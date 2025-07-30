@@ -12,4 +12,12 @@ Projet test de brique de normalisation commune pour les judilibre
 ## Etape 2 :
 
 1. Jurinorm envoie la décision a l'API de NLP pour récupérer les entités et les mises en doute
-2. Jurinorm calcule le circuit de relecture de chaque décision
+2. Jurinorm calcule le circuit de relecture de chaque décision et oriente la décision (passage par label ou non)
+
+## Etape 3 :
+
+1. Jurinorm appelle le endpoint qui permet de récupérer les termes de remplacement et les stocke dans la collection adhoc
+
+## Etape 4 :
+
+1. Jurinorm est capable de recevoir des décision "brutes" et s'occupe de la normalisation totale des décisions. Les briques de collecte se bornent a collecter les décisions, elles deviennent des interfaces techniques.
