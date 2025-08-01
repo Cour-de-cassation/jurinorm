@@ -3,6 +3,8 @@ import { fetchZoning } from '../library/zoning'
 import { putDecision } from '../library/dbsderApi'
 import { mapDecisionIntoZoningParameters } from './decision/models'
 import { logger } from '../library/logger'
+import { hasSourceNameTj } from 'dbsder-api-types'
+import { computeRulesDecisionTj } from './rules/rulesTj'
 
 export type ProcessingResult = {
   success: boolean
@@ -45,10 +47,12 @@ export const normalizeDecision = async (
     decision.originalTextZoning = zoningResult
 
     // Step 2: Apply filtering rules
-    const filteredDecision = await applyFilteringRules(decision)
+    const decisionWithRules = hasSourceNameTj(decision)
+      ? await computeRulesDecisionTj(decision)
+      : decision
 
     // Step 3: Save to DBSDER API
-    await putDecision(filteredDecision)
+    await putDecision(decisionWithRules)
 
     return {
       success: true,
