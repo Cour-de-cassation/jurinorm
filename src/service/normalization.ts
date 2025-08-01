@@ -15,22 +15,14 @@ export type ProcessingResult = {
 
 const callZoningAPI = async (decision: UnIdentifiedDecisionSupported) => {
   logger.info('Calling zoning API', {
-    decisionSourceId: decision.sourceId
+    type: 'decision',
+    decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
+    path: 'normalization.ts callZoningAPI',
+    msg: 'Calling zoning API'
   })
 
   const zoningParams = mapDecisionIntoZoningParameters(decision)
   return await fetchZoning(zoningParams)
-}
-
-const applyFilteringRules = async (decision: UnIdentifiedDecisionSupported) => {
-  logger.info('Applying filtering rules', {
-    decisionSourceId: decision.sourceId
-  })
-
-  // TODO: Implement your filtering rules here
-  // This is where you migrate the filtering logic from dbsder-api
-
-  return decision
 }
 
 export const normalizeDecision = async (
@@ -38,8 +30,10 @@ export const normalizeDecision = async (
 ): Promise<ProcessingResult> => {
   try {
     logger.info('Starting decision processing', {
-      decisionSourceId: decision.sourceId,
-      sourceName: decision.sourceName
+      type: 'decision',
+      decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
+      path: 'normalization.ts normalizeDecision',
+      msg: 'Starting decision processing'
     })
 
     // Step 1: Call zoning API
@@ -61,8 +55,10 @@ export const normalizeDecision = async (
     }
   } catch (error) {
     logger.error('Decision processing failed', {
-      decisionSourceId: decision.sourceId,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      type: 'decision',
+      decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
+      path: 'normalization.ts normalizeDecision',
+      msg: error instanceof Error ? error.message : 'Unknown error'
     })
 
     return {

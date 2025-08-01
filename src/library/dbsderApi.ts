@@ -2,6 +2,7 @@ import { CodeNac, UnIdentifiedDecision } from 'dbsder-api-types'
 import { DBSDER_API_URL, DBSDER_API_KEY } from './env'
 import { UnexpectedError } from './error'
 import axios, { AxiosError } from 'axios'
+import { logger } from './logger'
 
 export async function putDecision(decision: UnIdentifiedDecision) {
   try {
@@ -14,8 +15,19 @@ export async function putDecision(decision: UnIdentifiedDecision) {
         }
       }
     )
+    logger.info({
+      type: 'tech',
+      path: 'dbsderApi.ts',
+      msg: 'Decision saved successfully'
+    })
     return result
   } catch (err) {
+    logger.error({
+      type: 'tech',
+      path: 'dbsderApi.ts',
+      msg: `Failed to save decision: ${err instanceof Error ? err.message : 'Unknown error'}`
+    })
+
     if (!(err instanceof AxiosError)) throw new UnexpectedError()
     if (
       err instanceof AxiosError &&
@@ -37,8 +49,19 @@ export async function getCodeNac(code: string): Promise<CodeNac> {
         'x-api-key': DBSDER_API_KEY
       }
     })
+    logger.info({
+      type: 'tech',
+      path: 'dbsderApi.ts',
+      msg: `CodeNac fetched successfully for code: ${code}`
+    })
     return result.data
   } catch (err) {
+    logger.error({
+      type: 'tech',
+      path: 'dbsderApi.ts',
+      msg: `Failed to fetch CodeNac for code ${code}: ${err instanceof Error ? err.message : 'Unknown error'}`
+    })
+
     if (!(err instanceof AxiosError)) throw new UnexpectedError()
     if (
       err instanceof AxiosError &&

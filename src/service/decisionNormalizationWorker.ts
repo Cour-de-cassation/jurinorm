@@ -10,9 +10,10 @@ export const decisionWorker = new Worker(
     const { decision } = job.data
 
     logger.info('Processing decision normalization job', {
-      jobId: job.id,
-      decisionSourceId: decision.sourceId,
-      sourceName: decision.sourceName
+      type: 'decision',
+      decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
+      path: 'decisionNormalizationWorker.ts decisionWorker',
+      msg: `Processing decision normalization job with jobId: ${job.id}`
     })
 
     try {
@@ -24,16 +25,19 @@ export const decisionWorker = new Worker(
       }
 
       logger.info('Decision processing completed successfully', {
-        jobId: job.id,
-        decisionSourceId: decision.sourceId
+        type: 'decision',
+        decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
+        path: 'decisionNormalizationWorker.ts decisionWorker',
+        msg: `Decision processing completed successfully for jobId: ${job.id}`
       })
 
       return result
     } catch (error) {
       logger.error('Failed to process decision', {
-        jobId: job.id,
-        decisionSourceId: decision.sourceId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        type: 'decision',
+        decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
+        path: 'decisionNormalizationWorker.ts decisionWorker',
+        msg: error instanceof Error ? error.message : 'Unknown error'
       })
       throw error // This will mark the job as failed and trigger retries
     }
@@ -47,18 +51,24 @@ export const decisionWorker = new Worker(
 // Worker event handlers
 decisionWorker.on('completed', (job) => {
   logger.info('Job completed', {
-    jobId: job.id,
-    returnValue: job.returnvalue
+    type: 'tech',
+    path: 'decisionNormalizationWorker.ts on:completed',
+    msg: `Job ${job.id} completed successfully`
   })
 })
 
 decisionWorker.on('failed', (job, err) => {
   logger.error('Job failed', {
-    jobId: job?.id,
-    error: err.message
+    type: 'tech',
+    path: 'decisionNormalizationWorker.ts on:failed',
+    msg: `Job ${job?.id} failed: ${err.message}`
   })
 })
 
 decisionWorker.on('error', (err) => {
-  logger.error('Worker error', { error: err.message })
+  logger.error('Worker error', {
+    type: 'tech',
+    path: 'decisionNormalizationWorker.ts on:error',
+    msg: err.message
+  })
 })
