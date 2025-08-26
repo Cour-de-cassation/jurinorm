@@ -7,7 +7,8 @@ Projet test de brique de normalisation commune pour les judilibre
 1. Jurinorm expose une API qui permet de récupérer les décisions collectées et "pré-normalisées" par les briques de collecte
 2. Jurinorm appelle le zonage sur ces décisions
 3. Jurinorm applique les règles de filtrage qui sont actuelement appliquées dans dbdser-api sur ces décisions
-4. Jurinorm enregistre la décision dans la base SDER via dbsder-api
+4. Jurinorm effectue le calcul de diff mineur/majeure en fonction de la décision déjà présente dans notre base de donnée (effectué dans juritj et juritcom uniquement pour l'instant)
+5. Jurinorm enregistre la décision dans la base SDER via dbsder-api
 
 ## Etape 2 :
 
