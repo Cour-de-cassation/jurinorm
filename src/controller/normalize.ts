@@ -8,15 +8,15 @@ import { addDecisionToQueue } from '../service/redis'
 
 const app = Router()
 
-function parsePutBody(body: Request['body']): UnIdentifiedDecisionSupported {
+function parsePostBody(body: Request['body']): UnIdentifiedDecisionSupported {
   if (!body || !('decision' in body))
     throw new MissingValue('req.body', "body is missing on request or doesn't contain a decision")
   return parseUnIdentifiedDecisionSupported(body.decision)
 }
 
-app.put('/normalize', async (req, res, next) => {
+app.post('/normalize', async (req, res, next) => {
   try {
-    const decision = parsePutBody(req.body)
+    const decision = parsePostBody(req.body)
     await addDecisionToQueue(decision)
 
     res.send({
