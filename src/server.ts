@@ -7,6 +7,7 @@ import { errorHandler } from './controller/error'
 import { apiKeyHandler } from './controller/authentication'
 import { PORT } from './library/env'
 import './service/decisionNormalizationWorker'
+import path from 'path'
 
 const app: Express = express()
 
@@ -29,7 +30,8 @@ app
 
 app.listen(PORT, () => {
   logger.info({
-    operationName: 'startServer',
+    type: 'tech',
+    path: 'server.ts',
     msg: `Jurinorm running on port ${PORT}`
   })
 })

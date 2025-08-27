@@ -56,7 +56,7 @@ export async function addDecisionToQueue(
       delay: 0
     })
 
-    logger.info('Decision added to normalization queue', {
+    logger.info({
       type: 'decision',
       decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
       path: 'redis.ts addDecisionToQueue',
@@ -65,11 +65,11 @@ export async function addDecisionToQueue(
 
     return job
   } catch (error) {
-    logger.error('Failed to add decision to queue', {
+    logger.error({
       type: 'decision',
       decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
       path: 'redis.ts addDecisionToQueue',
-      msg: error instanceof Error ? error.message : 'Unknown error'
+      msg: `Failed to add decision to queue: ${error instanceof Error ? error.message : 'Unknown error'}`
     })
     throw error
   }

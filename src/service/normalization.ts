@@ -14,7 +14,7 @@ export type ProcessingResult = {
 }
 
 const callZoningAPI = async (decision: UnIdentifiedDecisionSupported) => {
-  logger.info('Calling zoning API', {
+  logger.info({
     type: 'decision',
     decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
     path: 'normalization.ts callZoningAPI',
@@ -29,7 +29,7 @@ export const normalizeDecision = async (
   decision: UnIdentifiedDecisionSupported
 ): Promise<ProcessingResult> => {
   try {
-    logger.info('Starting decision processing', {
+    logger.info({
       type: 'decision',
       decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
       path: 'normalization.ts normalizeDecision',
@@ -54,7 +54,7 @@ export const normalizeDecision = async (
       timestamp: new Date().toISOString()
     }
   } catch (error) {
-    logger.error('Decision processing failed', {
+    logger.error({
       type: 'decision',
       decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
       path: 'normalization.ts normalizeDecision',

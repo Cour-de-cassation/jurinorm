@@ -9,7 +9,7 @@ export const decisionWorker = new Worker(
   async (job: Job<DecisionJobData>) => {
     const { decision } = job.data
 
-    logger.info('Processing decision normalization job', {
+    logger.info({
       type: 'decision',
       decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
       path: 'decisionNormalizationWorker.ts decisionWorker',
@@ -24,7 +24,7 @@ export const decisionWorker = new Worker(
         throw new Error(result.error || 'Processing failed')
       }
 
-      logger.info('Decision processing completed successfully', {
+      logger.info({
         type: 'decision',
         decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
         path: 'decisionNormalizationWorker.ts decisionWorker',
@@ -33,7 +33,7 @@ export const decisionWorker = new Worker(
 
       return result
     } catch (error) {
-      logger.error('Failed to process decision', {
+      logger.error({
         type: 'decision',
         decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
         path: 'decisionNormalizationWorker.ts decisionWorker',
@@ -50,7 +50,7 @@ export const decisionWorker = new Worker(
 
 // Worker event handlers
 decisionWorker.on('completed', (job) => {
-  logger.info('Job completed', {
+  logger.info({
     type: 'tech',
     path: 'decisionNormalizationWorker.ts on:completed',
     msg: `Job ${job.id} completed successfully`
@@ -58,7 +58,7 @@ decisionWorker.on('completed', (job) => {
 })
 
 decisionWorker.on('failed', (job, err) => {
-  logger.error('Job failed', {
+  logger.error({
     type: 'tech',
     path: 'decisionNormalizationWorker.ts on:failed',
     msg: `Job ${job?.id} failed: ${err.message}`
@@ -66,7 +66,7 @@ decisionWorker.on('failed', (job, err) => {
 })
 
 decisionWorker.on('error', (err) => {
-  logger.error('Worker error', {
+  logger.error({
     type: 'tech',
     path: 'decisionNormalizationWorker.ts on:error',
     msg: err.message
