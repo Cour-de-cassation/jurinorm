@@ -33,13 +33,7 @@ export const decisionWorker = new Worker(
 
       return result
     } catch (error) {
-      logger.error({
-        type: 'decision',
-        decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
-        path: 'decisionNormalizationWorker.ts decisionWorker',
-        msg: error instanceof Error ? error.message : 'Unknown error'
-      })
-      throw error // This will mark the job as failed and trigger retries
+      throw error // Trigger retry, error is logged in the event handler below
     }
   },
   {
@@ -50,16 +44,22 @@ export const decisionWorker = new Worker(
 
 // Worker event handlers
 decisionWorker.on('completed', (job) => {
+  const { decision } = job.data
   logger.info({
-    type: 'tech',
+    type: 'decision',
+    decision: { sourceId: decision.sourceId, sourceName: decision.sourceName },
     path: 'decisionNormalizationWorker.ts on:completed',
     msg: `Job ${job.id} completed successfully`
   })
 })
 
 decisionWorker.on('failed', (job, err) => {
+  const decision = job?.data?.decision
   logger.error({
-    type: 'tech',
+    type: 'decision',
+    decision: decision
+      ? { sourceId: decision.sourceId, sourceName: decision.sourceName }
+      : undefined,
     path: 'decisionNormalizationWorker.ts on:failed',
     msg: `Job ${job?.id} failed: ${err.message}`
   })
