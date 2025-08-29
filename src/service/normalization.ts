@@ -3,7 +3,7 @@ import { fetchZoning } from '../library/zoning'
 import { putDecision } from '../library/dbsderApi'
 import { mapDecisionIntoZoningParameters } from './decision/models'
 import { logger } from '../library/logger'
-import { hasSourceNameTj } from 'dbsder-api-types'
+import { hasSourceNameTj, LabelStatus, PublishStatus } from 'dbsder-api-types'
 import { computeRulesDecisionTj } from './rules/rulesTj'
 
 export type ProcessingResult = {
@@ -45,7 +45,14 @@ export const normalizeDecision = async (
       ? await computeRulesDecisionTj(decision)
       : decision
 
-    // Step 3: Save to DBSDER API
+    // Step 3: Compute publishStatus according to labelStatus
+    const publishStatus =
+      decisionWithRules.labelStatus !== LabelStatus.TOBETREATED
+        ? PublishStatus.BLOCKED
+        : PublishStatus.TOBEPUBLISHED
+    decisionWithRules.publishStatus = publishStatus
+
+    // Step 4: Save to DBSDER API
     await putDecision(decisionWithRules)
 
     return {
