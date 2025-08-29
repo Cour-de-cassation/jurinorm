@@ -27,7 +27,7 @@ services:
     networks:
       - default
     command: redis-server --appendonly yes
-
+    
 networks:
   default:
   dbsder-external-network:
@@ -35,3 +35,4 @@ networks:
 
 volumes:
   redis_data:
+  redisinsight_data:
