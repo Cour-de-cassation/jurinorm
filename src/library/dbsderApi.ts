@@ -42,7 +42,7 @@ export async function putDecision(decision: UnIdentifiedDecision) {
   }
 }
 
-export async function getCodeNac(code: string): Promise<CodeNac> {
+export async function getCodeNac(code: string): Promise<CodeNac | null> {
   try {
     const result = await axios.get(`${DBSDER_API_URL}/codenacs/${code}`, {
       headers: {
