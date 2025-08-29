@@ -1,5 +1,5 @@
 import { Worker, Job } from 'bullmq'
-import { DecisionJobData, redisConfig } from './redis'
+import { DecisionJobData, redisConfig } from '../library/redis'
 import { logger } from '../library/logger'
 import { normalizeDecision } from './normalization'
 

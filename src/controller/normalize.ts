@@ -4,7 +4,7 @@ import {
   parseUnIdentifiedDecisionSupported,
   UnIdentifiedDecisionSupported
 } from '../service/decision/models'
-import { addDecisionToQueue } from '../service/redis'
+import { addDecisionToQueue } from '../library/redis'
 
 const app = Router()
 

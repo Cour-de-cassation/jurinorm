@@ -1,8 +1,8 @@
 import { Queue, Job } from 'bullmq'
 import Redis from 'ioredis'
-import { UnIdentifiedDecisionSupported } from './decision/models'
-import { logger } from '../library/logger'
-import { REDIS_HOST, REDIS_PASSWORD, REDIS_DB } from '../library/env'
+import { UnIdentifiedDecisionSupported } from '../service/decision/models'
+import { logger } from './logger'
+import { REDIS_HOST, REDIS_PASSWORD, REDIS_DB } from './env'
 
 // Parse Redis host and port
 const [host, portStr] = REDIS_HOST.split(':')
