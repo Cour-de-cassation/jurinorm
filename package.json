@@ -9,6 +9,7 @@
     "build": "tsc --build",
     "batch:start:tcom": "npx ts-node -r dotenv/config src/tcom/index.ts",
     "batch:start:tj": "npx ts-node -r dotenv/config src/tj/index.ts",
+    "batch:start:portalis": "npx ts-node -r dotenv/config src/portalis/index.ts",
     "batch:start:watch": "nodemon --config nodemon-batch.json",
     "batch:start:prod": "node -r dotenv/config dist/batch/normalization/index.js",
     "lint": "eslint \"src/**/*.ts\" --max-warnings 0",
@@ -46,7 +47,8 @@
     "marked": "15.0.12",
     "html-entities": "2.6.0",
     "html-to-text": "9.0.5",
-    "jsdom": "26.1.0"
+    "jsdom": "26.1.0",
+    "pdf-lib": "1.17.1"
   },
   "devDependencies": {
     "@nestjs/cli": "11.0.10",
