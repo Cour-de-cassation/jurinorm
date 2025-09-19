@@ -1,8 +1,8 @@
 import { ArgumentMetadata } from '@nestjs/common'
 import { QualitePartieExhaustive, TypePartieExhaustive } from 'dbsder-api-types'
 import { MockUtils } from '../utils/mock.utils'
-import { ValidateDtoPipe } from '../../../shared/infrastructure/dto/validateDto.pipe'
-import { BadPropertiesException } from '../../../shared/infrastructure/exceptions/missingProperties.exception'
+import { ValidateDtoPipe } from './validateDto.pipe'
+import { BadPropertiesException } from '../exceptions/missingProperties.exception'
 import { AdresseDto, CompositionDto, MetadonneeDto, PartieDto } from './metadonnee.dto'
 
 describe('Validate MetadonneeDTO format', () => {
