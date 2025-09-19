@@ -6,6 +6,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
+    "build": "tsc --build",
     "batch:start:tcom": "npx ts-node -r dotenv/config src/tcom/index.ts",
     "batch:start:tj": "npx ts-node -r dotenv/config src/tj/index.ts",
     "batch:start:watch": "nodemon --config nodemon-batch.json",
@@ -13,7 +14,6 @@
     "lint": "eslint \"src/**/*.ts\" --max-warnings 0",
     "test": "jest && npm run test:integration",
     "test:batch": "jest --testPathPattern=src/batch",
-    "test:api": "jest --testPathPattern=src/api & npm run test:integration",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",

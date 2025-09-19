@@ -2,7 +2,7 @@ import { LabelStatus } from 'dbsder-api-types'
 import { computeLabelStatus } from './computeLabelStatus'
 import { MockUtils } from '../../../shared/infrastructure/utils/mock.utils'
 
-jest.mock('../index', () => ({
+jest.mock('../../../index', () => ({
   logger: {
     error: jest.fn(),
     info: jest.fn(),

@@ -16,7 +16,7 @@ import { InfrastructureException } from '../../shared/infrastructure/exceptions/
 import { CollectDto } from '../../shared/infrastructure/dto/collect.dto'
 // import { ConvertedDecisionWithMetadonneesDto } from '../../shared/infrastructure/dto/convertedDecisionWithMetadonnees.dto'
 
-jest.mock('./index', () => ({
+jest.mock('../../index', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),

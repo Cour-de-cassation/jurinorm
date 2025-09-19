@@ -1,6 +1,6 @@
 import { getConversionCommandPath } from './transformWPDtoText'
 
-jest.mock('../../normalization/index', () => ({
+jest.mock('../../../index', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),
