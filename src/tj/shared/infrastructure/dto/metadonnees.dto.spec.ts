@@ -2,8 +2,8 @@ import { ArgumentMetadata } from '@nestjs/common'
 import { SuiviOccultation } from 'dbsder-api-types'
 import { MockUtils } from '../utils/mock.utils'
 import { MetadonneesDto, PresidentDto } from './metadonnees.dto'
-import { ValidateDtoPipe } from '../../../api/infrastructure/pipes/validateDto.pipe'
-import { BadPropertiesException } from '../../../api/infrastructure/exceptions/missingProperties.exception'
+import { ValidateDtoPipe } from './validateDto.pipe'
+import { BadPropertiesException } from '../exceptions/missingProperties.exception'
 
 describe('Validate MetadonneeDTO format', () => {
   const target = new ValidateDtoPipe()
