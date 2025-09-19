@@ -6,7 +6,7 @@ import {
   _Object,
 } from "@aws-sdk/client-s3";
 import { UnexpectedError } from "./error";
-import { S3_ACCESS_KEY, S3_BUCKET_NAME, S3_REGION, S3_SECRET_KEY, S3_URL } from "./env";
+import { S3_ACCESS_KEY, S3_BUCKET_NAME_PORTALIS, S3_REGION, S3_SECRET_KEY, S3_URL } from "./env";
 
 const S3Options: S3ClientConfig = {
   endpoint: S3_URL,
@@ -27,7 +27,7 @@ export function saveFile(
 ): Promise<unknown> {
   return s3Client.send(
     new PutObjectCommand({
-      Bucket: S3_BUCKET_NAME,
+      Bucket: S3_BUCKET_NAME_PORTALIS,
       Key: name,
       Body: buffer,
       ContentType: contentType,
@@ -39,7 +39,7 @@ export async function getFileByName(
   name: string
 ): Promise<Buffer> {
   const fileFromS3 = await s3Client.send(
-    new GetObjectCommand({ Bucket: S3_BUCKET_NAME, Key: name })
+    new GetObjectCommand({ Bucket: S3_BUCKET_NAME_PORTALIS, Key: name })
   );
   if (!fileFromS3.Body)
     throw new UnexpectedError(`File: ${name} seems empty or its body cannot be read.`);

@@ -24,7 +24,7 @@ import { strict as assert } from 'assert'
 import { logger, normalizationFormatLogs } from './logger'
 
 const dbSderApiGateway = new DbSderApiGateway()
-const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW
+const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TCOM
 
 interface Diff {
   major: Array<string>

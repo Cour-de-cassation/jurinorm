@@ -44,7 +44,7 @@ describe('DecisionS3Repository', () => {
       // GIVEN
       const expectedReqParams = {
         Body: requestS3DtoJson,
-        Bucket: process.env.S3_BUCKET_NAME_NORMALIZED,
+        Bucket: process.env.S3_BUCKET_NAME_NORMALIZED_TJ,
         Key: filename
       }
 
@@ -61,7 +61,7 @@ describe('DecisionS3Repository', () => {
       // GIVEN
       const expectedReqParams = {
         Body: requestS3DtoJson,
-        Bucket: process.env.S3_BUCKET_NAME_RAW,
+        Bucket: process.env.S3_BUCKET_NAME_RAW_TJ_TJ,
         Key: filename
       }
 
@@ -187,7 +187,7 @@ describe('DecisionS3Repository', () => {
       it('calls S3 without MaxKeys property when maxNumberOfDecisionsToRetrieve is not provided', async () => {
         // GIVEN
         const expected = {
-          Bucket: process.env.S3_BUCKET_NAME_RAW
+          Bucket: process.env.S3_BUCKET_NAME_RAW_TJ
         }
         mockS3.on(ListObjectsV2Command).resolves({})
 
@@ -202,7 +202,7 @@ describe('DecisionS3Repository', () => {
         // GIVEN
         const invalidMax = 0
         const expected = {
-          Bucket: process.env.S3_BUCKET_NAME_RAW
+          Bucket: process.env.S3_BUCKET_NAME_RAW_TJ
         }
         mockS3.on(ListObjectsV2Command).resolves({})
 
@@ -217,7 +217,7 @@ describe('DecisionS3Repository', () => {
         // GIVEN
         const invalidMax = 9999
         const expected = {
-          Bucket: process.env.S3_BUCKET_NAME_RAW
+          Bucket: process.env.S3_BUCKET_NAME_RAW_TJ
         }
         mockS3.on(ListObjectsV2Command).resolves({})
 
@@ -232,7 +232,7 @@ describe('DecisionS3Repository', () => {
         // GIVEN
         const validMax = 1
         const expected = {
-          Bucket: process.env.S3_BUCKET_NAME_RAW,
+          Bucket: process.env.S3_BUCKET_NAME_RAW_TJ,
           MaxKeys: validMax
         }
         mockS3.on(ListObjectsV2Command).resolves({})
@@ -248,7 +248,7 @@ describe('DecisionS3Repository', () => {
         // GIVEN
         const validMax = 1000
         const expected = {
-          Bucket: process.env.S3_BUCKET_NAME_RAW,
+          Bucket: process.env.S3_BUCKET_NAME_RAW_TJ,
           MaxKeys: validMax
         }
         mockS3.on(ListObjectsV2Command).resolves({})
@@ -264,7 +264,7 @@ describe('DecisionS3Repository', () => {
         // GIVEN
         const validMax = 500
         const expected = {
-          Bucket: process.env.S3_BUCKET_NAME_RAW,
+          Bucket: process.env.S3_BUCKET_NAME_RAW_TJ,
           MaxKeys: validMax
         }
         mockS3.on(ListObjectsV2Command).resolves({})
@@ -283,7 +283,7 @@ describe('DecisionS3Repository', () => {
         const maxKey = 500
         const startAfterFileName = 'someFileName'
         const expected = {
-          Bucket: process.env.S3_BUCKET_NAME_RAW,
+          Bucket: process.env.S3_BUCKET_NAME_RAW_TJ,
           MaxKeys: maxKey,
           StartAfter: startAfterFileName
         }

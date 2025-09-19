@@ -30,7 +30,7 @@ export const normalizationPinoConfig = {
       censor: '',
       remove: true
     },
-    transport: process.env.NODE_ENV === 'local' ? pinoPrettyConf : undefined,
+    transport: process.env.NODE_ENV === 'development' ? pinoPrettyConf : undefined,
     autoLogging: false
   }
 }
@@ -52,7 +52,7 @@ export const configureLoggerModule = (): DynamicModule =>
         censor: '',
         remove: true
       },
-      transport: process.env.NODE_ENV === 'local' ? pinoPrettyConf : undefined,
+      transport: process.env.NODE_ENV === 'development' ? pinoPrettyConf : undefined,
       genReqId: (request: IncomingMessage, response: ServerResponse): ReqId => {
         const correlationId = request.headers['x-correlation-id'] ?? uuid.v4()
         request.headers['x-correlation-id'] = correlationId

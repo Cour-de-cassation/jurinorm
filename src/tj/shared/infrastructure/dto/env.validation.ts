@@ -9,7 +9,7 @@ export const envValidationConfig = {
     S3_ACCESS_KEY: Joi.string().required(),
     S3_SECRET_KEY: Joi.string().required(),
     S3_REGION: Joi.string().required(),
-    S3_BUCKET_NAME_RAW: Joi.string().required(),
+    S3_BUCKET_NAME_RAW_TJ: Joi.string().required(),
     S3_BUCKET_NAME_NORMALIZED: Joi.string().required(),
     DBSDER_API_URL: Joi.string().required(),
     DBSDER_API_KEY: Joi.string()
@@ -18,6 +18,6 @@ export const envValidationConfig = {
         version: ['uuidv4'],
         separator: true
       }),
-    COMMISSIONING_DATE: Joi.string()
+    COMMISSIONING_DATE_TJ: Joi.string()
   })
 }

@@ -27,7 +27,7 @@ interface Diff {
 }
 
 const dbSderApiGateway = new DbSderApiGateway()
-const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW
+const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TJ
 
 export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonneesDto[]> {
   const listConvertedDecision: ConvertedDecisionWithMetadonneesDto[] = []

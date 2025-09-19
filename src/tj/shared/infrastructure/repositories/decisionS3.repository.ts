@@ -36,7 +36,7 @@ export class DecisionS3Repository {
   async saveDecisionIntegre(requestToS3Dto: string, filename: string) {
     const reqParams = {
       Body: requestToS3Dto,
-      Bucket: process.env.S3_BUCKET_NAME_RAW,
+      Bucket: process.env.S3_BUCKET_NAME_RAW_TJ,
       Key: filename
     }
 
@@ -46,7 +46,7 @@ export class DecisionS3Repository {
   async saveDecisionNormalisee(requestToS3Dto: string, filename: string) {
     const reqParams = {
       Body: requestToS3Dto,
-      Bucket: process.env.S3_BUCKET_NAME_NORMALIZED,
+      Bucket: process.env.S3_BUCKET_NAME_NORMALIZED_TJ,
       Key: filename
     }
     await this.saveDecision(reqParams)
@@ -93,7 +93,7 @@ export class DecisionS3Repository {
 
   async getNormalizedDecisionByFilename(filename: string): Promise<CollectDto> {
     const reqParams = {
-      Bucket: process.env.S3_BUCKET_NAME_NORMALIZED,
+      Bucket: process.env.S3_BUCKET_NAME_NORMALIZED_TJ,
       Key: filename
     }
 
@@ -116,7 +116,7 @@ export class DecisionS3Repository {
     startAfterFileName?: string
   ): Promise<_Object[]> {
     const reqParams: ListObjectsV2CommandInput = {
-      Bucket: process.env.S3_BUCKET_NAME_RAW
+      Bucket: process.env.S3_BUCKET_NAME_RAW_TJ
     }
     if (maxNumberOfDecisionsToRetrieve >= 1 && maxNumberOfDecisionsToRetrieve <= 1000) {
       reqParams.MaxKeys = maxNumberOfDecisionsToRetrieve

@@ -120,8 +120,8 @@ function isDecisionJurisdictionNotInWhiteList(jurisdictionId: string): boolean {
 */
 
 function getMiseEnServiceDate(): Date {
-  if (!isNaN(new Date(process.env.COMMISSIONING_DATE).getTime())) {
-    return new Date(process.env.COMMISSIONING_DATE)
+  if (!isNaN(new Date(process.env.COMMISSIONING_DATE_TCOM).getTime())) {
+    return new Date(process.env.COMMISSIONING_DATE_TCOM)
   } else {
     return new Date('2024-12-31')
   }

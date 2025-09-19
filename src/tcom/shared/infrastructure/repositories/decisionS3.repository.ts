@@ -52,7 +52,7 @@ export class DecisionS3Repository implements DecisionRepository {
     now.setMilliseconds(0)
     const reqParams = {
       Body: requestToS3Dto,
-      Bucket: process.env.S3_BUCKET_NAME_RAW,
+      Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM,
       Key: `${jsonS3Key}`,
       Metadata: {
         date: now.toISOString(),
@@ -87,7 +87,7 @@ export class DecisionS3Repository implements DecisionRepository {
     await this.saveDecision(reqParamsMarkForDeletion)
 
     const reqParamsDelete = {
-      Bucket: process.env.S3_BUCKET_NAME_RAW,
+      Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM,
       Key: `${jsonS3Key}`
     }
 
@@ -97,7 +97,7 @@ export class DecisionS3Repository implements DecisionRepository {
   async saveDecisionNormalisee(requestToS3Dto: string, filename: string) {
     const reqParams = {
       Body: requestToS3Dto,
-      Bucket: process.env.S3_BUCKET_NAME_NORMALIZED,
+      Bucket: process.env.S3_BUCKET_NAME_NORMALIZED_TCOM,
       Key: filename
     }
 
@@ -131,7 +131,7 @@ export class DecisionS3Repository implements DecisionRepository {
 
   async getDecisionByFilename(filename: string): Promise<CollectDto & { _id: string }> {
     const reqParams = {
-      Bucket: process.env.S3_BUCKET_NAME_RAW,
+      Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM,
       Key: filename
     }
 
@@ -206,7 +206,7 @@ export class DecisionS3Repository implements DecisionRepository {
     startAfterFileName?: string
   ): Promise<_Object[]> {
     const reqParams: ListObjectsV2CommandInput = {
-      Bucket: process.env.S3_BUCKET_NAME_RAW
+      Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM
     }
     if (maxNumberOfDecisionsToRetrieve >= 1 && maxNumberOfDecisionsToRetrieve <= 1000) {
       reqParams.MaxKeys = maxNumberOfDecisionsToRetrieve

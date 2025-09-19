@@ -11,9 +11,9 @@ import {
   PDFStream,
   decodePDFRawStream,
 } from "pdf-lib";
-import { NLP_PSEUDONYMISATION_API } from "../env";
+import { NLP_PSEUDONYMISATION_API_URL } from "../env";
 
-const ROUTE_URL = `${NLP_PSEUDONYMISATION_API}/pdf-to-text`;
+const ROUTE_URL = `${NLP_PSEUDONYMISATION_API_URL}/pdf-to-text`;
 
 type PdfToHtmlAnswer = {
   HTMLText: string;

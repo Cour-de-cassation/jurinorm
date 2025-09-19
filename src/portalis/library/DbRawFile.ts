@@ -10,7 +10,7 @@ import {
     InferIdType, 
     UpdateFilter 
 } from "mongodb"
-import { FILE_DB_URL, S3_BUCKET_NAME } from "./env"
+import { FILE_DB_URL, S3_BUCKET_NAME_PORTALIS } from "./env"
 
 const client = new MongoClient(FILE_DB_URL)
 
@@ -25,7 +25,7 @@ export async function createFileInformation<T extends Document>(
 ): Promise<{ _id: InferIdType<T> } & typeof file> {
     const db = await dbConnect()
     const { insertedId } = await db
-        .collection<T>(S3_BUCKET_NAME)
+        .collection<T>(S3_BUCKET_NAME_PORTALIS)
         .insertOne(file)
     return { _id: insertedId, ...file }
 }
@@ -36,7 +36,7 @@ export async function updateFileInformation<T extends Document>(
 ): Promise<WithId<T> | null> {
     const db = await dbConnect()
     return await db
-        .collection<T>(S3_BUCKET_NAME)
+        .collection<T>(S3_BUCKET_NAME_PORTALIS)
         .findOneAndUpdate(
             { _id: id } as Filter<T>, // MongoType seems dumb with inferId type
             { $set: file } as UpdateFilter<T>, // MongoType seems dumb with inferId type
@@ -48,14 +48,14 @@ export async function countFileInformations<T extends Document>(
     filters: Filter<T>
 ): Promise<number> {
     const db = await dbConnect()
-    return db.collection<T>(S3_BUCKET_NAME).countDocuments(filters)
+    return db.collection<T>(S3_BUCKET_NAME_PORTALIS).countDocuments(filters)
 }
 
 export async function findFileInformations<T extends Document>(
     filters: Filter<T>
 ): Promise<FindCursor<WithId<T>>> {
     const db = await dbConnect()
-    return db.collection<T>(S3_BUCKET_NAME).find(filters)
+    return db.collection<T>(S3_BUCKET_NAME_PORTALIS).find(filters)
 }
 
 export async function findFileInformationsList<T extends Document>(
@@ -66,7 +66,7 @@ export async function findFileInformationsList<T extends Document>(
     const db = await dbConnect()
     const filtersWithPagination = cursor ? { _id: { $gt: new ObjectId(cursor) }, ...filters } : filters
 
-    return db.collection<T>(S3_BUCKET_NAME)
+    return db.collection<T>(S3_BUCKET_NAME_PORTALIS)
         .find(filtersWithPagination)
         .sort({ _id: 1 })
         .limit(limit)
