@@ -6,8 +6,8 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "batch:start:tcom": "npx ts-node -r dotenv/config src/juritcom/index.ts",
-    "batch:start:tj": "npx ts-node -r dotenv/config src/juritj/index.ts",
+    "batch:start:tcom": "npx ts-node -r dotenv/config src/tcom/index.ts",
+    "batch:start:tj": "npx ts-node -r dotenv/config src/tj/index.ts",
     "batch:start:watch": "nodemon --config nodemon-batch.json",
     "batch:start:prod": "node -r dotenv/config dist/batch/normalization/index.js",
     "lint": "eslint \"src/**/*.ts\" --max-warnings 0",
