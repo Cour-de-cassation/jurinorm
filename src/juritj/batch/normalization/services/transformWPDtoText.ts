@@ -1,7 +1,7 @@
 import { existsSync, statSync } from 'fs'
 import { promisify } from 'util'
 import { exec } from 'child_process'
-import { logger, normalizationFormatLogs } from '../../../../index'
+import { logger, normalizationFormatLogs } from '../../../index'
 import { LogsFormat } from 'src/juritj/shared/infrastructure/utils/logsFormat.utils'
 
 const execPromise = promisify(exec)

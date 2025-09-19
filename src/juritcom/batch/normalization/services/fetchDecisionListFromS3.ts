@@ -1,6 +1,6 @@
 import { DecisionS3Repository } from '../../../shared/infrastructure/repositories/decisionS3.repository'
-import { InfrastructureExpection } from '../../../shared/infrastructure/exceptions/infrastructure.exception'
-import { logger, normalizationFormatLogs } from '../../..'
+import { InfrastructureException } from '../../../shared/infrastructure/exceptions/infrastructure.exception'
+import { logger, normalizationFormatLogs } from '../logger'
 import { LogsFormat } from '../../../shared/infrastructure/utils/logsFormat.utils'
 import { HttpStatus } from '@nestjs/common'
 
@@ -24,6 +24,6 @@ export async function fetchDecisionListFromS3(
       statusCode: HttpStatus.SERVICE_UNAVAILABLE
     }
     logger.error(formatLogs)
-    throw new InfrastructureExpection(error.message)
+    throw new InfrastructureException(error.message)
   }
 }

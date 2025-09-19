@@ -1,19 +1,9 @@
 import { CronJob } from 'cron'
-import { PinoLogger } from 'nestjs-pino'
-import { normalizationJob } from './juritj/batch/normalization/normalization'
-import { LogsFormat } from './juritj/shared/infrastructure/utils/logsFormat.utils'
-import { normalizationPinoConfig } from './juritj/shared/infrastructure/utils/pinoConfig.utils'
+import { normalizationJob } from './batch/normalization/normalization'
+import { LogsFormat } from './shared/infrastructure/utils/logsFormat.utils'
+import { logger } from './batch/normalization/logger'
 
 const CRON_EVERY_HOUR = '0 * * * *'
-
-export const logger = new PinoLogger(normalizationPinoConfig)
-// WARNING : using normalizationFormatLogs as a global variable to provide correlationId and decisionId in all services
-// Replace operationName and msg when using it outside of normalizationJob
-// correlationId and decisionId are provided for each normalized decision
-export const normalizationFormatLogs: LogsFormat = {
-  operationName: 'normalizationJob',
-  msg: 'Starting normalization job...'
-}
 
 async function startJob() {
   let isJobCompleted = true

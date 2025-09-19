@@ -1,5 +1,5 @@
 import { UnIdentifiedDecisionTj, SuiviOccultation } from 'dbsder-api-types'
-import { logger, normalizationFormatLogs } from '../../../../index'
+import { logger, normalizationFormatLogs } from '../../../index'
 import { LogsFormat } from '../../../shared/infrastructure/utils/logsFormat.utils'
 
 export function computeOccultation(

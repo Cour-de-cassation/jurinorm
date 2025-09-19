@@ -6,7 +6,7 @@ import {
   hasNoBreak
 } from './services/removeOrReplaceUnnecessaryCharacters'
 import { ConvertedDecisionWithMetadonneesDto } from '../../shared/infrastructure/dto/convertedDecisionWithMetadonnees.dto'
-import { logger } from '../../../index'
+import { logger } from '../../index'
 import { fetchDecisionListFromS3 } from './services/fetchDecisionListFromS3'
 import { DecisionS3Repository } from '../../shared/infrastructure/repositories/decisionS3.repository'
 import { mapDecisionNormaliseeToDecisionDto } from './infrastructure/decision.dto'
@@ -14,7 +14,7 @@ import { transformDecisionIntegreFromWPDToText } from './services/transformDecis
 import { CollectDto } from '../../shared/infrastructure/dto/collect.dto'
 import { computeLabelStatus } from './services/computeLabelStatus'
 import { DbSderApiGateway } from './repositories/gateways/dbsderApi.gateway'
-import { normalizationFormatLogs } from '../../../index'
+import { normalizationFormatLogs } from '../../index'
 import { computeOccultation } from './services/computeOccultation'
 
 import { LabelStatus, PublishStatus, UnIdentifiedDecisionTj } from 'dbsder-api-types'
