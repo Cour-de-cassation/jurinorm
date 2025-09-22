@@ -32,13 +32,13 @@ COPY --from=builder --chown=node:node /home/node/dist/tcom ./dist/tcom
 
 CMD ["node", "dist/tcom/index.js"]
 
-FROM builder AS portalis-batch
+FROM builder AS cph-batch
 
 USER node
 
-COPY --from=builder --chown=node:node /home/node/dist/portalis ./dist/portalis
+COPY --from=builder --chown=node:node /home/node/dist/cph ./dist/cph
 
-CMD ["node", "dist/portalis/index.js"]
+CMD ["node", "dist/cph/index.js"]
 
 
 ####################
@@ -69,8 +69,8 @@ USER node
 
 CMD ["npm", "run", "start:tcom:watch"]
 
-FROM builder-local AS portalis-batch-local
+FROM builder-local AS cph-batch-local
 
 USER node
 
-CMD ["npm", "run", "start:portalis:watch"]
+CMD ["npm", "run", "start:cph:watch"]

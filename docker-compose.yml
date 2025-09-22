@@ -21,9 +21,9 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-  portalis-batch:
+  cph-batch:
     build: 
-      target: portalis-batch-local
+      target: cph-batch-local
     env_file:
       - .env
     volumes:
