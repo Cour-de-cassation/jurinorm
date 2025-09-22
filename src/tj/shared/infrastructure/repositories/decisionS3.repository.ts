@@ -77,7 +77,7 @@ export class DecisionS3Repository {
 
   async getDecisionByFilename(filename: string): Promise<CollectDto> {
     const reqParams = {
-      Bucket: process.env.S3_BUCKET_NAME_RAW,
+      Bucket: process.env.S3_BUCKET_NAME_RAW_TJ,
       Key: filename
     }
 

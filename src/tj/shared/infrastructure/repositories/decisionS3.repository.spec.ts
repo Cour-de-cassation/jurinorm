@@ -61,7 +61,7 @@ describe('DecisionS3Repository', () => {
       // GIVEN
       const expectedReqParams = {
         Body: requestS3DtoJson,
-        Bucket: process.env.S3_BUCKET_NAME_RAW_TJ_TJ,
+        Bucket: process.env.S3_BUCKET_NAME_RAW_TJ,
         Key: filename
       }
 
