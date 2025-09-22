@@ -1,0 +1,5 @@
+{
+    "watch": ["src/tj"],
+    "ext": "ts",
+    "exec": "ts-node -r dotenv/config src/tj/index.ts"
+}

@@ -1,0 +1,5 @@
+{
+    "watch": ["src/portalis"],
+    "ext": "ts",
+    "exec": "ts-node -r dotenv/config src/portalis/index.ts"
+}

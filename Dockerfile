@@ -61,16 +61,16 @@ RUN apk add cmd:wpd2text
 
 USER node
 
-CMD ["npm", "run", "batch:start:tj"]
+CMD ["npm", "run", "start:tj:watch"]
 
 FROM builder-local AS tcom-batch-local
 
 USER node
 
-CMD ["npm", "run", "batch:start:tcom"]
+CMD ["npm", "run", "start:tcom:watch"]
 
 FROM builder-local AS portalis-batch-local
 
 USER node
 
-CMD ["npm", "run", "batch:start:portalis"]
+CMD ["npm", "run", "start:portalis:watch"]
