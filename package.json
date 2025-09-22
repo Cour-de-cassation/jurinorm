@@ -34,7 +34,6 @@
     "class-validator": "0.14.2",
     "cron": "4.3.3",
     "dbsder-api-types": "2.1.9",
-    "express-basic-auth": "1.2.1",
     "html-entities": "2.6.0",
     "html-to-text": "9.0.5",
     "joi": "18.0.1",
@@ -44,7 +43,6 @@
     "pdf-lib": "1.17.1",
     "pino-http": "10.5.0",
     "reflect-metadata": "0.2.2",
-    "rimraf": "6.0.1",
     "rxjs": "7.8.2",
     "uuid": "11.1.0"
   },
