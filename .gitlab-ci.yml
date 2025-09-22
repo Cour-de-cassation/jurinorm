@@ -3,34 +3,13 @@ services:
   - docker:20.10.22-dind
 
 variables:
-  api_docker_image: '$CI_REGISTRY/cour-de-cassation/dbsder-api:$CI_COMMIT_SHORT_SHA'
+  tj_batch_docker_image: '$CI_REGISTRY/cour-de-cassation/juritj/batch:$CI_COMMIT_SHORT_SHA'
 
 stages:
-  - test
   - build
   - deploy
 
-test:
-  stage: test
-  variables:
-    HTTP_PROXY: $HTTP_PROXY_DEV
-    HTTPS_PROXY: $HTTPS_PROXY_DEV
-  script:
-    - echo $CI_JOB_TOKEN | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
-    - docker build
-      --build-arg http_proxy=$HTTP_PROXY
-      --build-arg https_proxy=$HTTPS_PROXY
-      --target test
-      -t dbsder-api .
-    - docker run -e HTTP_PROXY=$HTTP_PROXY -e HTTPS_PROXY=$HTTPS_PROXY dbsder-api npm run format
-    - docker run -e HTTP_PROXY=$HTTP_PROXY -e HTTPS_PROXY=$HTTPS_PROXY dbsder-api npm run lint
-    - docker run -e HTTP_PROXY=$HTTP_PROXY -e HTTPS_PROXY=$HTTPS_PROXY dbsder-api npm test
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-  tags:
-    - docker
-
-build_and_push_api:
+.build_and_push_template:
   stage: build
   variables:
     HTTP_PROXY: $HTTP_PROXY_DEV
@@ -38,24 +17,29 @@ build_and_push_api:
   script:
     - echo $CI_JOB_TOKEN | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
 
-    # To avoid rebuild existing image when addind tag to a commit
+    # To avoid rebuild existing image when adding tag to a commit
     - |
-      if docker pull "$api_docker_image"; then
-        echo "Docker image $api_docker_image already exist, skiping build and push."
+      if docker pull "$DOCKER_IMAGE_NAME"; then
+        echo "Docker image $DOCKER_IMAGE_NAME already exist, skipping build and push."
         exit 0
       fi
-
     - docker build
       --build-arg http_proxy=$HTTP_PROXY
       --build-arg https_proxy=$HTTPS_PROXY
-      --target api
-      -t $api_docker_image .
-    - docker push $api_docker_image
+      --target $TARGET
+      -t $DOCKER_IMAGE_NAME .
+    - docker push $DOCKER_IMAGE_NAME
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
     - if: '$CI_COMMIT_TAG'
   tags:
     - docker
+
+build_and_push_tj_batch:
+  variables:
+    DOCKER_IMAGE_NAME: $tj_batch_docker_image
+    TARGET: tj-batch
+  extends: .build_and_push_template
 
 .deploy_template:
   stage: deploy
@@ -67,7 +51,9 @@ build_and_push_api:
     - cat "$KNOWN_HOSTS" > /root/.ssh/known_hosts
     - chmod 600 /root/.ssh/id_rsa
     - chmod 600 /root/.ssh/known_hosts
-    - ansible-playbook -e dbsder_api_image=$api_docker_image -i ansible/inventory/$ENV.yml ansible/deploy_dbsder.yml --vault-password-file=$ANSIBLE_VAULT_PASS
+    - ansible-playbook -e tj_batch_image=$tj_batch_docker_image -i ansible/inventory/$ENV.yml ansible/deploy_jurinorm.yml --vault-password-file=$ANSIBLE_VAULT_PASS
+  needs:
+    - build_and_push_tj_batch
   tags:
     - docker
 
@@ -79,24 +65,24 @@ deploy_dev:
     - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_TAG'
       when: on_success
   needs:
-    - build_and_push_api
+    - build_and_push_tj_batch
 
-deploy_preprod:
-  variables:
-    ENV: preprod
-  extends: .deploy_template
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: manual
-  needs:
-    - deploy_dev
+# deploy_preprod:
+#   variables:
+#     ENV: preprod
+#   extends: .deploy_template
+#   rules:
+#     - if: '$CI_COMMIT_TAG'
+#       when: manual
+#   needs:
+#     - deploy_dev
 
-deploy_prod:
-  variables:
-    ENV: prod
-  extends: .deploy_template
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: manual
-  needs:
-    - deploy_preprod
+# deploy_prod:
+#   variables:
+#     ENV: prod
+#   extends: .deploy_template
+#   rules:
+#     - if: '$CI_COMMIT_TAG'
+#       when: manual
+#   needs:
+#     - deploy_preprod

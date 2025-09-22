@@ -2,8 +2,24 @@
 ansible_user: iliasaaguida
 ansible_python_interpreter: '/home/{{ ansible_user }}/ansible_venv/bin/python'
 
-api_service: 'api-service'
-dbsder_private_name: 'apidbsder.judilibre-prive.local'
+dbsder_api_url: "http://api-service.dbsder:3000"
+nlp_pseudonymisation_api_url: "http://nlp-api-service.nlp.svc.cluster.local:8081"
+s3_url: "http://bucket-service.juritj.svc.cluster.local:9000"
+s3_region: "eu-west-paris-1"
 
-no_color: 'true'
-zoning_api_url: http://nlp-jurizonage-api-service.nlp.svc.cluster.local:8090
+## TJ
+S3_BUCKET_NAME_RAW_TJ: "juritj-bucket"
+S3_BUCKET_NAME_NORMALIZED_TJ: "juritj-bucket-normalized"
+
+## TCOM
+s3_bucket_name_raw_tcom: "juritcom-bucket"
+s3_bucket_name_pdf: "juritcom-bucket-pdf"
+s3_bucket_name_pdf2text_success: "juritcom-bucket-pdf2text-success"
+s3_bucket_name_pdf2text_failed: "juritcom-bucket-pdf2text-failed"
+s3_bucket_name_deletion: "juritcom-bucket-deletion"
+s3_bucket_name_deletion_processed: "juritcom-bucket-deletion-processed"
+s3_bucket_name_normalized_tcom: "juritcom-bucket-normalized"
+plaintext_source: "nlp"
+
+## CPH
+s3_bucket_name_tcom: "portalis-collect-test-bucket"

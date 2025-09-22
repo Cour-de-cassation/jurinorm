@@ -1,0 +1,20 @@
+---
+- name: Creation de la ConfigMap du batch
+  k8s:
+    apply: true
+    state: present
+    verify_ssl: true
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: batch-config
+        namespace: "{{ jurinorm_namespace }}"
+        labels:
+          app: "{{ jurinorm_namespace }}"
+      data:
+        DOC_LOGIN: "{{ doc_login }}"
+        DBSDER_API_URL: "{{ dbsder_api_url }}"
+        NO_COLOR: "{{ no_color }}"
+
+...

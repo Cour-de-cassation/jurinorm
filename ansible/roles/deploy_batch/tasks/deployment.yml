@@ -1,0 +1,33 @@
+---
+- name: Create Deployment batch
+  k8s:
+    apply: true
+    state: present
+    verify_ssl: true
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: "{{ tj_batch_app_id }}-deployment"
+        namespace: "{{ jurinorm_namespace }}"
+        labels:
+          app: "{{ tj_batch_app_id }}"
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: "{{ tj_batch_app_id }}"
+        template:
+          metadata:
+            labels:
+              app: "{{ tj_batch_app_id }}"
+          spec:
+            containers:
+              - name: "{{ tj_batch_app_id }}"
+                image: "{{ tj_batch_image }}"
+                envFrom:
+                  - configMapRef:
+                      name: "batch-config"
+                  - secretRef:
+                      name: "batch-secret"
+...
