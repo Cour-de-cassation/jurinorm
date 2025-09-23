@@ -8,6 +8,11 @@
 - name: Deploy secrets
   import_tasks: secret.yml
 
-- name: Deploy deployments
-  include_tasks: '{{item}}'
-  loop: "{{ lookup('fileglob', 'deployment/*.yml', wantlist=True ) }}"
+- name: Deploy TJ deployment
+  import_tasks: deployment/tj_deployment.yml
+
+- name: Deploy TCOM deployment
+  import_tasks: deployment/tcom_deployment.yml
+
+- name: Deploy CPH deployment
+  import_tasks: deployment/cph_deployment.yml
