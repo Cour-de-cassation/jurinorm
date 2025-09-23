@@ -28,4 +28,5 @@
         S3_BUCKET_NAME_NORMALIZED_TCOM: "{{ s3_bucket_name_normalized_tcom }}"
         PLAINTEXT_SOURCE: "{{ plaintext_source }}"
         S3_BUCKET_NAME_PORTALIS: "{{ s3_bucket_name_portalis }}"
+        NODE_ENV: "{{ node_env }}"
 ...
