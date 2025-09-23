@@ -8,8 +8,8 @@ s3_url: "http://bucket-service.juritj.svc.cluster.local:9000"
 s3_region: "eu-west-paris-1"
 
 ## TJ
-S3_BUCKET_NAME_RAW_TJ: "juritj-bucket"
-S3_BUCKET_NAME_NORMALIZED_TJ: "juritj-bucket-normalized"
+s3_bucket_name_raw_tj: "juritj-bucket"
+s3_bucket_name_normalized_tj: "juritj-bucket-normalized"
 
 ## TCOM
 s3_bucket_name_raw_tcom: "juritcom-bucket"
