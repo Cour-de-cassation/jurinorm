@@ -3,7 +3,7 @@ services:
   - docker:20.10.22-dind
 
 variables:
-  tj_batch_docker_image: '$CI_REGISTRY/cour-de-cassation/juritj/batch:$CI_COMMIT_SHORT_SHA'
+  tj_batch_docker_image: '$CI_REGISTRY/cour-de-cassation/jurinorm/batch:$CI_COMMIT_SHORT_SHA'
 
 stages:
   - build
