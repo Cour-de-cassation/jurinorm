@@ -13,8 +13,19 @@
         labels:
           app: "{{ jurinorm_namespace }}"
       data:
-        DOC_LOGIN: "{{ doc_login }}"
         DBSDER_API_URL: "{{ dbsder_api_url }}"
-        NO_COLOR: "{{ no_color }}"
-
+        NLP_PSEUDONYMISATION_API_URL: "{{ nlp_pseudonymisation_api_url }}"
+        S3_URL: "{{ s3_url }}"
+        S3_REGION: "{{ s3_region }}"
+        S3_BUCKET_NAME_RAW_TJ: "{{ s3_bucket_name_raw_tj }}"
+        S3_BUCKET_NAME_NORMALIZED_TJ: "{{ s3_bucket_name_normalized_tj }}"
+        S3_BUCKET_NAME_RAW_TCOM: "{{ s3_bucket_name_raw_tcom }}"
+        S3_BUCKET_NAME_PDF: "{{ s3_bucket_name_pdf }}"
+        S3_BUCKET_NAME_PDF2TEXT_SUCCESS: "{{ s3_bucket_name_pdf2text_success }}"
+        S3_BUCKET_NAME_PDF2TEXT_FAILED: "{{ s3_bucket_name_pdf2text_failed }}"
+        S3_BUCKET_NAME_DELETION: "{{ s3_bucket_name_deletion }}"
+        S3_BUCKET_NAME_DELETION_PROCESSED: "{{ s3_bucket_name_deletion_processed }}"
+        S3_BUCKET_NAME_NORMALIZED_TCOM: "{{ s3_bucket_name_normalized_tcom }}"
+        PLAINTEXT_SOURCE: "{{ plaintext_source }}"
+        S3_BUCKET_NAME_PORTALIS: "{{ s3_bucket_name_portalis }}"
 ...

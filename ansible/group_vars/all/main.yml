@@ -22,4 +22,4 @@ s3_bucket_name_normalized_tcom: "juritcom-bucket-normalized"
 plaintext_source: "nlp"
 
 ## CPH
-s3_bucket_name_tcom: "portalis-collect-test-bucket"
+s3_bucket_name_portalis: "portalis-collect-test-bucket"
