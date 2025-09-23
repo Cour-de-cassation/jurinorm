@@ -9,4 +9,5 @@
   import_tasks: secret.yml
 
 - name: Deploy deployments
-  import_tasks: deployment.yml
+  include_tasks: '{{item}}'
+  loop: "{{ lookup('fileglob', 'deployment/*.yml', wantlist=True ) }}"

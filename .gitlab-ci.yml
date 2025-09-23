@@ -3,7 +3,9 @@ services:
   - docker:20.10.22-dind
 
 variables:
-  tj_batch_docker_image: '$CI_REGISTRY/cour-de-cassation/jurinorm/batch:$CI_COMMIT_SHORT_SHA'
+  tj_batch_docker_image: '$CI_REGISTRY/cour-de-cassation/jurinorm/tj:$CI_COMMIT_SHORT_SHA'
+  tcom_batch_docker_image: '$CI_REGISTRY/cour-de-cassation/jurinorm/tcom:$CI_COMMIT_SHORT_SHA'
+  cph_batch_docker_image: '$CI_REGISTRY/cour-de-cassation/jurinorm/cph:$CI_COMMIT_SHORT_SHA'
 
 stages:
   - build
@@ -41,6 +43,18 @@ build_and_push_tj_batch:
     TARGET: tj-batch
   extends: .build_and_push_template
 
+build_and_push_tcom_batch:
+  variables:
+    DOCKER_IMAGE_NAME: $tcom_batch_docker_image
+    TARGET: tcom-batch
+  extends: .build_and_push_template
+
+build_and_push_cph_batch:
+  variables:
+    DOCKER_IMAGE_NAME: $cph_batch_docker_image
+    TARGET: cph-batch
+  extends: .build_and_push_template
+
 .deploy_template:
   stage: deploy
   environment: $ENV
@@ -51,9 +65,11 @@ build_and_push_tj_batch:
     - cat "$KNOWN_HOSTS" > /root/.ssh/known_hosts
     - chmod 600 /root/.ssh/id_rsa
     - chmod 600 /root/.ssh/known_hosts
-    - ansible-playbook -e tj_batch_image=$tj_batch_docker_image -i ansible/inventory/$ENV.yml ansible/deploy_jurinorm.yml --vault-password-file=$ANSIBLE_VAULT_PASS
+    - ansible-playbook -e tj_batch_image=$tj_batch_docker_image -e tcom_batch_image=$tcom_batch_docker_image -e cph_batch_image=$cph_batch_docker_image -i ansible/inventory/$ENV.yml ansible/deploy_jurinorm.yml --vault-password-file=$ANSIBLE_VAULT_PASS
   needs:
     - build_and_push_tj_batch
+    - build_and_push_tcom_batch
+    - build_and_push_cph_batch
   tags:
     - docker
 
@@ -66,6 +82,8 @@ deploy_dev:
       when: on_success
   needs:
     - build_and_push_tj_batch
+    - build_and_push_tcom_batch
+    - build_and_push_cph_batch
 
 # deploy_preprod:
 #   variables:

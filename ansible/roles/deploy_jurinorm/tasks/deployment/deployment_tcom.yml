@@ -1,5 +1,5 @@
 ---
-- name: Create Deployment batch
+- name: Create Deployment TCOM batch
   k8s:
     apply: true
     state: present
@@ -8,23 +8,23 @@
       apiVersion: apps/v1
       kind: Deployment
       metadata:
-        name: "{{ tj_batch_app_id }}-deployment"
+        name: "{{ tcom_batch_app_id }}-deployment"
         namespace: "{{ jurinorm_namespace }}"
         labels:
-          app: "{{ tj_batch_app_id }}"
+          app: "{{ tcom_batch_app_id }}"
       spec:
         replicas: 1
         selector:
           matchLabels:
-            app: "{{ tj_batch_app_id }}"
+            app: "{{ tcom_batch_app_id }}"
         template:
           metadata:
             labels:
-              app: "{{ tj_batch_app_id }}"
+              app: "{{ tcom_batch_app_id }}"
           spec:
             containers:
-              - name: "{{ tj_batch_app_id }}"
-                image: "{{ tj_batch_image }}"
+              - name: "{{ tcom_batch_app_id }}"
+                image: "{{ tcom_batch_image }}"
                 envFrom:
                   - configMapRef:
                       name: "batch-config"
