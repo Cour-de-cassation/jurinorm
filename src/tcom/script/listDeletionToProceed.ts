@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv'
 dotenv.config()
 
-import { hashDecisionId } from '../../../../juritcom/src/shared/infrastructure/utils/hash.utils'
+import { hashDecisionId } from '../shared/infrastructure/utils/hash.utils'
 
 import {
   S3Client,
