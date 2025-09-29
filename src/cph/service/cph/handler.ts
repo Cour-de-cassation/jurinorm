@@ -46,7 +46,7 @@ async function updateRawCphStatus(result: NormalizationResult): Promise<unknown>
       path: "src/service/cph/handler.ts",
       operations: ["normalization", "updateRawCphStatus"],
       message: `${result.rawCph._id} has been treated with a status: ${result.status} but has not be saved in rawFiles`,
-      error
+      stack: error.stack
     })
   }
 }
@@ -127,7 +127,7 @@ export async function normalizeRawCphFiles(
         path: "src/service/cph/handler.ts",
         operations: ["normalization", "normalizeRawCphFiles"],
         message: `${rawCph._id} failed to normalize`,
-        error
+        stack: error.stack
       })
       return { rawCph, status: "error", error }
     }
