@@ -64,7 +64,7 @@ const loggerOptions: LoggerOptions = {
 };
 
 export type CustomLogger = Omit<Logger, 'error' | 'warn' | 'info'> & {
-  error: (a: TechLog & { error: Error }) => void,
+  error: (a: TechLog & Pick<Error, 'stack'>) => void,
   warn: (a: TechLog) => void,
   info: (a: TechLog | DecisionLog) => void,
 }

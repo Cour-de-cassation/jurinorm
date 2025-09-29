@@ -1,9 +1,11 @@
 ---
-attachments_api_key: '{{ vault_attachments_api_key }}'
-index_api_key: '{{ vault_index_api_key }}'
-label_api_key: '{{ vault_label_api_key }}'
-normalization_api_key: '{{ vault_normalization_api_key }}'
-opensder_api_key: '{{ vault_opensder_api_key }}'
-ops_api_key: '{{ vault_ops_api_key }}'
-publication_api_key: '{{ vault_publication_api_key }}'
-mongo_db_url: '{{ vault_mongo_db_url }}'
+normalization_batch_schedule: '* * * * *'
+commissioning_date_tj: "2023-01-01"
+commissioning_date_tcom: "2024-01-31"
+
+s3_access_key: "{{ vault_s3_access_key }}"
+s3_secret_key: "{{ vault_s3_secret_key }}"
+dbsder_api_key: "{{ vault_dbsder_api_key }}"
+dbsder_other_api_key: "{{ vault_dbsder_other_api_key }}"
+av_pdf_path: "{{ vault_av_pdf_path }}"
+file_db_url: "{{ vault_file_db_url }}"

@@ -1,4 +1,4 @@
-import FormData from "form-data";
+import * as FormData from 'form-data'
 import axios, { AxiosError } from "axios";
 import {
   PDFDocument,

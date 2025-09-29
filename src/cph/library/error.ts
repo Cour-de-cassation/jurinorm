@@ -70,17 +70,13 @@ export class ForbiddenError extends Error {
 export class UnexpectedError extends Error {
   type = "unexpectedError" as const
   constructor(message?: string) {
-    const _message = message ? message : `Unexepected error occurs.`
-    super(_message)
+    super(message ? message : `Unexepected error occurs.`)
   }
 }
 export function toUnexpectedError(error: any) {
   if (!(error instanceof Error)) return new UnexpectedError(`${error}`)
 
-  const unexpected = new UnexpectedError()
-  if (error.message?.length > 0) unexpected.message = error.message
-  if ((error.stack?.length ?? 0) > 0) unexpected.stack = error.stack
-  return unexpected
+  return Object.assign(error, new UnexpectedError(error.message))
 }
 
 type CustomError = NotSupported | MissingValue | NotFound | UnauthorizedError | ForbiddenError | UnexpectedError

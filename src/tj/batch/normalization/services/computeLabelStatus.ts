@@ -76,8 +76,8 @@ function decisionContainsOnlyAuthorizedCharacters(originalText: string): boolean
 }
 
 function getMiseEnServiceDate(): Date {
-  if (!isNaN(new Date(process.env.COMMISSIONING_DATE).getTime())) {
-    return new Date(process.env.COMMISSIONING_DATE)
+  if (!isNaN(new Date(process.env.COMMISSIONING_DATE_TJ).getTime())) {
+    return new Date(process.env.COMMISSIONING_DATE_TJ)
   } else {
     return new Date('2023-12-15')
   }

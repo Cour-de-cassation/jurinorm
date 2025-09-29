@@ -21,7 +21,7 @@ function searchXml(
         path: "src/service/cph/normalization.ts",
         operations: ["normalization", "searchXml"],
         message: `Error on attachment ${index + 1}`,
-        error
+        stack: error.stack
       })
       return acc
     }
