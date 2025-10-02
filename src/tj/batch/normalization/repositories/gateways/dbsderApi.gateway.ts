@@ -6,7 +6,7 @@ import {
   UnauthorizedException
 } from '@nestjs/common'
 import axios from 'axios'
-import { logger, normalizationFormatLogs } from '../../../../index'
+import { logger, normalizationFormatLogs } from '../../../../shared/infrastructure/utils/log'
 import { DecisionTj, UnIdentifiedDecisionTj } from 'dbsder-api-types'
 import { LogsFormat } from '../../../../shared/infrastructure/utils/logsFormat.utils'
 

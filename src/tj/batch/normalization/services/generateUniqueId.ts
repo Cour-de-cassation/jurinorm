@@ -1,6 +1,6 @@
-import { logger } from '../../../index'
+import { logger } from '../../../shared/infrastructure/utils/log'
 import { MetadonneesDto } from '../../../shared/infrastructure/dto/metadonnees.dto'
-import { normalizationFormatLogs } from '../../../index'
+import { normalizationFormatLogs } from '../../../shared/infrastructure/utils/log'
 import { LogsFormat } from 'src/tj/shared/infrastructure/utils/logsFormat.utils'
 
 const requiredKeys = ['idJuridiction', 'numeroRegistre', 'numeroRoleGeneral', 'dateDecision']
