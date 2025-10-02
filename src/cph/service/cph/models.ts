@@ -1,5 +1,5 @@
 import zod from "zod";
-import { NotSupported, toNotSupported } from "../../library/error";
+import { toNotSupported } from "../../library/error";
 import {
   UnIdentifiedDecisionCph,
   LabelStatus,
@@ -25,18 +25,6 @@ const schemaPublicationRules = zod.object({
   sommaireInteretParticulier: zod.string().optional(),
 });
 export type PublicationRules = zod.infer<typeof schemaPublicationRules>;
-export function parsePublicationRules(
-  maybePublicationRules: any
-): PublicationRules | NotSupported {
-  const result = schemaPublicationRules.safeParse(maybePublicationRules);
-  if (result.error)
-    return toNotSupported(
-      "publicationRules",
-      maybePublicationRules,
-      result.error
-    );
-  return result.data;
-}
 
 const schemaCphMetadatas = zod.object({
   audiences_dossier: zod.object({

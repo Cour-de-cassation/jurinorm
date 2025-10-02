@@ -4,6 +4,7 @@ ansible_python_interpreter: '/home/{{ ansible_user }}/ansible_venv/bin/python'
 
 dbsder_api_url: "http://api-service.dbsder:3000"
 nlp_pseudonymisation_api_url: "http://nlp-api-service.nlp.svc.cluster.local:8081"
+zoning_api_url: "http://nlp-jurizonage-api-service.nlp.svc.cluster.local:8090"
 s3_url: "http://bucket-service.juritj.svc.cluster.local:9000"
 s3_region: "eu-west-paris-1"
 

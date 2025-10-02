@@ -20,16 +20,6 @@ async function dbConnect() {
     return db
 }
 
-export async function createFileInformation<T extends Document>(
-    file: OptionalUnlessRequiredId<T>,
-): Promise<{ _id: InferIdType<T> } & typeof file> {
-    const db = await dbConnect()
-    const { insertedId } = await db
-        .collection<T>(S3_BUCKET_NAME_PORTALIS)
-        .insertOne(file)
-    return { _id: insertedId, ...file }
-}
-
 export async function updateFileInformation<T extends Document>(
     id: ObjectId,
     file: Partial<WithoutId<T>>,
@@ -56,21 +46,6 @@ export async function findFileInformations<T extends Document>(
 ): Promise<FindCursor<WithId<T>>> {
     const db = await dbConnect()
     return db.collection<T>(S3_BUCKET_NAME_PORTALIS).find(filters)
-}
-
-export async function findFileInformationsList<T extends Document>(
-    filters: Filter<T>,
-    cursor: string | undefined,
-    limit = 100
-): Promise<WithId<T>[]> {
-    const db = await dbConnect()
-    const filtersWithPagination = cursor ? { _id: { $gt: new ObjectId(cursor) }, ...filters } : filters
-
-    return db.collection<T>(S3_BUCKET_NAME_PORTALIS)
-        .find(filtersWithPagination)
-        .sort({ _id: 1 })
-        .limit(limit)
-        .toArray()
 }
 
 export async function disconnect() {
