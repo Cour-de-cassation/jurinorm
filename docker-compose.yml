@@ -3,27 +3,7 @@ name: opendata
 services:
   tj-batch:
     build: 
-      target: tj-batch-local
-    env_file:
-      - .env
-    volumes:
-      - .:/home/node
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  tcom-batch:
-    build: 
-      target: tcom-batch-local
-    env_file:
-      - .env
-    volumes:
-      - .:/home/node
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  cph-batch:
-    build: 
-      target: cph-batch-local
+      target: batch-local
     env_file:
       - .env
     volumes:
