@@ -1,7 +1,7 @@
 name: opendata
 
 services:
-  tj-batch:
+  batch:
     build: 
       target: batch-local
     env_file:
