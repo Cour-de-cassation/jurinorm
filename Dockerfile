@@ -29,6 +29,9 @@ CMD ["node", "dist/batch.js"]
 ####################
 FROM node:24-alpine AS batch-local
 
+USER root
+RUN apk add cmd:wpd2text
+
 USER node
 WORKDIR /home/node
 

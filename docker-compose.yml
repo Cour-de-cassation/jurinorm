@@ -1,7 +1,7 @@
 name: opendata
 
 services:
-  batch:
+  jurinorm-batch:
     build: 
       target: batch-local
     env_file:
