@@ -27,18 +27,11 @@ CMD ["node", "dist/batch.js"]
 ####################
 # Local development
 ####################
-FROM node:24-alpine AS builder-local
-
-ENV NODE_ENV=local
+FROM node:24-alpine AS batch-local
 
 USER node
 WORKDIR /home/node
 
 COPY --chown=node:node . .
-RUN npm i
-
-FROM builder-local AS batch-local
-
-USER node
 
 CMD ["npm", "run", "start:watch"]

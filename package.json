@@ -10,7 +10,7 @@
     "fix": "eslint \"src/**/*.ts\" --fix && prettier \"src/**/*.ts\" --write",
     "lint": "eslint \"src/**/*.ts\" --max-warnings 0",
     "start": "npx ts-node -r dotenv/config src/batch.ts",
-    "start:watch": "nodemon --config nodemon-batch.json",
+    "start:watch": "nodemon --config nodemon.json",
     "test": "jest && npm run test:integration",
     "test:cov": "jest --coverage",
     "test:integration": "jest --config ./jest-integration.json --runInBand"
