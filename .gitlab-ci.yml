@@ -3,9 +3,7 @@ services:
   - docker:20.10.22-dind
 
 variables:
-  tj_batch_docker_image: '$CI_REGISTRY/cour-de-cassation/jurinorm/tj:$CI_COMMIT_SHORT_SHA'
-  tcom_batch_docker_image: '$CI_REGISTRY/cour-de-cassation/jurinorm/tcom:$CI_COMMIT_SHORT_SHA'
-  cph_batch_docker_image: '$CI_REGISTRY/cour-de-cassation/jurinorm/cph:$CI_COMMIT_SHORT_SHA'
+  batch_docker_image: '$CI_REGISTRY/cour-de-cassation/jurinorm/$CI_COMMIT_SHORT_SHA'
 
 stages:
   - build
@@ -37,22 +35,10 @@ stages:
   tags:
     - docker
 
-build_and_push_tj_batch:
+build_and_push_batch:
   variables:
-    DOCKER_IMAGE_NAME: $tj_batch_docker_image
-    TARGET: tj-batch
-  extends: .build_and_push_template
-
-build_and_push_tcom_batch:
-  variables:
-    DOCKER_IMAGE_NAME: $tcom_batch_docker_image
-    TARGET: tcom-batch
-  extends: .build_and_push_template
-
-build_and_push_cph_batch:
-  variables:
-    DOCKER_IMAGE_NAME: $cph_batch_docker_image
-    TARGET: cph-batch
+    DOCKER_IMAGE_NAME: $batch_docker_image
+    TARGET: batch
   extends: .build_and_push_template
 
 .deploy_template:
@@ -65,11 +51,9 @@ build_and_push_cph_batch:
     - cat "$KNOWN_HOSTS" > /root/.ssh/known_hosts
     - chmod 600 /root/.ssh/id_rsa
     - chmod 600 /root/.ssh/known_hosts
-    - ansible-playbook -e tj_batch_image=$tj_batch_docker_image -e tcom_batch_image=$tcom_batch_docker_image -e cph_batch_image=$cph_batch_docker_image -i ansible/inventory/$ENV.yml ansible/deploy_jurinorm.yml --vault-password-file=$ANSIBLE_VAULT_PASS
+    - ansible-playbook -e batch_image=$batch_docker_image -i ansible/inventory/$ENV.yml ansible/deploy_jurinorm.yml --vault-password-file=$ANSIBLE_VAULT_PASS
   needs:
-    - build_and_push_tj_batch
-    - build_and_push_tcom_batch
-    - build_and_push_cph_batch
+    - build_and_push_batch
   tags:
     - docker
 
@@ -81,9 +65,7 @@ deploy_dev:
     - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_TAG'
       when: on_success
   needs:
-    - build_and_push_tj_batch
-    - build_and_push_tcom_batch
-    - build_and_push_cph_batch
+    - build_and_push_batch
 
 # deploy_preprod:
 #   variables:
