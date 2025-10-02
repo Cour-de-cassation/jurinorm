@@ -1,7 +1,7 @@
 import axios from "axios";
-import { DBSDER_API_KEY, DBSDER_API_URL } from "./env";
 import { CodeNac, UnIdentifiedDecisionCph } from "dbsder-api-types";
-import { UnexpectedError } from "./error";
+import { UnexpectedError } from "../../library/error";
+import { DBSDER_API_KEY, DBSDER_API_URL } from "../../library/env";
 
 export async function sendToSder(decision: UnIdentifiedDecisionCph) {
   const route = `${DBSDER_API_URL}/decisions`

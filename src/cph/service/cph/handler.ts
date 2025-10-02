@@ -1,4 +1,4 @@
-import { isMissingValue, toUnexpectedError, UnexpectedError } from "../../library/error";
+import { isMissingValue, toUnexpectedError, UnexpectedError } from "../../../library/error";
 import {
   Created,
   Event,
@@ -7,7 +7,7 @@ import {
 } from "./models";
 import { countFileInformations, findFileInformations, mapCursorSync, updateFileInformation } from "../../library/DbRawFile";
 import { normalizeCph, rawCphToNormalize } from "./normalization";
-import { logger } from "../../library/logger";
+import { logger } from "../../../library/logger";
 
 async function updateEventRawCph(file: RawCph, event: Exclude<Event, Created>) {
   try {

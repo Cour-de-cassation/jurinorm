@@ -6,11 +6,9 @@ import {
     WithId, 
     ObjectId, 
     WithoutId, 
-    OptionalUnlessRequiredId, 
-    InferIdType, 
     UpdateFilter 
 } from "mongodb"
-import { FILE_DB_URL, S3_BUCKET_NAME_PORTALIS } from "./env"
+import { FILE_DB_URL, S3_BUCKET_NAME_PORTALIS } from "../../library/env"
 
 const client = new MongoClient(FILE_DB_URL)
 

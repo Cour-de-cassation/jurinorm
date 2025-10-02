@@ -1,5 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
-import { NotFound } from "../error";
+import { NotFound } from "../../../library/error";
 
 const cphMetadatasArray = [
   // WARN: Convention about array are confused: xml parser parse like QueryString do, xml list is wrote as HTML list.

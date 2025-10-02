@@ -1,7 +1,5 @@
 import pino, { Logger, LoggerOptions } from "pino";
 import { NODE_ENV } from "./env";
-import { Handler } from "express";
-import { randomUUID } from "crypto";
 
 type DecisionLog = {
   decision: {
@@ -70,36 +68,3 @@ export type CustomLogger = Omit<Logger, 'error' | 'warn' | 'info'> & {
 }
 
 export const logger: CustomLogger = pino(loggerOptions);
-
-declare module "http" {
-  interface IncomingMessage {
-    log: CustomLogger;
-    allLogs: CustomLogger[];
-  }
-
-  interface OutgoingMessage {
-    log: CustomLogger;
-    allLogs: CustomLogger[];
-  }
-}
-
-export const loggerHttp: Handler = (req, res, next) => {
-  const requestId = randomUUID()
-
-  const httpLogger = pino({
-    ...loggerOptions,
-    formatters: {
-      ...loggerOptions.formatters,
-      log: (content) => ({
-        ...content,
-        type: Object.keys(content).includes("decison") ? "decision" : "tech",
-        appName: "portalis-collect",
-        requestId
-      })
-    }
-  })
-
-  req.log = httpLogger
-  res.log = httpLogger
-  next()
-}
