@@ -32,6 +32,8 @@ interface Diff {
 }
 
 export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonneesDto[]> {
+  logger.info({ ...normalizationFormatLogs, msg: 'Starting TCOM normalization' })
+
   const listConvertedDecision: ConvertedDecisionWithMetadonneesDto[] = []
   const s3Repository = new DecisionS3Repository(logger)
 

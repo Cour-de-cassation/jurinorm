@@ -30,6 +30,8 @@ const dbSderApiGateway = new DbSderApiGateway()
 const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TJ
 
 export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonneesDto[]> {
+  logger.info({ ...normalizationFormatLogs, msg: 'Starting TJ normalization' })
+
   const listConvertedDecision: ConvertedDecisionWithMetadonneesDto[] = []
   const s3Repository = new DecisionS3Repository(logger)
 
