@@ -3,7 +3,7 @@ import { computeOccultation } from './computeOccultation'
 import { MockUtils } from '../../../shared/infrastructure/utils/mock.utils'
 import { MetadonneeDto } from '../../../shared/infrastructure/dto/metadonnee.dto'
 
-jest.mock('../../../index', () => ({
+jest.mock('../logger', () => ({
   logger: {
     error: jest.fn(),
     info: jest.fn(),

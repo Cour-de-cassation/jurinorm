@@ -3,7 +3,7 @@ import { DecisionS3Repository } from '../../../shared/infrastructure/repositorie
 import { fetchDecisionListFromS3 } from './fetchDecisionListFromS3'
 import { InfrastructureException } from '../../../shared/infrastructure/exceptions/infrastructure.exception'
 
-jest.mock('../../../index', () => ({
+jest.mock('../logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),

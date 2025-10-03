@@ -1,5 +1,5 @@
 import zod from "zod";
-import { toNotSupported } from "../../library/error";
+import { toNotSupported } from "../../../library/error";
 import {
   UnIdentifiedDecisionCph,
   LabelStatus,

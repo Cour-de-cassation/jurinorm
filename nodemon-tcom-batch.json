@@ -1,5 +1,0 @@
-{
-    "watch": ["src/tcom"],
-    "ext": "ts",
-    "exec": "ts-node -r dotenv/config src/tcom/index.ts"
-}

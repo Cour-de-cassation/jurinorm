@@ -8,11 +8,6 @@
 - name: Deploy secrets
   import_tasks: secret.yml
 
-- name: Deploy TJ deployment
-  import_tasks: deployment/deployment_tj.yml
+- name: Deploy deployment
+  import_tasks: deployment/deployment.yml
 
-- name: Deploy TCOM deployment
-  import_tasks: deployment/deployment_tcom.yml
-
-- name: Deploy CPH deployment
-  import_tasks: deployment/deployment_cph.yml

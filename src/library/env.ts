@@ -1,7 +1,8 @@
 import dotenv from 'dotenv'
 import { MissingValue } from './error'
+import { resolve } from 'path';
 
-// if (!process.env.NODE_ENV) dotenv.config()
+if (!process.env.NODE_ENV) dotenv.config({ path: resolve(__dirname, '..', '..', '.env')})
 
 if (process.env.DBSDER_API_KEY == null)
   throw new MissingValue("process.env.DBSDER_API_KEY");

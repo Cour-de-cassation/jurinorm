@@ -1,7 +1,7 @@
 import { UnIdentifiedDecisionTj, LabelStatus } from 'dbsder-api-types'
-import { logger } from '../../../index'
+import { logger } from '../../../shared/infrastructure/utils/log'
 import { LogsFormat } from '../../../shared/infrastructure/utils/logsFormat.utils'
-import { normalizationFormatLogs } from '../../../index'
+import { normalizationFormatLogs } from '../../../shared/infrastructure/utils/log'
 import { codeDecisionListNotTransmissibleToCC } from '../infrastructure/codeDecisionList'
 import { authorizedCharacters } from '../infrastructure/authorizedCharactersList'
 
