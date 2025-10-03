@@ -7,7 +7,7 @@ import { MockUtils } from '../../shared/infrastructure/utils/mock.utils'
 import { CollectDto } from '../../shared/infrastructure/dto/collect.dto'
 import { DecisionS3Repository } from '../../shared/infrastructure/repositories/decisionS3.repository'
 
-jest.mock('../../index', () => ({
+jest.mock('../../shared/infrastructure/utils/log', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),
