@@ -157,6 +157,11 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
         }
         decisionToSave.occultation = computeOccultation(decision.metadonnees)
 
+        decisionToSave.publishStatus =
+          decisionToSave.labelStatus !== LabelStatus.TOBETREATED
+            ? PublishStatus.BLOCKED
+            : PublishStatus.TOBEPUBLISHED
+
         // Step 7: check diff (major/minor) and upsert/patch accordingly
         const previousVersion = await dbSderApiGateway.getDecisionBySourceId(
           decisionToSave.sourceId
