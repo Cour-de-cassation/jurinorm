@@ -1,5 +1,3 @@
-// Warn: isolated because normalization rules (juritj responsibilities)
-
 import { DbSderApiGateway } from '../repositories/gateways/dbsderApi.gateway'
 import { LabelStatus, UnIdentifiedDecisionTj } from 'dbsder-api-types'
 

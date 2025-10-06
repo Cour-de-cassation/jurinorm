@@ -17,8 +17,8 @@ async function startNormalization() {
         operations: ['normalization', 'startNormalization']
       })
       await normalizeRawTjFiles()
-      // await normalizeRawTcomFiles()
-      // await normalizeRawCphFiles()
+      await normalizeRawTcomFiles()
+      await normalizeRawCphFiles()
     },
     waitForCompletion: true, // onTick cannot be retry if an instance of it is running
     timeZone: 'Europe/Paris',
