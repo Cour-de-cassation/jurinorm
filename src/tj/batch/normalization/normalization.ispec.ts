@@ -15,6 +15,11 @@ import * as transformDecisionIntegreFromWPDToText from './services/transformDeci
 import { DbSderApiGateway } from './repositories/gateways/dbsderApi.gateway'
 import { InfrastructureExpection } from '../../shared/infrastructure/exceptions/infrastructure.exception'
 import { LabelStatus } from 'dbsder-api-types'
+import { ObjectId } from 'mongodb'
+
+jest.mock('./repositories/gateways/zoning', () => ({
+  fetchZoning: jest.fn()
+}))
 
 jest.mock('../../shared/infrastructure/utils/log', () => ({
   logger: {
@@ -50,6 +55,33 @@ describe('Normalization', () => {
     jest
       .spyOn(DbSderApiGateway.prototype, 'getDecisionBySourceId')
       .mockImplementation(() => Promise.resolve(null))
+
+    jest.spyOn(DbSderApiGateway.prototype, 'getCodeNac').mockImplementation(() =>
+      Promise.resolve({
+        _id: new ObjectId(),
+        codeNAC: 'TEST_CODE',
+        libelleNAC: 'Test NAC',
+        niveau1NAC: { code: '01', libelle: 'Niveau 1' },
+        niveau2NAC: { code: '02', libelle: 'Niveau 2' },
+        indicateurAffaireSignalee: false,
+        indicateurDebatsPublics: true,
+        indicateurDecisionRenduePubliquement: true,
+        blocOccultationCA: 1,
+        blocOccultationTJ: 1,
+        categoriesToOmitCA: {
+          aucune: [],
+          conforme: [],
+          complément: [],
+          substituant: []
+        },
+        categoriesToOmitTJ: {
+          aucune: [],
+          conforme: [],
+          complément: [],
+          substituant: []
+        }
+      })
+    )
   })
 
   beforeAll(() => {
@@ -110,7 +142,8 @@ describe('Normalization', () => {
             labelStatus: LabelStatus.TOBETREATED,
             filenameSource: fileName,
             sourceId,
-            idDecisionTJ: objectId
+            idDecisionTJ: objectId,
+            originalTextZoning: undefined
           }
         }
       ]
@@ -190,7 +223,8 @@ describe('Normalization', () => {
             idDecisionTJ: firstObjectId,
             labelStatus: LabelStatus.TOBETREATED,
             filenameSource: firstFilename,
-            sourceId: firstSourceId
+            sourceId: firstSourceId,
+            originalTextZoning: undefined
           }
         },
         {
@@ -201,7 +235,8 @@ describe('Normalization', () => {
             idDecisionTJ: secondObjectId,
             labelStatus: LabelStatus.TOBETREATED,
             filenameSource: secondFilename,
-            sourceId: secondSourceId
+            sourceId: secondSourceId,
+            originalTextZoning: undefined
           }
         },
         {
@@ -212,7 +247,8 @@ describe('Normalization', () => {
             idDecisionTJ: thirdtObjectId,
             labelStatus: LabelStatus.TOBETREATED,
             filenameSource: thirdFilename,
-            sourceId: thirdSourceId
+            sourceId: thirdSourceId,
+            originalTextZoning: undefined
           }
         }
       ]
