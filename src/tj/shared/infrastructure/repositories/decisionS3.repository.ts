@@ -11,6 +11,14 @@ import { Logger } from '@nestjs/common'
 import { PinoLogger } from 'nestjs-pino'
 import { CollectDto } from '../dto/collect.dto'
 import { BucketError } from '../../domain/errors/bucket.error'
+import {
+  S3_ACCESS_KEY,
+  S3_BUCKET_NAME_NORMALIZED_TJ,
+  S3_BUCKET_NAME_RAW_TJ,
+  S3_REGION,
+  S3_SECRET_KEY,
+  S3_URL
+} from '../../../../library/env'
 
 export class DecisionS3Repository {
   private s3Client: S3Client
@@ -21,12 +29,12 @@ export class DecisionS3Repository {
       this.s3Client = providedS3Client
     } else {
       this.s3Client = new S3Client({
-        endpoint: process.env.S3_URL,
+        endpoint: S3_URL,
         forcePathStyle: true,
-        region: process.env.S3_REGION,
+        region: S3_REGION,
         credentials: {
-          accessKeyId: process.env.S3_ACCESS_KEY,
-          secretAccessKey: process.env.S3_SECRET_KEY
+          accessKeyId: S3_ACCESS_KEY,
+          secretAccessKey: S3_SECRET_KEY
         }
       })
     }
@@ -36,7 +44,7 @@ export class DecisionS3Repository {
   async saveDecisionIntegre(requestToS3Dto: string, filename: string) {
     const reqParams = {
       Body: requestToS3Dto,
-      Bucket: process.env.S3_BUCKET_NAME_RAW_TJ,
+      Bucket: S3_BUCKET_NAME_RAW_TJ,
       Key: filename
     }
 
@@ -46,7 +54,7 @@ export class DecisionS3Repository {
   async saveDecisionNormalisee(requestToS3Dto: string, filename: string) {
     const reqParams = {
       Body: requestToS3Dto,
-      Bucket: process.env.S3_BUCKET_NAME_NORMALIZED_TJ,
+      Bucket: S3_BUCKET_NAME_NORMALIZED_TJ,
       Key: filename
     }
     await this.saveDecision(reqParams)
@@ -77,7 +85,7 @@ export class DecisionS3Repository {
 
   async getDecisionByFilename(filename: string): Promise<CollectDto> {
     const reqParams = {
-      Bucket: process.env.S3_BUCKET_NAME_RAW_TJ,
+      Bucket: S3_BUCKET_NAME_RAW_TJ,
       Key: filename
     }
 
@@ -116,7 +124,7 @@ export class DecisionS3Repository {
     startAfterFileName?: string
   ): Promise<_Object[]> {
     const reqParams: ListObjectsV2CommandInput = {
-      Bucket: process.env.S3_BUCKET_NAME_RAW_TJ
+      Bucket: S3_BUCKET_NAME_RAW_TJ
     }
     if (maxNumberOfDecisionsToRetrieve >= 1 && maxNumberOfDecisionsToRetrieve <= 1000) {
       reqParams.MaxKeys = maxNumberOfDecisionsToRetrieve

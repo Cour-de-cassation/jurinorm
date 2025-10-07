@@ -7,9 +7,8 @@ import {
 } from './services/removeOrReplaceUnnecessaryCharacters'
 import { ConvertedDecisionWithMetadonneesDto } from '../../shared/infrastructure/dto/convertedDecisionWithMetadonnees.dto'
 import { logger } from '../../shared/infrastructure/utils/log'
-import { fetchDecisionListFromS3 } from './services/fetchDecisionListFromS3'
 import { DecisionS3Repository } from '../../shared/infrastructure/repositories/decisionS3.repository'
-import { mapDecisionNormaliseeToDecisionDto } from './infrastructure/decision.dto'
+import { mapDecisionNormaliseeToDecisionDto, RawTj } from './infrastructure/decision.dto'
 import { transformDecisionIntegreFromWPDToText } from './services/transformDecisionIntegreContent'
 import { CollectDto } from '../../shared/infrastructure/dto/collect.dto'
 import { computeLabelStatus } from './services/computeLabelStatus'
@@ -20,6 +19,9 @@ import { computeOccultation } from './services/computeOccultation'
 import { LabelStatus, PublishStatus, UnIdentifiedDecisionTj } from 'dbsder-api-types'
 
 import { strict as assert } from 'assert'
+import { updateRawStatus } from '../../../service/eventSourcing'
+import { S3_BUCKET_NAME_RAW_TJ } from '../../../library/env'
+import { findRawInformations, mapCursorSync } from '../../../library/DbRaw'
 
 interface Diff {
   major: Array<string>
@@ -27,7 +29,29 @@ interface Diff {
 }
 
 const dbSderApiGateway = new DbSderApiGateway()
-const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TJ
+const bucketNameIntegre = S3_BUCKET_NAME_RAW_TJ
+
+export const rawToNormalize = {
+  // Ne contient pas normalized:
+  events: { $not: { $elemMatch: { type: 'normalized' } } },
+  // Les 3 derniers events ne sont pas "blocked":
+  $expr: {
+    $not: {
+      $eq: [
+        3,
+        {
+          $size: {
+            $filter: {
+              input: { $slice: ['$events', -3] },
+              as: 'e',
+              cond: { $eq: ['$$e.type', 'blocked'] }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
 
 export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonneesDto[]> {
   logger.info({ ...normalizationFormatLogs, msg: 'Starting TJ normalization' })
@@ -35,23 +59,22 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
   const listConvertedDecision: ConvertedDecisionWithMetadonneesDto[] = []
   const s3Repository = new DecisionS3Repository(logger)
 
-  let decisionList = await fetchDecisionListFromS3(s3Repository)
+  const decisions = await findRawInformations<RawTj>(bucketNameIntegre, rawToNormalize)
 
-  while (decisionList.length > 0) {
-    for (const decisionFilename of decisionList) {
-      try {
+  const results = await mapCursorSync(decisions, async (rawTj) => {
+    try {
         const jobId = uuidv4()
         normalizationFormatLogs.correlationId = jobId
 
         // Step 1: Fetch decision from S3
-        const decision: CollectDto = await s3Repository.getDecisionByFilename(decisionFilename)
+        const decision: CollectDto = await s3Repository.getDecisionByFilename(rawTj.path)
 
         // Step 2: Cloning decision to save it in normalized bucket
         const decisionFromS3Clone = JSON.parse(JSON.stringify(decision))
 
         logger.info({
           ...normalizationFormatLogs,
-          msg: 'Starting normalization of ' + decisionFilename
+          msg: 'Starting normalization of ' + rawTj.path
         })
 
         // Step 3: Generating unique id for decision
@@ -81,7 +104,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
           _id,
           cleanedDecision,
           decision.metadonnees,
-          decisionFilename
+          rawTj.path
         )
         decisionToSave.labelStatus = computeLabelStatus(decisionToSave)
         decisionToSave.occultation = computeOccultation(
@@ -175,7 +198,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
         // Step 8: Save decision in normalized bucket
         await s3Repository.saveDecisionNormalisee(
           JSON.stringify(decisionFromS3Clone),
-          decisionFilename
+          rawTj.path
         )
 
         logger.info({
@@ -184,11 +207,14 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
         })
 
         // Step 9: Delete decision in raw bucket
-        await s3Repository.deleteDecision(decisionFilename, bucketNameIntegre)
+        await s3Repository.deleteDecision(rawTj.path, bucketNameIntegre)
+
+        // Step 10: Add Status
+        await updateRawStatus(bucketNameIntegre, { rawDecision: rawTj, status: 'success' })
 
         logger.info({
           ...normalizationFormatLogs,
-          msg: 'Successful normalization of ' + decisionFilename
+          msg: 'Successful normalization of ' + rawTj.path
         })
         listConvertedDecision.push({
           metadonnees: decisionToSave,
@@ -200,18 +226,15 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
           msg: error.message,
           data: error
         })
+        await updateRawStatus(bucketNameIntegre, { rawDecision: rawTj, status: 'error', error })
         logger.error({
           ...normalizationFormatLogs,
-          msg: 'Failed to normalize the decision ' + decisionFilename + '.'
+          msg: 'Failed to normalize the decision ' + rawTj.path + '.'
         })
-        continue
       }
-    }
-    const lastTreatedDecisionFileName = decisionList[decisionList.length - 1]
-    decisionList = await fetchDecisionListFromS3(s3Repository, lastTreatedDecisionFileName)
-  }
+  })
 
-  if (listConvertedDecision.length == 0) {
+  if (results.length == 0) {
     logger.info({ ...normalizationFormatLogs, msg: 'No decision to normalize.' })
     return []
   }
