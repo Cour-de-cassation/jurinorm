@@ -7,16 +7,16 @@ import { MockUtils } from '../../shared/infrastructure/utils/mock.utils'
 import { CollectDto } from '../../shared/infrastructure/dto/collect.dto'
 import { DecisionS3Repository } from '../../shared/infrastructure/repositories/decisionS3.repository'
 
-jest.mock('../../shared/infrastructure/utils/log', () => ({
+jest.mock('../../../library/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),
     error: jest.fn()
-  },
-  normalizationFormatLogs: {
-    operationName: 'normalizationJob',
-    msg: 'Starting normalization job...'
   }
+}))
+
+jest.mock('../../../library/env', () => ({
+  S3_BUCKET_NAME_RAW_TJ: "S3_BUCKET_NAME_RAW_TJ" 
 }))
 
 describe('Normalization', () => {
