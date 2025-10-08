@@ -53,7 +53,7 @@ async function reprocessNormalizedDecisionByFilename(filename: string): Promise<
     }
   })
   const reqParams = {
-    Bucket: process.env.S3_BUCKET_NAME_NORMALIZED,
+    Bucket: process.env.S3_BUCKET_NAME_NORMALIZED_TCOM,
     Key: filename
   }
   try {
@@ -71,7 +71,7 @@ async function reprocessNormalizedDecisionByFilename(filename: string): Promise<
       // 3. copy to raw:
       const reqCopyParams = {
         Body: JSON.stringify(objectDecision),
-        Bucket: process.env.S3_BUCKET_NAME_RAW,
+        Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM,
         Key: filename
       }
       await s3Client.send(new PutObjectCommand(reqCopyParams))
