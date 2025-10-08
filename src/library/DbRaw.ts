@@ -48,7 +48,7 @@ export async function mapCursorSync<T, U>(
   callbackFn: (element: T) => Promise<U>
 ): Promise<U[]> {
   const element = await cursor.next()
-  if (!element) return Promise.resolve([])
+  if (!element) return []
 
   const res = await callbackFn(element)
   return [res, ...(await mapCursorSync(cursor, callbackFn))]

@@ -15,6 +15,10 @@ import * as transformDecisionIntegreFromWPDToText from './services/transformDeci
 import { DbSderApiGateway } from './repositories/gateways/dbsderApi.gateway'
 import { InfrastructureExpection } from '../../shared/infrastructure/exceptions/infrastructure.exception'
 import { LabelStatus } from 'dbsder-api-types'
+import { RawTj } from './infrastructure/decision.dto'
+import { ObjectId } from 'mongodb'
+import { findRawInformations, mapCursorSync } from '../../../library/DbRaw'
+import { updateRawStatus } from '../../../service/eventSourcing'
 
 jest.mock('../../../library/logger', () => ({
   logger: {
@@ -22,11 +26,13 @@ jest.mock('../../../library/logger', () => ({
     info: jest.fn(),
     error: jest.fn()
   },
-  normalizationFormatLogs: {
-    operationName: 'normalizationJob',
-    msg: 'Starting normalization job...'
-  }
 }))
+
+jest.mock('../../../library/DbRaw')
+const mockedFindRawInformations = findRawInformations as jest.MockedFunction<typeof findRawInformations>;
+const mockedMapCursorSync = mapCursorSync as jest.MockedFunction<typeof mapCursorSync>;
+jest.mock('../../../service/eventSourcing')
+const mockedUpdateRawStatus = updateRawStatus as jest.MockedFunction<typeof updateRawStatus>;
 
 describe('Normalization', () => {
   const mockS3: AwsClientStub<S3Client> = mockClient(S3Client)
@@ -50,6 +56,9 @@ describe('Normalization', () => {
     jest
       .spyOn(DbSderApiGateway.prototype, 'getDecisionBySourceId')
       .mockImplementation(() => Promise.resolve(null))
+    
+    mockedMapCursorSync.mockImplementation((mockRaws: any, cb) => Promise.all(mockRaws.map(cb)))
+    mockedUpdateRawStatus.mockResolvedValue(null)
   })
 
   beforeAll(() => {
@@ -64,10 +73,12 @@ describe('Normalization', () => {
   describe('Success Cases', () => {
     it('returns an empty list when no decisions are present', async () => {
       // GIVEN
+      mockedFindRawInformations.mockReturnValue(Promise.resolve([]) as any)
       const emptyListFromS3 = {
         Contents: []
       }
       mockS3.on(ListObjectsV2Command).resolves(emptyListFromS3)
+
 
       const expected = []
 
@@ -98,6 +109,14 @@ describe('Normalization', () => {
           objectId
         )
       })
+      const mockRaw: RawTj = {
+        _id: new ObjectId(),
+        path: fileName,
+        metadonnees: metadonneesFromS3,
+        events: [{ type: "created", date: new Date() }],
+      }
+
+      mockedFindRawInformations.mockReturnValue(Promise.resolve([mockRaw]) as any)
 
       jest.spyOn(DbSderApiGateway.prototype, 'saveDecision').mockResolvedValue({})
 
@@ -181,6 +200,29 @@ describe('Normalization', () => {
 
       jest.spyOn(DbSderApiGateway.prototype, 'saveDecision').mockResolvedValue({})
 
+      const mockRaws: RawTj[] = [
+        {
+          _id: new ObjectId(),
+          path: firstFilename,
+          metadonnees: metadonneesFromS3,
+          events: [{ type: "created", date: new Date() }],
+        },
+        {
+          _id: new ObjectId(),
+          path: secondFilename,
+          metadonnees: metadonneesFromS3,
+          events: [{ type: "created", date: new Date() }],
+        },
+        {
+          _id: new ObjectId(),
+          path: thirdFilename,
+          metadonnees: metadonneesFromS3,
+          events: [{ type: "created", date: new Date() }],
+        }
+      ]
+
+      mockedFindRawInformations.mockReturnValue(Promise.resolve(mockRaws) as any)
+
       const expected = [
         {
           decisionNormalisee: mockUtils.decisionContentNormalized,
@@ -221,7 +263,6 @@ describe('Normalization', () => {
       const result = await normalizationJob()
 
       // THEN
-      expect(mockS3).toHaveReceivedCommandTimes(ListObjectsV2Command, 3)
       expect(result).toEqual(expected)
     })
   })
@@ -230,11 +271,20 @@ describe('Normalization', () => {
     it('returns an exception when S3 is unavailable', async () => {
       // GIVEN
       mockS3.on(ListObjectsV2Command).rejects(new Error())
+      const mockRaw: RawTj = {
+        _id: new ObjectId(),
+        path: "inexistent",
+        metadonnees: metadonneesFromS3,
+        events: [{ type: "created", date: new Date() }],
+      }
+
+      mockedFindRawInformations.mockReturnValue(Promise.resolve([mockRaw]) as any)
 
       // WHEN
-      expect(async () => await normalizationJob())
-        // THEN
-        .rejects.toThrow(InfrastructureExpection)
+      const result = await normalizationJob()
+      // THEN
+      expect(result).toEqual([])
+        
     })
 
     it('returns an empty list when S3 is available but dbSder API is unavailable', async () => {
@@ -255,6 +305,14 @@ describe('Normalization', () => {
           objectId
         )
       })
+      const mockRaw: RawTj = {
+        _id: new ObjectId(),
+        path: 'filename',
+        metadonnees: metadonneesFromS3,
+        events: [{ type: "created", date: new Date() }],
+      }
+
+      mockedFindRawInformations.mockReturnValue(Promise.resolve([mockRaw]) as any)
 
       jest.spyOn(DbSderApiGateway.prototype, 'saveDecision').mockRejectedValueOnce(new Error())
 
