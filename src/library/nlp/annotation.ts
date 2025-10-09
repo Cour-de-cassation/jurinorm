@@ -22,7 +22,7 @@ export async function annotateDecision(decision: UnIdentifiedDecision): Promise<
 
   console.log(`nerResult: ${JSON.stringify(nerResult)}`)
 
-  return {
+  const result: AnnotationResult = {
     treatments: [
       {
         annotations: nerResult.entities,
@@ -32,15 +32,25 @@ export async function annotateDecision(decision: UnIdentifiedDecision): Promise<
         version: nerResult.versions,
         treatmentDate: new Date().toISOString()
       }
-    ],
-    newCategoriesToOmit: computeNewCategoriesToOmit(
+    ]
+  }
+
+  if (nerResult.newCategoriesToAnnotate || nerResult.newCategoriesToUnAnnotate) {
+    result.newCategoriesToOmit = computeNewCategoriesToOmit(
       decision.occultation.categoriesToOmit,
       nerResult.newCategoriesToAnnotate,
       nerResult.newCategoriesToUnAnnotate
-    ),
-    additionalTermsToAnnotate: nerResult.additionalTermsToAnnotate,
-    additionalTermsToUnAnnotate: nerResult.additionalTermsToUnAnnotate
+    )
   }
+
+  if (
+    nerResult.additionalTermsToAnnotate?.length ||
+    nerResult.additionalTermsToUnAnnotate?.length
+  ) {
+    result.additionalTermsToAnnotate = nerResult.additionalTermsToAnnotate
+    result.additionalTermsToUnAnnotate = nerResult.additionalTermsToUnAnnotate
+  }
+  return result
 }
 
 function computeCategories(categoriesToOmit: Category[]): Category[] {
