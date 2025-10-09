@@ -1,6 +1,15 @@
 import { LabelStatus, PublishStatus, UnIdentifiedDecisionTcom } from 'dbsder-api-types'
 import { hashDecisionId } from '../../../shared/infrastructure/utils/hash.utils'
 import { MetadonneeDto } from '../../../shared/infrastructure/dto/metadonnee.dto'
+import { Id } from 'src/library/DbRaw'
+import { Created, Event } from 'src/service/eventSourcing'
+
+export type RawTcom = {
+  _id: Id,
+  path: string,
+  events: [Created, ...Event[]]
+  metadonnees: MetadonneeDto
+}
 
 export function mapDecisionNormaliseeToDecisionDto(
   generatedId: string,

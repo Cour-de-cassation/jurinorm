@@ -8,7 +8,7 @@ import {
   CodeNac
 } from 'dbsder-api-types'
 import { Id } from 'src/library/DbRaw'
-import { Created, Event } from 'src/service/eventSourcing'
+import { Created, Deleted, Event } from 'src/service/eventSourcing'
 
 export type FileCph = {
   mimetype: string
@@ -156,7 +156,7 @@ export function mapCphDecision(
 export type RawCph = {
   _id: Id
   path: string
-  events: [Created, ...Event[]]
+  events: [Created, ...Exclude<Event, Deleted>[]]
   metadatas: PublicationRules
 }
 

@@ -15,7 +15,11 @@ export type Blocked = {
   date: Date
   reason: string
 }
-export type Event = Created | Normalized | Blocked
+export type Deleted = {
+  type: 'deleted'
+  date: Date
+}
+export type Event = Created | Normalized | Blocked | Deleted
 
 type DocumentWithEvents<T extends Record<string, unknown>> = T & {
   _id: Id
