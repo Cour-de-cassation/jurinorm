@@ -17,9 +17,10 @@ import { DbSderApiGateway } from './repositories/gateways/dbsderApi.gateway'
 import { normalizationFormatLogs } from '../../shared/infrastructure/utils/log'
 import { computeOccultation } from './services/computeOccultation'
 
-import { LabelStatus, PublishStatus, UnIdentifiedDecisionTj } from 'dbsder-api-types'
+import { Category, LabelStatus, PublishStatus, UnIdentifiedDecisionTj } from 'dbsder-api-types'
 
 import { strict as assert } from 'assert'
+import { annotateDecision } from '../../../library/nlp/annotation'
 
 interface Diff {
   major: Array<string>
@@ -89,6 +90,28 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
           decision.metadonnees.occultationComplementaire,
           decision.metadonnees.debatPublic
         )
+
+        const annotationResult = await annotateDecision(decisionToSave)
+
+        decisionToSave.labelTreatments = annotationResult.treatments
+
+        if (
+          !!annotationResult.additionalTermsToAnnotate ||
+          !!annotationResult.additionalTermsToUnAnnotate
+        ) {
+          decisionToSave.occultation = {
+            ...decisionToSave.occultation,
+            additionalTermsToAnnotate: annotationResult.additionalTermsToAnnotate,
+            additionalTermsToUnAnnotate: annotationResult.additionalTermsToUnAnnotate
+          }
+        }
+
+        if (!!annotationResult.newCategoriesToOmit) {
+          decisionToSave.occultation = {
+            ...decisionToSave.occultation,
+            categoriesToOmit: annotationResult.newCategoriesToOmit
+          }
+        }
 
         // Step 7: check diff (major/minor) and upsert/patch accordingly
         logger.info({

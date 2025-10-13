@@ -1,4 +1,10 @@
-import { Category, LabelTreatments, UnIdentifiedDecision } from 'dbsder-api-types'
+import {
+  Category,
+  hasSourceNameTcom,
+  hasSourceNameTj,
+  LabelTreatments,
+  UnIdentifiedDecision
+} from 'dbsder-api-types'
 import { NerParameters, NerResponse, postNer } from './ner'
 
 export type AnnotationResult = {
@@ -49,6 +55,12 @@ export async function annotateDecision(decision: UnIdentifiedDecision): Promise<
   ) {
     result.additionalTermsToAnnotate = nerResult.additionalTermsToAnnotate
     result.additionalTermsToUnAnnotate = nerResult.additionalTermsToUnAnnotate
+  }
+
+  if (hasSourceNameTj(decision) || hasSourceNameTcom(decision)) {
+    if (decision.occultation.motivationOccultation) {
+      //occult motivation
+    }
   }
   return result
 }
