@@ -9,16 +9,9 @@ import {
 } from '@aws-sdk/client-s3'
 import { DbSderApiGateway } from '../batch/normalization/repositories/gateways/dbsderApi.gateway'
 
-let batchSize: number
 const dbSderApiGateway = new DbSderApiGateway()
 
-async function main(count: string) {
-  batchSize = parseInt(count, 10)
-
-  if (isNaN(batchSize)) {
-    batchSize = 100
-  }
-
+async function main() {
   const decisions = await dbSderApiGateway.listDecisions('ignored_controleRequis')
   let decision = await decisions.next()
   let doneCount = 0
@@ -81,14 +74,9 @@ async function reprocessNormalizedDecisionByFilename(filename: string): Promise<
     } else {
       throw new Error('Decision incomplete or ID mismatch')
     }
-  } catch (error) {
-    console.log({
-      operationName: 'reprocessNormalizedDecisionByFilename',
-      msg: error.message,
-      data: error
-    })
+  } catch (_ignore) {
     return false
   }
 }
 
-main(process.argv[2])
+main()
