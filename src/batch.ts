@@ -2,9 +2,9 @@ import { CronJob } from "cron";
 import { logger } from "./library/logger";
 import { NORMALIZATION_BATCH_SCHEDULE } from "./library/env";
 
-import { normalizeRawCphFiles } from "./cph/service/cph/handler";
-import { normalizationJob as normalizeRawTcomFiles } from './tcom/batch/normalization/normalization'
-import { normalizationJob as normalizeRawTjFiles } from './tj/batch/normalization/normalization'
+// import { normalizeRawCphFiles } from "./cph/service/cph/handler";
+// import { normalizationJob as normalizeRawTcomFiles } from './tcom/batch/normalization/normalization'
+// import { normalizationJob as normalizeRawTjFiles } from './tj/batch/normalization/normalization'
 
 const CRON_EVERY_HOUR = "0 * * * *";
 
@@ -16,9 +16,9 @@ async function startNormalization() {
         path: "src/batch.ts",
         operations: ["normalization", "startNormalization"],
       });
-      await normalizeRawTjFiles()
-      await normalizeRawTcomFiles()
-      await normalizeRawCphFiles()
+      // await normalizeRawTjFiles()
+      // await normalizeRawTcomFiles()
+      // await normalizeRawCphFiles()
     },
     waitForCompletion: true, // onTick cannot be retry if an instance of it is running
     timeZone: "Europe/Paris",
