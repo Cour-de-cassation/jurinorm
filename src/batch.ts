@@ -1,6 +1,6 @@
 import { CronJob } from 'cron'
 import { logger } from './library/logger'
-import { NORMALIZATION_BATCH_SCHEDULE } from './library/env'
+import { NODE_ENV, NORMALIZATION_BATCH_SCHEDULE } from './library/env'
 
 import { normalizeRawCph } from './cph/service/handler'
 import { normalizationJob as normalizeRawTcom } from './tcom/batch/normalization/normalization'

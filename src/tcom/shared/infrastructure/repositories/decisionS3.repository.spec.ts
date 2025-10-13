@@ -11,7 +11,7 @@ describe('DecisionS3Repository', () => {
 
   beforeEach(() => {
     mockS3.reset()
-    repository = new DecisionS3Repository(new Logger())
+    repository = new DecisionS3Repository()
   })
 
   describe('saveDecision', () => {

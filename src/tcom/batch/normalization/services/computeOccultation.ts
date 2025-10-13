@@ -1,6 +1,5 @@
 import { UnIdentifiedDecisionTcom, Category } from 'dbsder-api-types'
-import { logger, normalizationFormatLogs } from '../logger'
-import { LogsFormat } from '../../../shared/infrastructure/utils/logsFormat.utils'
+import { logger } from '../../../../library/logger'
 import {
   OccultationComplementaireDto,
   MetadonneeDto
@@ -69,21 +68,14 @@ export function computeOccultation(
   const occultationsComplementaires: OccultationComplementaireDto =
     metadonnees.occultationsComplementaires
 
-  const formatLogs: LogsFormat = {
-    ...normalizationFormatLogs,
-    operationName: 'computeOccultation',
-    msg: 'Starting computeOccultation...'
-  }
-
   if (
     jurisdictionsWithErroneousOccultations.includes(metadonnees.idJuridiction) &&
     occultationsDataAreEmpty(occultationsComplementaires)
   ) {
     logger.warn({
-      ...formatLogs,
-      msg: `Empty occultations form received, applying the default "bloc 3" signature`,
-      idJuridiction: metadonnees.idJuridiction,
-      libelleJuridiction: metadonnees.libelleJuridiction
+      path: 'src/tcom/batch/normalization/services/computeLabelStatus',
+      operations: ['normalization', 'computeLabelStatus-TCOM'],
+      message: `Empty occultations form received, applying the default "bloc 3" signature`,
     })
 
     return {
@@ -103,8 +95,9 @@ export function computeOccultation(
       occultationsComplementaires.motifsSecretAffaires === true
 
     logger.info({
-      ...formatLogs,
-      msg: `motivationOccultation computed ${motivationOccultation}`
+      path: 'src/tcom/batch/normalization/services/computeLabelStatus',
+      operations: ['normalization', 'computeLabelStatus-TCOM'],
+      message: `motivationOccultation computed ${motivationOccultation}`,
     })
 
     if (occultationsComplementaires.personneMorale !== true) {
@@ -159,8 +152,9 @@ export function computeOccultation(
     )
 
     logger.info({
-      ...formatLogs,
-      msg: `categoriesToOmit computed ${categoriesToOmit}`
+      path: 'src/tcom/batch/normalization/services/computeLabelStatus',
+      operations: ['normalization', 'computeLabelStatus-TCOM'],
+      message: `categoriesToOmit computed ${categoriesToOmit}`,
     })
 
     if (occultationsComplementaires.conserverElement) {
@@ -185,11 +179,12 @@ export function computeOccultation(
       .filter((value, index, array) => array.indexOf(value) === index)
       .join('|')
 
-    logger.info({
-      ...formatLogs,
-      msg: `additionalTerms computed ${additionalTerms}`
+      logger.info({
+      path: 'src/tcom/batch/normalization/services/computeLabelStatus',
+      operations: ['normalization', 'computeLabelStatus-TCOM'],
+      message: `additionalTerms computed ${additionalTerms}`,
     })
-
+   
     return {
       additionalTerms,
       categoriesToOmit,

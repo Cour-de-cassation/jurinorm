@@ -20,11 +20,12 @@ import { incrementErrorCount, resetErrorCount } from './errorCounter/errorCounte
 import { LabelStatus, PublishStatus, UnIdentifiedDecisionTcom } from 'dbsder-api-types'
 
 import { strict as assert } from 'assert'
-import { logger, normalizationFormatLogs } from './logger'
 import { findRawInformations, mapCursorSync } from '../../../library/DbRaw'
+import { logger } from '../../../library/logger'
+import { S3_BUCKET_NAME_RAW_TCOM, PLAINTEXT_SOURCE } from '../../../library/env'
+import { updateRawStatus } from '../../../service/eventSourcing'
 
 const dbSderApiGateway = new DbSderApiGateway()
-const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TCOM
 
 interface Diff {
   major: Array<string>
@@ -62,30 +63,27 @@ export const rawToNormalize = {
   }
 }
 
-export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonneesDto[]> {
-  logger.info({ ...normalizationFormatLogs, msg: 'Starting TCOM normalization' })
+export async function normalizationJob(
+  defaultFilter: Parameters<typeof findRawInformations<RawTcom>>[1] = rawToNormalize
+): Promise<ConvertedDecisionWithMetadonneesDto[]> {
+  logger.info({
+    path: 'src/tcom/batch/normalization.ts',
+    operations: ["normalization", "normalizationJob-TCOM"],
+    message: 'Starting TCOM normalization'
+  })
 
   const listConvertedDecision: ConvertedDecisionWithMetadonneesDto[] = []
-  const s3Repository = new DecisionS3Repository(logger)
+  const s3Repository = new DecisionS3Repository()
 
-  const decisions = await findRawInformations<RawTcom>(bucketNameIntegre, rawToNormalize)
-
-  // let decisionList = (await fetchDecisionListFromS3(s3Repository)).filter((name) =>
-  //   name.endsWith('.json')
-  // )
+  const decisions = await findRawInformations<RawTcom>(S3_BUCKET_NAME_RAW_TCOM, defaultFilter)
 
   await mapCursorSync(decisions, async (rawTcom) => {
-    const decisionFilename = rawTcom.path.replace(/\.pdf$/, '.json')
+    let texteDecisionIntegre = null
 
     try {
       const jobId = uuidv4()
-      const currentNormalizationFormatLogs = JSON.parse(JSON.stringify(normalizationFormatLogs))
-      currentNormalizationFormatLogs.correlationId = jobId
 
-      // Step 1: Fetch decision from S3
-      const decision = await s3Repository.getDecisionByFilename(decisionFilename)
-
-      if (process.env.PLAINTEXT_SOURCE === 'nlp') {
+      if (PLAINTEXT_SOURCE === 'nlp') {
         // Step 2a, use pdf-to-text NLP API:
 
         // Fetch PDF from -pdf bucket
@@ -100,88 +98,90 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
 
           if (NLPData.HTMLText) {
             // 2.1. Get plain text from HTML:
-            decision.texteDecisionIntegre = HTMLToPlainText(NLPData.HTMLText)
+            texteDecisionIntegre = HTMLToPlainText(NLPData.HTMLText)
           } else if (NLPData.markdownText) {
             // 2.2. Get plain text from markdown:
-            decision.texteDecisionIntegre = markdownToPlainText(NLPData.markdownText)
+            texteDecisionIntegre = markdownToPlainText(NLPData.markdownText)
           }
 
           // 3. Store NLP data in -pdf-success bucket:
-          await s3Repository.archiveSuccessPDF(NLPData, pdfFilename)
+          // await s3Repository.archiveSuccessPDF(NLPData, pdfFilename)
         } catch (error) {
           const errorCount = incrementErrorCount(pdfFilename)
           logger.info({
-            ...currentNormalizationFormatLogs,
-            msg: `NLPPDFToText error count ${errorCount} for decision ${pdfFilename}`
+            path: 'src/tcom/batch/normalization.ts',
+            operations: ["normalization", `normalizationJob-TCOM-${jobId}`],
+            message: `NLPPDFToText error count ${errorCount} for decision ${rawTcom._id}`
           })
+
           if (errorCount >= 3 || error instanceof PostponeException === false) {
             logger.info({
-              ...currentNormalizationFormatLogs,
-              msg: `NLPPDFToText error limit reached, move decision ${pdfFilename} to pdf-failed bucket`
+              path: 'src/tcom/batch/normalization.ts',
+              operations: ["normalization", `normalizationJob-TCOM-${jobId}`],
+              message: `NLPPDFToText error limit reached, move decision ${rawTcom._id} to pdf-failed bucket`
             })
-            // *Move* failed PDF to pdf-failed bucket:
-            await s3Repository.archiveFailedPDF(pdfFile, pdfFilename)
-            await s3Repository.deleteDecision({
-              Bucket: process.env.S3_BUCKET_NAME_PDF,
-              Key: pdfFilename
-            })
+            await updateRawStatus(S3_BUCKET_NAME_RAW_TCOM, { status: "error", rawDecision: rawTcom, error })
             resetErrorCount(pdfFilename)
           }
           throw error
         }
 
         logger.info({
-          ...currentNormalizationFormatLogs,
-          msg: 'Plain text extracted by NLP API from collected PDF file'
+          path: 'src/tcom/batch/normalization.ts',
+          operations: ["normalization", `normalizationJob-TCOM-${jobId}`],
+          message: 'Plain text extracted by NLP API from collected PDF file'
         })
       } else {
         // Step 2b, use texteDecisionIntegre property:
 
         if (
-          !decision.texteDecisionIntegre ||
-          isEmptyText(decision.texteDecisionIntegre) ||
-          hasNoBreak(decision.texteDecisionIntegre)
+          !texteDecisionIntegre ||
+          isEmptyText(texteDecisionIntegre) ||
+          hasNoBreak(texteDecisionIntegre)
         ) {
           throw new Error('Collected texteDecisionIntegre property is empty')
         }
 
         logger.info({
-          ...currentNormalizationFormatLogs,
-          msg: 'Plain text from collected texteDecisionIntegre property'
+          path: 'src/tcom/batch/normalization.ts',
+          operations: ["normalization", `normalizationJob-TCOM-${jobId}`],
+          message: 'Plain text from collected texteDecisionIntegre property'
         })
       }
 
       // Step 3: Cloning decision to save it in normalized bucket
-      const decisionFromS3Clone = JSON.parse(JSON.stringify(decision))
+      const decisionClone = JSON.parse(JSON.stringify({ ...rawTcom.metadonnees }))
 
       logger.info({
-        ...currentNormalizationFormatLogs,
-        msg: 'Starting normalization of ' + decisionFilename
+        path: 'src/tcom/batch/normalization.ts',
+        operations: ["normalization", `normalizationJob-TCOM-${jobId}`],
+        message: 'Starting normalization of ' + rawTcom._id
       })
 
       // Step 4: Generating unique id for decision
-      const _id = decision.metadonnees.idDecision
-      currentNormalizationFormatLogs.data = {
-        decisionId: _id,
-        decisionFilename: decisionFilename
-      }
-
-      logger.info({ ...currentNormalizationFormatLogs, msg: 'Generated unique id for decision' })
-
-      // Step 5: Removing or replace (by other thing) unnecessary characters from decision
-      const cleanedDecision = removeOrReplaceUnnecessaryCharacters(decision.texteDecisionIntegre)
+      const _id = rawTcom.metadonnees.idDecision
 
       logger.info({
-        ...currentNormalizationFormatLogs,
-        msg: 'Removed unnecessary characters'
+        path: 'src/tcom/batch/normalization.ts',
+        operations: ["normalization", `normalizationJob-TCOM-${jobId}`],
+        message: 'Generated unique id for decision'
+      })
+
+      // Step 5: Removing or replace (by other thing) unnecessary characters from decision
+      const cleanedDecision = removeOrReplaceUnnecessaryCharacters(texteDecisionIntegre)
+
+      logger.info({
+        path: 'src/tcom/batch/normalization.ts',
+        operations: ["normalization", `normalizationJob-TCOM-${jobId}`],
+        message: 'Removed unnecessary characters'
       })
 
       // Step 6: Map decision to DBSDER API Type to save it in database
       const decisionToSave = mapDecisionNormaliseeToDecisionDto(
         _id,
         cleanedDecision,
-        decision.metadonnees,
-        decisionFilename
+        decisionClone,
+        rawTcom.path
       )
       decisionToSave.labelStatus = await computeLabelStatus(decisionToSave)
       decisionToSave.occultation = {
@@ -189,7 +189,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
         categoriesToOmit: [],
         motivationOccultation: false
       }
-      decisionToSave.occultation = computeOccultation(decision.metadonnees)
+      decisionToSave.occultation = computeOccultation(decisionClone)
 
       // Step 7: check diff (major/minor) and upsert/patch accordingly
       const previousVersion = await dbSderApiGateway.getDecisionBySourceId(
@@ -201,8 +201,9 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
           // Update decision with major changes:
           await dbSderApiGateway.saveDecision(decisionToSave)
           logger.info({
-            ...currentNormalizationFormatLogs,
-            msg: `Decision updated in database with major changes: ${JSON.stringify(diff.major)}`
+            path: 'src/tcom/batch/normalization.ts',
+            operations: ["normalization", `normalizationJob-TCOM-${jobId}`],
+            message: `Decision updated in database with major changes: ${JSON.stringify(diff.major)}`
           })
         } else if (diff.minor && diff.minor.length > 0) {
           // Patch decision with minor changes:
@@ -220,8 +221,9 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
             decisionToSave.publishStatus = PublishStatus.BLOCKED
             // Bad new date? Throw a warning... @TODO ODDJDashboard
             logger.warn({
-              ...currentNormalizationFormatLogs,
-              msg: `Decision has a bad updated date: ${decisionToSave.dateDecision}`
+              path: 'src/tcom/batch/normalization.ts',
+              operations: ["normalization", `normalizationJob-TCOM-${jobId}`],
+              message: `Decision has a bad updated date: ${decisionToSave.dateDecision}`
             })
           } else {
             if (previousVersion.labelStatus === LabelStatus.EXPORTED) {
@@ -242,88 +244,85 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
           }
           await dbSderApiGateway.patchDecision(previousVersion._id, decisionToSave)
           logger.info({
-            ...currentNormalizationFormatLogs,
-            msg: `Decision patched in database with minor changes: ${JSON.stringify(diff.minor)}`
+            path: 'src/tcom/batch/normalization.ts',
+            operations: ["normalization", `normalizationJob-TCOM-${jobId}`],
+            message: `Decision patched in database with minor changes: ${JSON.stringify(diff.minor)}`
           })
         } else {
           // No change? Throw a warning and do nothing... @TODO ODDJDashboard
-          logger.warn({ ...currentNormalizationFormatLogs, msg: 'Decision has no change' })
+          logger.warn({
+            path: 'src/tcom/batch/normalization.ts',
+            operations: ["normalization", `normalizationJob-TCOM-${jobId}`],
+            message: 'Decision has no change'
+          })
         }
       } else {
         // Insert new decision:
         await dbSderApiGateway.saveDecision(decisionToSave)
-        logger.info({ ...currentNormalizationFormatLogs, msg: `Decision saved in database` })
+        logger.info({
+          path: 'src/tcom/batch/normalization.ts',
+          operations: ["normalization", `normalizationJob-TCOM-${jobId}`],
+          message: `Decision saved in database`
+        })
       }
 
       // Step 8: Save decision in normalized bucket
       await s3Repository.saveDecisionNormalisee(
-        JSON.stringify(decisionFromS3Clone),
-        decisionFilename
+        JSON.stringify({ texteDecisionIntegre, metadonnees: decisionClone }),
+        rawTcom.path.replace(".pdf$", ".json")
       )
 
       logger.info({
-        ...currentNormalizationFormatLogs,
-        msg: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
+        path: 'src/tcom/batch/normalization.ts',
+        operations: ["normalization", `normalizationJob-TCOM-${jobId}`],
+        message: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
       })
 
       logger.info({
-        ...currentNormalizationFormatLogs,
-        msg: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
+        path: 'src/tcom/batch/normalization.ts',
+        operations: ["normalization", `normalizationJob-TCOM-${jobId}`],
+        message: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
       })
 
-      // Step 9: Delete decision in raw bucket
-      const reqParamsDelete = {
-        Bucket: bucketNameIntegre,
-        Key: decisionFilename
-      }
-      await s3Repository.deleteDecision(reqParamsDelete)
+      await updateRawStatus(S3_BUCKET_NAME_RAW_TCOM, { status: "success", rawDecision: rawTcom })
 
       logger.info({
-        ...currentNormalizationFormatLogs,
-        msg: 'Successful normalization of ' + decisionFilename
+        path: 'src/tcom/batch/normalization.ts',
+        operations: ["normalization", `normalizationJob-TCOM-${jobId}`],
+        message: 'Successful normalization of ' + rawTcom._id
       })
       listConvertedDecision.push({
         metadonnees: decisionToSave,
         decisionNormalisee: cleanedDecision
       })
     } catch (error) {
-      if (error.message && /nosuchkey/i.test(error.message)) {
-        logger.error({
-          ...normalizationFormatLogs,
-          msg: 'Decision has no PDF. Deleting decision in raw bucket',
-          data: error
-        })
-        const reqParamsDelete = {
-          Bucket: bucketNameIntegre,
-          Key: decisionFilename
-        }
-        await s3Repository.deleteDecision(reqParamsDelete)
-        logger.error({
-          ...normalizationFormatLogs,
-          msg: 'Failed to normalize the decision ' + decisionFilename + '.'
-        })
+      logger.error({
+        path: 'src/tcom/batch/normalization.ts',
+        operations: ["normalization", `normalizationJob-TCOM`],
+        message: error.message,
+        stack: error.stack
+      })
+      logger.error({
+        path: 'src/tcom/batch/normalization.ts',
+        operations: ["normalization", `normalizationJob-TCOM`],
+        message: 'Failed to normalize the decision ' + rawTcom._id + '.'
+      })
+      await updateRawStatus(S3_BUCKET_NAME_RAW_TCOM, { status: "error", rawDecision: rawTcom, error })
+      // To avoid too many request errors (as in Label):
+      if (error instanceof PostponeException) {
+        await new Promise((_) => setTimeout(_, 20 * 1000))
       } else {
-        logger.error({
-          ...normalizationFormatLogs,
-          msg: error.message,
-          data: error
-        })
-        logger.error({
-          ...normalizationFormatLogs,
-          msg: 'Failed to normalize the decision ' + decisionFilename + '.'
-        })
-        // To avoid too many request errors (as in Label):
-        if (error instanceof PostponeException) {
-          await new Promise((_) => setTimeout(_, 20 * 1000))
-        } else {
-          await new Promise((_) => setTimeout(_, 10 * 1000))
-        }
+        await new Promise((_) => setTimeout(_, 10 * 1000))
       }
     }
   })
 
   if (listConvertedDecision.length == 0) {
-    logger.info({ ...normalizationFormatLogs, msg: 'No decision to normalize.' })
+    logger.info({
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: 'No decision to normalize.'
+    })
     return []
   }
 
@@ -344,15 +343,17 @@ function computeDiff(
   if (newDecision.public !== oldDecision.public) {
     diff.major.push('public')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `major change to public: '${oldDecision.public}' -> '${newDecision.public}'`
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: `major change to public: '${oldDecision.public}' -> '${newDecision.public}'`
     })
   }
   if (newDecision.debatPublic !== oldDecision.debatPublic) {
     diff.major.push('debatPublic')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `major change to debatPublic: '${oldDecision.debatPublic}' -> '${newDecision.debatPublic}'`
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: `major change to debatPublic: '${oldDecision.debatPublic}' -> '${newDecision.debatPublic}'`
     })
   }
   if (newDecision.originalText !== oldDecision.originalText) {
@@ -393,64 +394,73 @@ function computeDiff(
   if (newDecision.chamberId !== oldDecision.chamberId) {
     diff.minor.push('chamberId')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to chamberId: '${oldDecision.chamberId}' -> '${newDecision.chamberId}'`
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: `minor change to chamberId: '${oldDecision.chamberId}' -> '${newDecision.chamberId}'`
     })
   }
   if (newDecision.chamberName !== oldDecision.chamberName) {
     diff.minor.push('chamberName')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to chamberName: '${oldDecision.chamberName}' -> '${newDecision.chamberName}'`
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: `minor change to chamberName: '${oldDecision.chamberName}' -> '${newDecision.chamberName}'`
     })
   }
   if (newDecision.dateDecision !== oldDecision.dateDecision) {
     diff.minor.push('dateDecision')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to dateDecision: '${oldDecision.dateDecision}' -> '${newDecision.dateDecision}'`
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: `minor change to dateDecision: '${oldDecision.dateDecision}' -> '${newDecision.dateDecision}'`
     })
   }
   if (newDecision.jurisdictionCode !== oldDecision.jurisdictionCode) {
     diff.minor.push('jurisdictionCode')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to jurisdictionCode: '${oldDecision.jurisdictionCode}' -> '${newDecision.jurisdictionCode}'`
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: `minor change to jurisdictionCode: '${oldDecision.jurisdictionCode}' -> '${newDecision.jurisdictionCode}'`
     })
   }
   if (newDecision.jurisdictionId !== oldDecision.jurisdictionId) {
     diff.minor.push('jurisdictionId')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to jurisdictionId: '${oldDecision.jurisdictionId}' -> '${newDecision.jurisdictionId}'`
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: `minor change to jurisdictionId: '${oldDecision.jurisdictionId}' -> '${newDecision.jurisdictionId}'`
     })
   }
   if (newDecision.jurisdictionName !== oldDecision.jurisdictionName) {
     diff.minor.push('jurisdictionName')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to jurisdictionName: '${oldDecision.jurisdictionName}' -> '${newDecision.jurisdictionName}'`
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: `minor change to jurisdictionName: '${oldDecision.jurisdictionName}' -> '${newDecision.jurisdictionName}'`
     })
   }
   if (newDecision.registerNumber !== oldDecision.registerNumber) {
     diff.minor.push('registerNumber')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to registerNumber: '${oldDecision.registerNumber}' -> '${newDecision.registerNumber}'`
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: `minor change to registerNumber: '${oldDecision.registerNumber}' -> '${newDecision.registerNumber}'`
     })
   }
   if (newDecision.solution !== oldDecision.solution) {
     diff.minor.push('solution')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to solution: '${oldDecision.solution}' -> '${newDecision.solution}'`
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: `minor change to solution: '${oldDecision.solution}' -> '${newDecision.solution}'`
     })
   }
   if (newDecision.codeMatiereCivil !== oldDecision.codeMatiereCivil) {
     diff.minor.push('codeMatiereCivil')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to codeMatiereCivil: '${oldDecision.codeMatiereCivil}' -> '${newDecision.codeMatiereCivil}'`
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: `minor change to codeMatiereCivil: '${oldDecision.codeMatiereCivil}' -> '${newDecision.codeMatiereCivil}'`
     })
   }
   if (
@@ -472,29 +482,33 @@ function computeDiff(
   if (newDecision.idGroupement !== oldDecision.idGroupement) {
     diff.minor.push('idGroupement')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to idGroupement: '${oldDecision.idGroupement}' -> '${newDecision.idGroupement}'`
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: `minor change to idGroupement: '${oldDecision.idGroupement}' -> '${newDecision.idGroupement}'`
     })
   }
   if (newDecision.codeProcedure !== oldDecision.codeProcedure) {
     diff.minor.push('codeProcedure')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to codeProcedure: '${oldDecision.codeProcedure}' -> '${newDecision.codeProcedure}'`
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: `minor change to codeProcedure: '${oldDecision.codeProcedure}' -> '${newDecision.codeProcedure}'`
     })
   }
   if (newDecision.libelleMatiere !== oldDecision.libelleMatiere) {
     diff.minor.push('libelleMatiere')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to libelleMatiere: '${oldDecision.libelleMatiere}' -> '${newDecision.libelleMatiere}'`
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: `minor change to libelleMatiere: '${oldDecision.libelleMatiere}' -> '${newDecision.libelleMatiere}'`
     })
   }
   if (newDecision.selection !== oldDecision.selection) {
     diff.minor.push('selection')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to selection: '${oldDecision.selection}' -> '${newDecision.selection}'`
+      path: 'src/tcom/batch/normalization.ts',
+      operations: ["normalization", `normalizationJob-TCOM`],
+      message: `minor change to selection: '${oldDecision.selection}' -> '${newDecision.selection}'`
     })
   }
   if (

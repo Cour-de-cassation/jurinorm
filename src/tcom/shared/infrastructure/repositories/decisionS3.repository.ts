@@ -7,17 +7,15 @@ import {
   ListObjectsV2Command,
   DeleteObjectCommand
 } from '@aws-sdk/client-s3'
-import { Logger } from '@nestjs/common'
-import { PinoLogger } from 'nestjs-pino'
 import { BucketError } from '../../domain/errors/bucket.error'
 import { DecisionRepository } from './decision.repository'
 import { CollectDto } from '../dto/collect.dto'
+import { logger } from '../../../../library/logger'
 
 export class DecisionS3Repository implements DecisionRepository {
   private s3Client: S3Client
-  private logger: PinoLogger | Logger
 
-  constructor(logger: PinoLogger | Logger, providedS3Client?: S3Client) {
+  constructor(providedS3Client?: S3Client) {
     if (providedS3Client) {
       this.s3Client = providedS3Client
     } else {
@@ -31,14 +29,18 @@ export class DecisionS3Repository implements DecisionRepository {
         }
       })
     }
-    this.logger = logger
   }
 
   async saveDecision(reqParams): Promise<void> {
     try {
       await this.s3Client.send(new PutObjectCommand(reqParams))
     } catch (error) {
-      this.logger.error({ operationName: 'saveDecision', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcoshared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ["normalization", `saveDecision-TCOM`],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }
@@ -67,7 +69,12 @@ export class DecisionS3Repository implements DecisionRepository {
     try {
       await this.s3Client.send(new DeleteObjectCommand(reqParams))
     } catch (error) {
-      this.logger.error({ operationName: 'deleteDecision', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcoshared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ["normalization", `deleteDecision-TCOM`],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }
@@ -124,14 +131,21 @@ export class DecisionS3Repository implements DecisionRepository {
     try {
       await this.s3Client.send(new PutObjectCommand(params))
     } catch (error) {
-      this.logger.error({ operationName: 'putDecision', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcoshared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ["normalization", `putDecision-TCOM`],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }
 
-  async getDecisionByFilename(filename: string): Promise<CollectDto & { _id: string }> {
+  async getDecisionByFilename(
+    filename: string
+  ): Promise<CollectDto & { _id: string }> {
     const reqParams = {
-      Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM,
+      Bucket: process.env.S3_BUCKET_NAME_NORMALIZED_TCOM,
       Key: filename
     }
 
@@ -140,7 +154,12 @@ export class DecisionS3Repository implements DecisionRepository {
       const stringifiedDecision = await decisionFromS3.Body?.transformToString()
       return JSON.parse(stringifiedDecision)
     } catch (error) {
-      this.logger.error({ operationName: 'getDecisionByFilename', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcoshared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ["normalization", `getDecisionByFilename-TCOM`],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }
@@ -155,7 +174,12 @@ export class DecisionS3Repository implements DecisionRepository {
       const fileFromS3 = await this.s3Client.send(new GetObjectCommand(reqParams))
       return Buffer.from(await fileFromS3.Body?.transformToByteArray())
     } catch (error) {
-      this.logger.error({ operationName: 'getPDFByFilename', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcoshared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ["normalization", `getPDFByFilename-TCOM`],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }
@@ -176,7 +200,12 @@ export class DecisionS3Repository implements DecisionRepository {
     try {
       await this.s3Client.send(new PutObjectCommand(params))
     } catch (error) {
-      this.logger.error({ operationName: 'archiveFailedPDF', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcoshared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ["normalization", `archiveFailedPDF-TCOM`],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }
@@ -196,17 +225,23 @@ export class DecisionS3Repository implements DecisionRepository {
     try {
       await this.s3Client.send(new PutObjectCommand(params))
     } catch (error) {
-      this.logger.error({ operationName: 'archiveSuccessPDF', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcoshared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ["normalization", `archiveSuccessPDF-TCOM`],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }
 
   async getDecisionList(
+    bucket?: string,
     maxNumberOfDecisionsToRetrieve?: number,
     startAfterFileName?: string
   ): Promise<_Object[]> {
     const reqParams: ListObjectsV2CommandInput = {
-      Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM
+      Bucket: bucket ?? process.env.S3_BUCKET_NAME_RAW_TCOM
     }
     if (maxNumberOfDecisionsToRetrieve >= 1 && maxNumberOfDecisionsToRetrieve <= 1000) {
       reqParams.MaxKeys = maxNumberOfDecisionsToRetrieve
@@ -217,7 +252,12 @@ export class DecisionS3Repository implements DecisionRepository {
       const decisionListFromS3 = await this.s3Client.send(new ListObjectsV2Command(reqParams))
       return decisionListFromS3.Contents ? decisionListFromS3.Contents : []
     } catch (error) {
-      this.logger.error({ operationName: 'getDecisionList', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcoshared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ["normalization", `getDecisionList-TCOM`],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }

@@ -1,4 +1,4 @@
-import { Document, MongoClient, Filter, FindCursor, WithId, ObjectId, UpdateFilter } from 'mongodb'
+import { Document, MongoClient, Filter, FindCursor, WithId, ObjectId, UpdateFilter, OptionalUnlessRequiredId, InferIdType } from 'mongodb'
 import { FILE_DB_URL } from './env'
 
 const client = new MongoClient(FILE_DB_URL)
@@ -13,6 +13,17 @@ export async function disconnect() {
   await dbConnect()
   return client.close()
 }
+
+export async function createFileInformation<T extends Document>(
+    collection: string,
+    file: OptionalUnlessRequiredId<T>,
+  ): Promise<{ _id: ObjectId } & typeof file> {
+    const db = await dbConnect()
+    const { insertedId } = await db
+      .collection(collection)
+      .insertOne(file)
+    return { _id: insertedId, ...file }
+  }
 
 export async function updateRawInformation<T extends Document>(
   collection: string,
