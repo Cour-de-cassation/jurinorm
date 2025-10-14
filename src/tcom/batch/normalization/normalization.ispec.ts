@@ -12,21 +12,25 @@ import { MockUtils } from '../../shared/infrastructure/utils/mock.utils'
 import { Readable } from 'stream'
 import { sdkStreamMixin } from '@smithy/util-stream'
 import { DbSderApiGateway } from './repositories/gateways/dbsderApi.gateway'
-import { InfrastructureException } from '../../shared/infrastructure/exceptions/infrastructure.exception'
 import { CollectDto } from '../../shared/infrastructure/dto/collect.dto'
+import { findRawInformations, mapCursorSync } from '../../../library/DbRaw'
+import { updateRawStatus } from '../../../service/eventSourcing'
+import { ObjectId } from 'mongodb'
 // import { ConvertedDecisionWithMetadonneesDto } from '../../shared/infrastructure/dto/convertedDecisionWithMetadonnees.dto'
 
-jest.mock('./logger', () => ({
+jest.mock('../../../library/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),
     error: jest.fn()
-  },
-  normalizationFormatLogs: {
-    operationName: 'normalizationJob',
-    msg: 'Starting normalization job...'
   }
 }))
+
+jest.mock('../../../library/DbRaw')
+const mockedFindRawInformations = findRawInformations as jest.MockedFunction<typeof findRawInformations>;
+const mockedMapCursorSync = mapCursorSync as jest.MockedFunction<typeof mapCursorSync>;
+jest.mock('../../../service/eventSourcing')
+const mockedUpdateRawStatus = updateRawStatus as jest.MockedFunction<typeof updateRawStatus>;
 
 describe('Normalization', () => {
   const mockS3: AwsClientStub<S3Client> = mockClient(S3Client)
@@ -42,6 +46,8 @@ describe('Normalization', () => {
 
     mockS3.on(PutObjectCommand).resolves({})
     mockS3.on(DeleteObjectCommand).resolves({})
+    mockedMapCursorSync.mockImplementation((mockRaws: any, cb) => Promise.all(mockRaws.map(cb)))
+    mockedUpdateRawStatus.mockResolvedValue(null)
   })
 
   beforeAll(() => {
@@ -56,6 +62,7 @@ describe('Normalization', () => {
   describe('Success Cases', () => {
     it('returns an empty list when no decisions are present', async () => {
       // GIVEN
+      mockedFindRawInformations.mockReturnValue(Promise.resolve([]) as any)
       const emptyListFromS3 = {
         Contents: []
       }
@@ -180,22 +187,28 @@ describe('Normalization', () => {
   })
 
   describe('Failing Cases', () => {
-    it('returns an exception when S3 is unavailable', async () => {
-      // GIVEN
-      mockS3.on(ListObjectsV2Command).rejects(new Error())
+    // it('returns an exception when S3 is unavailable', async () => {
+    //   // GIVEN
+    //   mockS3.on(ListObjectsV2Command).rejects(new Error())
 
-      // WHEN
-      expect(async () => await normalizationJob())
-        // THEN
-        .rejects.toThrow(InfrastructureException)
-    })
+    //   // WHEN
+    //   expect(async () => await normalizationJob())
+    //     // THEN
+    //     .rejects.toThrow(InfrastructureException)
+    // })
 
     it('returns an empty list when S3 is available but dbSder API is unavailable', async () => {
       // GIVEN
-      const listWithOneElementFromS3 = {
-        Contents: [{ Key: 'filename' }]
-      }
-      mockS3.on(ListObjectsV2Command).resolves(listWithOneElementFromS3)
+      mockedFindRawInformations.mockReturnValue(Promise.resolve([{
+        _id: new ObjectId(),
+        path: 'filename',
+        metadonnees: metadonneesFromS3,
+        events: [{ type: "created", date: new Date() }],
+      }]) as any)
+      // const listWithOneElementFromS3 = {
+      //   Contents: [{ Key: 'filename' }]
+      // }
+      // mockS3.on(ListObjectsV2Command).resolves(listWithOneElementFromS3)
 
       mockS3.on(GetObjectCommand).resolves({
         Body: createFakeDocument(decisionIntegre, metadonneesFromS3)

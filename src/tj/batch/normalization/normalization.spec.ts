@@ -6,18 +6,25 @@ import * as transformDecisionIntegreFromWPDToText from './services/transformDeci
 import { MockUtils } from '../../shared/infrastructure/utils/mock.utils'
 import { CollectDto } from '../../shared/infrastructure/dto/collect.dto'
 import { DecisionS3Repository } from '../../shared/infrastructure/repositories/decisionS3.repository'
+import { RawTj } from './infrastructure/decision.dto'
+import { ObjectId } from 'mongodb'
+import { findRawInformations, mapCursorSync } from '../../../library/DbRaw'
+import { updateRawStatus } from '../../../service/eventSourcing'
 
-jest.mock('../../shared/infrastructure/utils/log', () => ({
+jest.mock('../../../library/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),
     error: jest.fn()
-  },
-  normalizationFormatLogs: {
-    operationName: 'normalizationJob',
-    msg: 'Starting normalization job...'
   }
 }))
+
+jest.mock('../../../library/DbRaw')
+const mockedFindRawInformations = findRawInformations as jest.MockedFunction<typeof findRawInformations>;
+const mockedMapCursorSync = mapCursorSync as jest.MockedFunction<typeof mapCursorSync>;
+jest.mock('../../../service/eventSourcing')
+const mockedUpdateRawStatus = updateRawStatus as jest.MockedFunction<typeof updateRawStatus>;
+
 
 describe('Normalization', () => {
   const mockUtils = new MockUtils()
@@ -36,6 +43,13 @@ describe('Normalization', () => {
     filename: decisionName,
     path: '',
     buffer: Buffer.from('Le contenu WPD\n de ma\n decision')
+  }
+
+  const mockRaw: RawTj = {
+    _id: new ObjectId(),
+    path: fakeMetadonneesFromS3.filenameSource,
+    events: [{ type: "created", date: new Date() }],
+    metadonnees: fakeMetadonneesFromS3
   }
 
   const mockDecision: CollectDto = {
@@ -57,6 +71,10 @@ describe('Normalization', () => {
     jest
       .spyOn(DbSderApiGateway.prototype, 'getDecisionBySourceId')
       .mockImplementation(() => Promise.resolve(null))
+
+    mockedFindRawInformations.mockReturnValue(Promise.resolve([mockRaw]) as any)
+    mockedMapCursorSync.mockImplementation((mockRaws: any, cb) => Promise.all(mockRaws.map(cb)))
+    mockedUpdateRawStatus.mockResolvedValue(null)
   })
 
   beforeAll(() => {
@@ -149,6 +167,11 @@ describe('Normalization', () => {
         .spyOn(transformDecisionIntegreFromWPDToText, 'transformDecisionIntegreFromWPDToText')
         .mockImplementationOnce(() => Promise.resolve(mockUtils.decisionContentToNormalize))
         .mockImplementationOnce(() => Promise.resolve(mockUtils.decisionContentToNormalize))
+
+      mockedFindRawInformations.mockReturnValue(Promise.resolve([
+        { ...mockRaw, path: firstDecisionName }, 
+        { ...mockRaw, path: secondDecisionName }
+      ]) as any)
 
       const expected = [
         {

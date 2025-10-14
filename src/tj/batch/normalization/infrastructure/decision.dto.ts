@@ -4,6 +4,15 @@ import {
   DecisionAssocieeDto,
   MetadonneesDto
 } from '../../../shared/infrastructure/dto/metadonnees.dto'
+import { Id } from 'src/library/DbRaw'
+import { Created, Deleted, Event } from 'src/service/eventSourcing'
+
+export type RawTj = {
+  _id: Id,
+  path: string,
+  events: [Created, ...Exclude<Event, Deleted>[]]
+  metadonnees: MetadonneesDto
+}
 
 export function mapDecisionNormaliseeToDecisionDto(
   generatedId: string,

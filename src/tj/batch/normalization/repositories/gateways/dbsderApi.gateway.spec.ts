@@ -9,7 +9,7 @@ import axios from 'axios'
 import { DbSderApiGateway } from './dbsderApi.gateway'
 import { MockUtils } from '../../../../shared/infrastructure/utils/mock.utils'
 
-jest.mock('../../../../shared/infrastructure/utils/log', () => ({
+jest.mock('../../../../../library/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),

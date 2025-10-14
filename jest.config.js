@@ -7,4 +7,5 @@ module.exports = {
   testMatch: [
     "<rootDir>/src/**/*.spec.ts",
   ],
+  setupFiles: ['<rootDir>/src/.jest/setupEnvVars.ts'],
 };

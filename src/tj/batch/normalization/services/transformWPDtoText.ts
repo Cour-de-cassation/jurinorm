@@ -1,24 +1,20 @@
 import { existsSync, statSync } from 'fs'
 import { promisify } from 'util'
 import { exec } from 'child_process'
-import { logger, normalizationFormatLogs } from '../../../shared/infrastructure/utils/log'
-import { LogsFormat } from 'src/tj/shared/infrastructure/utils/logsFormat.utils'
+import { logger } from '../../../../library/logger'
 
 const execPromise = promisify(exec)
 const CONVERSION_COMMAND = 'wpd2text'
 
 export async function readWordperfectDocument(filename: string) {
-  const formatLogs: LogsFormat = {
-    ...normalizationFormatLogs,
-    operationName: 'readWordperfectDocument'
-  }
   const cmdPath = await getConversionCommandPath(CONVERSION_COMMAND)
   if (cmdPath && existsSync(filename)) {
     try {
       if (!statSync(filename).isFile()) {
         logger.error({
-          ...normalizationFormatLogs,
-          msg: `Path provided is not a file: ${filename}`
+          path: "src/tj/batch/normalization/services/transformWPDtoText",
+          operations: ["extraction", "readWordperfectDocument"],
+          message: `Path provided is not a file: ${filename}`,
         })
         throw new Error()
       }
@@ -28,16 +24,18 @@ export async function readWordperfectDocument(filename: string) {
       return stdout
     } catch (error) {
       logger.error({
-        ...formatLogs,
-        msg: error.message,
-        data: error
+        path: "src/tj/batch/normalization/services/transformWPDtoText",
+        operations: ["extraction", "readWordperfectDocument"],
+        message: error.message,
+        stack: error.stack
       })
       throw new Error(error)
     }
   } else {
     logger.error({
-      ...normalizationFormatLogs,
-      msg: 'Unable to read Wordperfect document.'
+      path: "src/tj/batch/normalization/services/transformWPDtoText",
+      operations: ["extraction", "readWordperfectDocument"],
+      message: 'Unable to read Wordperfect document.',
     })
     throw new Error()
   }
@@ -50,8 +48,9 @@ export async function getConversionCommandPath(commandName: string): Promise<str
     })
     .catch(() => {
       logger.error({
-        operationName: 'getConversionCommandPath',
-        msg: 'Unable to find the command to do the conversion... Skipping'
+        path: "src/tj/batch/normalization/services/transformWPDtoText",
+        operations: ["extraction", "getConversionCommandPath"],
+        message: 'Unable to find the command to do the conversion... Skipping',
       })
       throw new Error()
     })
