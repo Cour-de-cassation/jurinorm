@@ -15,14 +15,15 @@ export function generateUniqueId(metadonnees: MetadonneesDto): string {
   } else {
     logger.error({
       path: 'src/tj/batch/normalization/services/generateUniqueId.ts',
-      operations: ["normalization", "generateUniqueId-TJ"],
-      message: 'Could not generate unique ID based on metadata: ' +
+      operations: ['normalization', 'generateUniqueId-TJ'],
+      message:
+        'Could not generate unique ID based on metadata: ' +
         JSON.stringify({
           idJuridiction: metadonnees.idJuridiction,
           numeroRegistre: metadonnees.numeroRegistre,
           numeroRoleGeneral: metadonnees.numeroRoleGeneral,
           dateDecision: metadonnees.dateDecision
-        }),
+        })
     })
 
     throw new Error('Could not generate unique ID based on metadata.')

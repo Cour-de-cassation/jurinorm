@@ -17,7 +17,7 @@ export async function fetchDecisionListFromS3(
   } catch (error) {
     logger.error({
       path: 'src/tj/batch/normalization/services/fetchDecisionListFromS3.ts',
-      operations: ["normalization", "fetchDecisionListFromS3-TJ"],
+      operations: ['normalization', 'fetchDecisionListFromS3-TJ'],
       message: error.message,
       stack: error.stack
     })

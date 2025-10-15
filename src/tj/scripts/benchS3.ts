@@ -10,8 +10,11 @@ async function main(key: string) {
   logger
   logger.info({
     path: 'src/tj/scripts/benchS3.ts',
-    operations: ['other', "script-benchS3-TJ"],
-    message: `Got idDecision ${decision.metadonnees.idDecision} for file ${key} \nTook ${((t1.getTime() - t0.getTime()) / 1000).toFixed(2)} seconds`
+    operations: ['other', 'script-benchS3-TJ'],
+    message: `Got idDecision ${decision.metadonnees.idDecision} for file ${key} \nTook ${(
+      (t1.getTime() - t0.getTime()) /
+      1000
+    ).toFixed(2)} seconds`
   })
 }
 

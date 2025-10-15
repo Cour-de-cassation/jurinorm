@@ -12,9 +12,9 @@ export async function readWordperfectDocument(filename: string) {
     try {
       if (!statSync(filename).isFile()) {
         logger.error({
-          path: "src/tj/batch/normalization/services/transformWPDtoText",
-          operations: ["extraction", "readWordperfectDocument"],
-          message: `Path provided is not a file: ${filename}`,
+          path: 'src/tj/batch/normalization/services/transformWPDtoText',
+          operations: ['extraction', 'readWordperfectDocument'],
+          message: `Path provided is not a file: ${filename}`
         })
         throw new Error()
       }
@@ -24,8 +24,8 @@ export async function readWordperfectDocument(filename: string) {
       return stdout
     } catch (error) {
       logger.error({
-        path: "src/tj/batch/normalization/services/transformWPDtoText",
-        operations: ["extraction", "readWordperfectDocument"],
+        path: 'src/tj/batch/normalization/services/transformWPDtoText',
+        operations: ['extraction', 'readWordperfectDocument'],
         message: error.message,
         stack: error.stack
       })
@@ -33,9 +33,9 @@ export async function readWordperfectDocument(filename: string) {
     }
   } else {
     logger.error({
-      path: "src/tj/batch/normalization/services/transformWPDtoText",
-      operations: ["extraction", "readWordperfectDocument"],
-      message: 'Unable to read Wordperfect document.',
+      path: 'src/tj/batch/normalization/services/transformWPDtoText',
+      operations: ['extraction', 'readWordperfectDocument'],
+      message: 'Unable to read Wordperfect document.'
     })
     throw new Error()
   }
@@ -48,9 +48,9 @@ export async function getConversionCommandPath(commandName: string): Promise<str
     })
     .catch(() => {
       logger.error({
-        path: "src/tj/batch/normalization/services/transformWPDtoText",
-        operations: ["extraction", "getConversionCommandPath"],
-        message: 'Unable to find the command to do the conversion... Skipping',
+        path: 'src/tj/batch/normalization/services/transformWPDtoText',
+        operations: ['extraction', 'getConversionCommandPath'],
+        message: 'Unable to find the command to do the conversion... Skipping'
       })
       throw new Error()
     })

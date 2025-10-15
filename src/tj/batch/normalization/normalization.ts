@@ -32,8 +32,8 @@ const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TJ
 export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonneesDto[]> {
   logger.info({
     path: 'src/tj/batch/normalization.ts',
-    operations: ["normalization", "normalizationJob-TJ"],
-    message: "Starting TJ normalization"
+    operations: ['normalization', 'normalizationJob-TJ'],
+    message: 'Starting TJ normalization'
   })
 
   const listConvertedDecision: ConvertedDecisionWithMetadonneesDto[] = []
@@ -55,7 +55,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
 
         logger.info({
           path: 'src/tj/batch/normalization.ts',
-          operations: ["normalization", "normalizationJob-TJ"],
+          operations: ['normalization', 'normalizationJob-TJ'],
           message: 'Starting normalization of ' + decisionFilename
         })
 
@@ -64,7 +64,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
         normalizationFormatLogs.data = { decisionId: _id }
         logger.info({
           path: 'src/tj/batch/normalization.ts',
-          operations: ["normalization", "normalizationJob-TJ"],
+          operations: ['normalization', 'normalizationJob-TJ'],
           message: 'Generated unique id for decision'
         })
 
@@ -75,7 +75,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
 
         logger.info({
           path: 'src/tj/batch/normalization.ts',
-          operations: ["normalization", "normalizationJob-TJ"],
+          operations: ['normalization', 'normalizationJob-TJ'],
           message: 'Decision conversion finished. Removing unnecessary characters'
         })
 
@@ -103,7 +103,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
         // Step 7: check diff (major/minor) and upsert/patch accordingly
         logger.info({
           path: 'src/tj/batch/normalization.ts',
-          operations: ["normalization", "normalizationJob-TJ"],
+          operations: ['normalization', 'normalizationJob-TJ'],
           message: `Check diff with previous version of decision ${decisionToSave.sourceId} (if any)...`
         })
 
@@ -117,8 +117,10 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
             await dbSderApiGateway.saveDecision(decisionToSave)
             logger.info({
               path: 'src/tj/batch/normalization.ts',
-              operations: ["normalization", "normalizationJob-TJ"],
-              message: `Decision updated in database with major changes: ${JSON.stringify(diff.major)}`
+              operations: ['normalization', 'normalizationJob-TJ'],
+              message: `Decision updated in database with major changes: ${JSON.stringify(
+                diff.major
+              )}`
             })
           } else if (diff.minor && diff.minor.length > 0) {
             // Patch decision with minor changes:
@@ -137,7 +139,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
               // Bad dateDecision? Throw a warning... @TODO ODDJDashboard
               logger.warn({
                 path: 'src/tj/batch/normalization.ts',
-                operations: ["normalization", "normalizationJob-TJ"],
+                operations: ['normalization', 'normalizationJob-TJ'],
                 message: `Decision has a bad updated date: ${decisionToSave.dateDecision}`
               })
             } else if (decisionToSave.labelStatus === LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC) {
@@ -145,7 +147,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
               // Bad endCaseCode? Throw a warning... @TODO ODDJDashboard
               logger.warn({
                 path: 'src/tj/batch/normalization.ts',
-                operations: ["normalization", "normalizationJob-TJ"],
+                operations: ['normalization', 'normalizationJob-TJ'],
                 message: `Decision has a codeDecision in blocked codeDecision list: ${decisionToSave.endCaseCode}`
               })
             } else if (decisionToSave.labelStatus === LabelStatus.IGNORED_CARACTERE_INCONNU) {
@@ -153,7 +155,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
               // Unknown characters? Throw a warning... @TODO ODDJDashboard
               logger.warn({
                 path: 'src/tj/batch/normalization.ts',
-                operations: ["normalization", "normalizationJob-TJ"],
+                operations: ['normalization', 'normalizationJob-TJ'],
                 message: `Decision contains unknown characters`
               })
             } else {
@@ -176,14 +178,16 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
             await dbSderApiGateway.patchDecision(previousVersion._id, decisionToSave)
             logger.info({
               path: 'src/tj/batch/normalization.ts',
-              operations: ["normalization", "normalizationJob-TJ"],
-              message: `Decision patched in database with minor changes: ${JSON.stringify(diff.minor)}`
+              operations: ['normalization', 'normalizationJob-TJ'],
+              message: `Decision patched in database with minor changes: ${JSON.stringify(
+                diff.minor
+              )}`
             })
           } else {
             // No change? Throw a warning and do nothing... @TODO ODDJDashboard
             logger.warn({
               path: 'src/tj/batch/normalization.ts',
-              operations: ["normalization", "normalizationJob-TJ"],
+              operations: ['normalization', 'normalizationJob-TJ'],
               message: 'Decision has no change'
             })
           }
@@ -196,17 +200,16 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
 
           logger.info({
             path: 'src/tj/batch/normalization.ts',
-            operations: ["normalization", "normalizationJob-TJ"],
+            operations: ['normalization', 'normalizationJob-TJ'],
             message: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
           })
 
           // Step 9: Delete decision in raw bucket
           await s3Repository.deleteDecision(decisionFilename, bucketNameIntegre)
 
-
           logger.info({
             path: 'src/tj/batch/normalization.ts',
-            operations: ["normalization", "normalizationJob-TJ"],
+            operations: ['normalization', 'normalizationJob-TJ'],
             message: 'Successful normalization of ' + decisionFilename
           })
 
@@ -218,7 +221,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
       } catch (error) {
         logger.error({
           path: 'src/tj/batch/normalization.ts',
-          operations: ["normalization", "normalizationJob-TJ"],
+          operations: ['normalization', 'normalizationJob-TJ'],
           message: 'Failed to normalize the decision ' + decisionFilename + '.',
           stack: error.stack
         })
@@ -232,7 +235,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
   if (listConvertedDecision.length == 0) {
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: 'No decision to normalize.'
     })
     return []
@@ -256,7 +259,7 @@ function computeDiff(
     diff.major.push('public')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `major change to public: '${oldDecision.public}' -> '${newDecision.public}'`
     })
   }
@@ -264,7 +267,7 @@ function computeDiff(
     diff.major.push('debatPublic')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `major change to debatPublic: '${oldDecision.debatPublic}' -> '${newDecision.debatPublic}'`
     })
   }
@@ -294,7 +297,7 @@ function computeDiff(
     diff.minor.push('dateDecision')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to dateDecision: '${oldDecision.dateDecision}' -> '${newDecision.dateDecision}'`
     })
   }
@@ -302,7 +305,7 @@ function computeDiff(
     diff.minor.push('jurisdictionId')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to jurisdictionId: '${oldDecision.jurisdictionId}' -> '${newDecision.jurisdictionId}'`
     })
   }
@@ -310,7 +313,7 @@ function computeDiff(
     diff.minor.push('jurisdictionName')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to jurisdictionName: '${oldDecision.jurisdictionName}' -> '${newDecision.jurisdictionName}'`
     })
   }
@@ -318,7 +321,7 @@ function computeDiff(
     diff.minor.push('numeroRoleGeneral')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to numeroRoleGeneral: '${oldDecision.numeroRoleGeneral}' -> '${newDecision.numeroRoleGeneral}'`
     })
   }
@@ -342,7 +345,7 @@ function computeDiff(
     diff.minor.push('selection')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to selection: '${oldDecision.selection}' -> '${newDecision.selection}'`
     })
   }
@@ -350,7 +353,7 @@ function computeDiff(
     diff.minor.push('libelleEndCaseCode')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to libelleEndCaseCode: '${oldDecision.libelleEndCaseCode}' -> '${newDecision.libelleEndCaseCode}'`
     })
   }
@@ -358,7 +361,7 @@ function computeDiff(
     diff.minor.push('registerNumber')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to registerNumber: '${oldDecision.registerNumber}' -> '${newDecision.registerNumber}'`
     })
   }
@@ -366,7 +369,7 @@ function computeDiff(
     diff.minor.push('jurisdictionCode')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to jurisdictionCode: '${oldDecision.jurisdictionCode}' -> '${newDecision.jurisdictionCode}'`
     })
   }
@@ -374,7 +377,7 @@ function computeDiff(
     diff.minor.push('solution')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to solution: '${oldDecision.solution}' -> '${newDecision.solution}'`
     })
   }
@@ -382,7 +385,7 @@ function computeDiff(
     diff.minor.push('formation')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to formation: '${oldDecision.formation}' -> '${newDecision.formation}'`
     })
   }
@@ -390,7 +393,7 @@ function computeDiff(
     diff.minor.push('libelleNAC')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to libelleNAC: '${oldDecision.libelleNAC}' -> '${newDecision.libelleNAC}'`
     })
   }
@@ -398,7 +401,7 @@ function computeDiff(
     diff.minor.push('NPCode')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to NPCode: '${oldDecision.NPCode}' -> '${newDecision.NPCode}'`
     })
   }
@@ -406,7 +409,7 @@ function computeDiff(
     diff.minor.push('libelleNatureParticuliere')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to libelleNatureParticuliere: '${oldDecision.libelleNatureParticuliere}' -> '${newDecision.libelleNatureParticuliere}'`
     })
   }
@@ -414,7 +417,7 @@ function computeDiff(
     diff.minor.push('codeService')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to codeService: '${oldDecision.codeService}' -> '${newDecision.codeService}'`
     })
   }
@@ -422,7 +425,7 @@ function computeDiff(
     diff.minor.push('libelleService')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to libelleService: '${oldDecision.libelleService}' -> '${newDecision.libelleService}'`
     })
   }
@@ -430,7 +433,7 @@ function computeDiff(
     diff.minor.push('indicateurQPC')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to indicateurQPC: '${oldDecision.indicateurQPC}' -> '${newDecision.indicateurQPC}'`
     })
   }
@@ -438,7 +441,7 @@ function computeDiff(
     diff.minor.push('matiereDeterminee')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to matiereDeterminee: '${oldDecision.matiereDeterminee}' -> '${newDecision.matiereDeterminee}'`
     })
   }
@@ -446,7 +449,7 @@ function computeDiff(
     diff.minor.push('pourvoiCourDeCassation')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to pourvoiCourDeCassation: '${oldDecision.pourvoiCourDeCassation}' -> '${newDecision.pourvoiCourDeCassation}'`
     })
   }
@@ -454,7 +457,7 @@ function computeDiff(
     diff.minor.push('pourvoiLocal')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to pourvoiLocal: '${oldDecision.pourvoiLocal}' -> '${newDecision.pourvoiLocal}'`
     })
   }
@@ -462,7 +465,7 @@ function computeDiff(
     diff.minor.push('sommaire')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to sommaire: '${oldDecision.sommaire}' -> '${newDecision.sommaire}'`
     })
   }
@@ -470,7 +473,7 @@ function computeDiff(
     diff.minor.push('president')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to president: '${oldDecision.president}' -> '${newDecision.president}'`
     })
   }
@@ -478,7 +481,7 @@ function computeDiff(
     diff.minor.push('decisionAssociee')
     logger.info({
       path: 'src/tj/batch/normalization.ts',
-      operations: ["normalization", "normalizationJob-TJ"],
+      operations: ['normalization', 'normalizationJob-TJ'],
       message: `minor change to decisionAssociee: '${oldDecision.decisionAssociee}' -> '${newDecision.decisionAssociee}'`
     })
   }

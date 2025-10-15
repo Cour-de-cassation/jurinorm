@@ -13,7 +13,7 @@ export function computeLabelStatus(decisionDto: UnIdentifiedDecisionTj): LabelSt
   if (isDecisionInTheFuture(dateCreation, dateDecision)) {
     logger.error({
       path: 'src/tj/batch/normalization/services/computeLabelStatus.ts',
-      operations: ["normalization", "computeLabelStatus-TJ"],
+      operations: ['normalization', 'computeLabelStatus-TJ'],
       message: `Incorrect date, dateDecision must be before dateCreation.. Changing LabelStatus to ${LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE}.`
     })
     return LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE
@@ -22,7 +22,7 @@ export function computeLabelStatus(decisionDto: UnIdentifiedDecisionTj): LabelSt
   if (isDecisionOlderThanMiseEnService(dateDecision)) {
     logger.error({
       path: 'src/tj/batch/normalization/services/computeLabelStatus.ts',
-      operations: ["normalization", "computeLabelStatus-TJ"],
+      operations: ['normalization', 'computeLabelStatus-TJ'],
       message: `Incorrect date, dateDecision must be after mise en service. Changing LabelStatus to ${LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE}.`
     })
     return LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
@@ -31,7 +31,7 @@ export function computeLabelStatus(decisionDto: UnIdentifiedDecisionTj): LabelSt
   if (!isDecisionFromTJTransmissibleToCC(decisionDto.endCaseCode)) {
     logger.error({
       path: 'src/tj/batch/normalization/services/computeLabelStatus.ts',
-      operations: ["normalization", "computeLabelStatus-TJ"],
+      operations: ['normalization', 'computeLabelStatus-TJ'],
       message: `Decision can not be treated by Judilibre because codeDecision is in blocked codeDecision list, changing LabelStatus to ${LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC}.`
     })
     return LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC
@@ -40,7 +40,7 @@ export function computeLabelStatus(decisionDto: UnIdentifiedDecisionTj): LabelSt
   if (!decisionContainsOnlyAuthorizedCharacters(decisionDto.originalText)) {
     logger.error({
       path: 'src/tj/batch/normalization/services/computeLabelStatus.ts',
-      operations: ["normalization", "computeLabelStatus-TJ"],
+      operations: ['normalization', 'computeLabelStatus-TJ'],
       message: `Decision can not be treated by Judilibre because its text contains unknown characters, changing LabelStatus to ${LabelStatus.IGNORED_CARACTERE_INCONNU}.`
     })
     return LabelStatus.IGNORED_CARACTERE_INCONNU

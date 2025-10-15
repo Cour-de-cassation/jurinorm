@@ -7,17 +7,15 @@ import {
   ListObjectsV2Command,
   DeleteObjectCommand
 } from '@aws-sdk/client-s3'
-import { Logger } from '@nestjs/common'
-import { PinoLogger } from 'nestjs-pino'
+import { logger } from '../../../../library/logger'
 import { BucketError } from '../../domain/errors/bucket.error'
 import { DecisionRepository } from './decision.repository'
 import { CollectDto } from '../dto/collect.dto'
 
 export class DecisionS3Repository implements DecisionRepository {
   private s3Client: S3Client
-  private logger: PinoLogger | Logger
 
-  constructor(logger: PinoLogger | Logger, providedS3Client?: S3Client) {
+  constructor(providedS3Client?: S3Client) {
     if (providedS3Client) {
       this.s3Client = providedS3Client
     } else {
@@ -31,14 +29,18 @@ export class DecisionS3Repository implements DecisionRepository {
         }
       })
     }
-    this.logger = logger
   }
 
   async saveDecision(reqParams): Promise<void> {
     try {
       await this.s3Client.send(new PutObjectCommand(reqParams))
     } catch (error) {
-      this.logger.error({ operationName: 'saveDecision', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ['normalization', 'saveDecision'],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }
@@ -67,7 +69,12 @@ export class DecisionS3Repository implements DecisionRepository {
     try {
       await this.s3Client.send(new DeleteObjectCommand(reqParams))
     } catch (error) {
-      this.logger.error({ operationName: 'deleteDecision', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ['normalization', 'deleteDecision'],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }
@@ -124,7 +131,12 @@ export class DecisionS3Repository implements DecisionRepository {
     try {
       await this.s3Client.send(new PutObjectCommand(params))
     } catch (error) {
-      this.logger.error({ operationName: 'putDecision', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ['normalization', 'putDecision'],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }
@@ -140,7 +152,12 @@ export class DecisionS3Repository implements DecisionRepository {
       const stringifiedDecision = await decisionFromS3.Body?.transformToString()
       return JSON.parse(stringifiedDecision)
     } catch (error) {
-      this.logger.error({ operationName: 'getDecisionByFilename', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ['normalization', 'getDecisionByFilename'],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }
@@ -155,7 +172,12 @@ export class DecisionS3Repository implements DecisionRepository {
       const fileFromS3 = await this.s3Client.send(new GetObjectCommand(reqParams))
       return Buffer.from(await fileFromS3.Body?.transformToByteArray())
     } catch (error) {
-      this.logger.error({ operationName: 'getPDFByFilename', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ['normalization', 'getPDFByFilename'],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }
@@ -176,7 +198,12 @@ export class DecisionS3Repository implements DecisionRepository {
     try {
       await this.s3Client.send(new PutObjectCommand(params))
     } catch (error) {
-      this.logger.error({ operationName: 'archiveFailedPDF', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ['normalization', 'archiveFailedPDF'],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }
@@ -196,7 +223,12 @@ export class DecisionS3Repository implements DecisionRepository {
     try {
       await this.s3Client.send(new PutObjectCommand(params))
     } catch (error) {
-      this.logger.error({ operationName: 'archiveSuccessPDF', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ['normalization', 'archiveSuccessPDF'],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }
@@ -217,7 +249,12 @@ export class DecisionS3Repository implements DecisionRepository {
       const decisionListFromS3 = await this.s3Client.send(new ListObjectsV2Command(reqParams))
       return decisionListFromS3.Contents ? decisionListFromS3.Contents : []
     } catch (error) {
-      this.logger.error({ operationName: 'getDecisionList', msg: error.message, data: error })
+      logger.error({
+        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        operations: ['normalization', 'getDecisionList'],
+        message: error.message,
+        stack: error.stack
+      })
       throw new BucketError(error)
     }
   }

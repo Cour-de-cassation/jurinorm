@@ -11,7 +11,7 @@ jest.mock('../logger', () => ({
   }
 }))
 describe('fetchDecisionListFromS3', () => {
-  const repository: DecisionS3Repository = new DecisionS3Repository(new Logger())
+  const repository: DecisionS3Repository = new DecisionS3Repository()
 
   beforeEach(() => {
     jest.resetAllMocks()

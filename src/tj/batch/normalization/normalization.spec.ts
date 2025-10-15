@@ -15,10 +15,6 @@ jest.mock('../../../library/logger', () => ({
   }
 }))
 
-jest.mock('../../../library/env', () => ({
-  S3_BUCKET_NAME_RAW_TJ: "S3_BUCKET_NAME_RAW_TJ" 
-}))
-
 describe('Normalization', () => {
   const mockUtils = new MockUtils()
   const fakeMetadonneesFromS3 = mockUtils.allAttributesMetadonneesDtoMock

@@ -6,9 +6,8 @@ import {
   UnauthorizedException
 } from '@nestjs/common'
 import axios from 'axios'
-import { logger, normalizationFormatLogs } from '../../../../shared/infrastructure/utils/log'
+import { logger } from '../../../../shared/infrastructure/utils/log'
 import { DecisionTj, UnIdentifiedDecisionTj } from 'dbsder-api-types'
-import { LogsFormat } from '../../../../shared/infrastructure/utils/logsFormat.utils'
 
 export class DbSderApiGateway {
   async saveDecision(decisionToSave: UnIdentifiedDecisionTj) {
@@ -29,7 +28,7 @@ export class DbSderApiGateway {
           if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
             logger.error({
               path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ["normalization", "saveDecision-TJ"],
+              operations: ['normalization', 'saveDecision-TJ'],
               message: error.response.data.message,
               stack: error.stack
             })
@@ -39,7 +38,7 @@ export class DbSderApiGateway {
           } else if (error.response.data.statusCode === HttpStatus.UNAUTHORIZED) {
             logger.error({
               path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ["normalization", "saveDecision-TJ"],
+              operations: ['normalization', 'saveDecision-TJ'],
               message: error.response.data.message,
               stack: error.stack
             })
@@ -48,7 +47,7 @@ export class DbSderApiGateway {
           } else if (error.response.data.statusCode === HttpStatus.CONFLICT) {
             logger.error({
               path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ["normalization", "saveDecision-TJ"],
+              operations: ['normalization', 'saveDecision-TJ'],
               message: error.response.data.message,
               stack: error.stack
             })
@@ -56,7 +55,7 @@ export class DbSderApiGateway {
           } else {
             logger.error({
               path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ["normalization", "saveDecision-TJ"],
+              operations: ['normalization', 'saveDecision-TJ'],
               message: error.response.data.message,
               stack: error.stack
             })
@@ -90,7 +89,7 @@ export class DbSderApiGateway {
           if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
             logger.error({
               path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ["normalization", "getDecisionBySourceId-TJ"],
+              operations: ['normalization', 'getDecisionBySourceId-TJ'],
               message: error.response.data.message,
               stack: error.stack
             })
@@ -100,7 +99,7 @@ export class DbSderApiGateway {
           } else if (error.response.data.statusCode === HttpStatus.UNAUTHORIZED) {
             logger.error({
               path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ["normalization", "getDecisionBySourceId-TJ"],
+              operations: ['normalization', 'getDecisionBySourceId-TJ'],
               message: error.response.data.message,
               stack: error.stack
             })
@@ -109,7 +108,7 @@ export class DbSderApiGateway {
           } else if (error.response.data.statusCode === HttpStatus.CONFLICT) {
             logger.error({
               path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ["normalization", "getDecisionBySourceId-TJ"],
+              operations: ['normalization', 'getDecisionBySourceId-TJ'],
               message: error.response.data.message,
               stack: error.stack
             })
@@ -117,7 +116,7 @@ export class DbSderApiGateway {
           } else {
             logger.error({
               path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ["normalization", "getDecisionBySourceId-TJ"],
+              operations: ['normalization', 'getDecisionBySourceId-TJ'],
               message: error.response.data.message,
               stack: error.stack
             })
@@ -147,7 +146,7 @@ export class DbSderApiGateway {
           if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
             logger.error({
               path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ["normalization", "patchDecision-TJ"],
+              operations: ['normalization', 'patchDecision-TJ'],
               message: error.response.data.message,
               stack: error.stack
             })
@@ -157,7 +156,7 @@ export class DbSderApiGateway {
           } else if (error.response.data.statusCode === HttpStatus.UNAUTHORIZED) {
             logger.error({
               path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ["normalization", "patchDecision-TJ"],
+              operations: ['normalization', 'patchDecision-TJ'],
               message: error.response.data.message,
               stack: error.stack
             })
@@ -166,7 +165,7 @@ export class DbSderApiGateway {
           } else if (error.response.data.statusCode === HttpStatus.CONFLICT) {
             logger.error({
               path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ["normalization", "patchDecision-TJ"],
+              operations: ['normalization', 'patchDecision-TJ'],
               message: error.response.data.message,
               stack: error.stack
             })
@@ -174,7 +173,7 @@ export class DbSderApiGateway {
           } else {
             logger.error({
               path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ["normalization", "patchDecision-TJ"],
+              operations: ['normalization', 'patchDecision-TJ'],
               message: error.response.data.message,
               stack: error.stack
             })
