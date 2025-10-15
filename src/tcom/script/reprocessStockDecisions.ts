@@ -20,6 +20,7 @@ async function main() {
     try {
       const done = await reprocessNormalizedDecisionByFilename(decision.filenameSource)
       if (done) {
+        await dbSderApiGateway.deleteDecisionById(decision._id)
         console.log(`Reprocess ${decision._id}`)
         doneCount++
       } else {
