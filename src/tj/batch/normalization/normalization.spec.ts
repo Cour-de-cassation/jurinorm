@@ -11,7 +11,8 @@ jest.mock('../../../library/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),
-    error: jest.fn()
+    error: jest.fn(),
+    warn: jest.fn()
   }
 }))
 
@@ -70,6 +71,11 @@ describe('Normalization', () => {
         .spyOn(fetchDecisionListFromS3, 'fetchDecisionListFromS3')
         .mockImplementationOnce(() => Promise.resolve([decisionName]))
         .mockImplementation(() => Promise.resolve([]))
+
+      jest
+        .spyOn(DecisionS3Repository.prototype, 'getDecisionByFilename')
+        .mockImplementationOnce(() => Promise.resolve(mockDecision))
+
     })
 
     it('returns decision with its metadonnees and decision ID', async () => {

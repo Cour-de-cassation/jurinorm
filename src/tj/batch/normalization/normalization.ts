@@ -191,33 +191,41 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
               message: 'Decision has no change'
             })
           }
-
-          // Step 8: Save decision in normalized bucket
-          await s3Repository.saveDecisionNormalisee(
-            JSON.stringify(decisionFromS3Clone),
-            decisionFilename
-          )
-
+        } else {
+          // Insert new decision:
+          await dbSderApiGateway.saveDecision(decisionToSave)
           logger.info({
             path: 'src/tj/batch/normalization.ts',
             operations: ['normalization', 'normalizationJob-TJ'],
-            message: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
-          })
-
-          // Step 9: Delete decision in raw bucket
-          await s3Repository.deleteDecision(decisionFilename, bucketNameIntegre)
-
-          logger.info({
-            path: 'src/tj/batch/normalization.ts',
-            operations: ['normalization', 'normalizationJob-TJ'],
-            message: 'Successful normalization of ' + decisionFilename
-          })
-
-          listConvertedDecision.push({
-            metadonnees: decisionToSave,
-            decisionNormalisee: cleanedDecision
+            message: `Decision saved in database`
           })
         }
+
+        // Step 8: Save decision in normalized bucket
+        await s3Repository.saveDecisionNormalisee(
+          JSON.stringify(decisionFromS3Clone),
+          decisionFilename
+        )
+
+        logger.info({
+          path: 'src/tj/batch/normalization.ts',
+          operations: ['normalization', 'normalizationJob-TJ'],
+          message: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
+        })
+
+        // Step 9: Delete decision in raw bucket
+        await s3Repository.deleteDecision(decisionFilename, bucketNameIntegre)
+
+        logger.info({
+          path: 'src/tj/batch/normalization.ts',
+          operations: ['normalization', 'normalizationJob-TJ'],
+          message: 'Successful normalization of ' + decisionFilename
+        })
+
+        listConvertedDecision.push({
+          metadonnees: decisionToSave,
+          decisionNormalisee: cleanedDecision
+        })
       } catch (error) {
         logger.error({
           path: 'src/tj/batch/normalization.ts',
