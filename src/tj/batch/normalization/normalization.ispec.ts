@@ -16,7 +16,7 @@ import { DbSderApiGateway } from './repositories/gateways/dbsderApi.gateway'
 import { InfrastructureExpection } from '../../shared/infrastructure/exceptions/infrastructure.exception'
 import { LabelStatus } from 'dbsder-api-types'
 
-jest.mock('../../shared/infrastructure/utils/log', () => ({
+jest.mock('../../../library/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),

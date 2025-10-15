@@ -1,4 +1,3 @@
-import { Logger } from '@nestjs/common'
 import { DecisionS3Repository } from '../../../shared/infrastructure/repositories/decisionS3.repository'
 import { fetchDecisionListFromS3 } from './fetchDecisionListFromS3'
 import { InfrastructureException } from '../../../shared/infrastructure/exceptions/infrastructure.exception'
@@ -11,7 +10,7 @@ jest.mock('../logger', () => ({
   }
 }))
 describe('fetchDecisionListFromS3', () => {
-  const repository: DecisionS3Repository = new DecisionS3Repository(new Logger())
+  const repository: DecisionS3Repository = new DecisionS3Repository()
 
   beforeEach(() => {
     jest.resetAllMocks()

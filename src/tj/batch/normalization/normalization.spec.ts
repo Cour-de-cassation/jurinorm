@@ -7,15 +7,12 @@ import { MockUtils } from '../../shared/infrastructure/utils/mock.utils'
 import { CollectDto } from '../../shared/infrastructure/dto/collect.dto'
 import { DecisionS3Repository } from '../../shared/infrastructure/repositories/decisionS3.repository'
 
-jest.mock('../../shared/infrastructure/utils/log', () => ({
+jest.mock('../../../library/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),
-    error: jest.fn()
-  },
-  normalizationFormatLogs: {
-    operationName: 'normalizationJob',
-    msg: 'Starting normalization job...'
+    error: jest.fn(),
+    warn: jest.fn()
   }
 }))
 
@@ -74,6 +71,10 @@ describe('Normalization', () => {
         .spyOn(fetchDecisionListFromS3, 'fetchDecisionListFromS3')
         .mockImplementationOnce(() => Promise.resolve([decisionName]))
         .mockImplementation(() => Promise.resolve([]))
+
+      jest
+        .spyOn(DecisionS3Repository.prototype, 'getDecisionByFilename')
+        .mockImplementationOnce(() => Promise.resolve(mockDecision))
     })
 
     it('returns decision with its metadonnees and decision ID', async () => {
