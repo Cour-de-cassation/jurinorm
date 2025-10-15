@@ -21,7 +21,7 @@ jest.mock('./repositories/gateways/zoning', () => ({
   fetchZoning: jest.fn()
 }))
 
-jest.mock('../../shared/infrastructure/utils/log', () => ({
+jest.mock('../../../library/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),
