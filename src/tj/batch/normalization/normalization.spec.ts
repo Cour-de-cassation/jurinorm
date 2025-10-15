@@ -1,4 +1,5 @@
 import { Readable } from 'stream'
+import { ObjectId } from 'mongodb'
 import { normalizationJob } from './normalization'
 import { DbSderApiGateway } from './repositories/gateways/dbsderApi.gateway'
 import * as fetchDecisionListFromS3 from './services/fetchDecisionListFromS3'
@@ -6,6 +7,10 @@ import * as transformDecisionIntegreFromWPDToText from './services/transformDeci
 import { MockUtils } from '../../shared/infrastructure/utils/mock.utils'
 import { CollectDto } from '../../shared/infrastructure/dto/collect.dto'
 import { DecisionS3Repository } from '../../shared/infrastructure/repositories/decisionS3.repository'
+
+jest.mock('./repositories/gateways/zoning', () => ({
+  fetchZoning: jest.fn()
+}))
 
 jest.mock('../../../library/logger', () => ({
   logger: {
@@ -51,6 +56,32 @@ describe('Normalization', () => {
       .mockImplementation(jest.fn())
     jest.spyOn(DecisionS3Repository.prototype, 'deleteDecision').mockImplementation(jest.fn())
     jest.spyOn(DbSderApiGateway.prototype, 'saveDecision').mockImplementation(jest.fn())
+    jest.spyOn(DbSderApiGateway.prototype, 'getCodeNac').mockImplementation(() =>
+      Promise.resolve({
+        _id: new ObjectId(),
+        codeNAC: 'TEST_CODE',
+        libelleNAC: 'Test NAC',
+        niveau1NAC: { code: '01', libelle: 'Niveau 1' },
+        niveau2NAC: { code: '02', libelle: 'Niveau 2' },
+        indicateurAffaireSignalee: false,
+        indicateurDebatsPublics: true,
+        indicateurDecisionRenduePubliquement: true,
+        blocOccultationCA: 1,
+        blocOccultationTJ: 1,
+        categoriesToOmitCA: {
+          aucune: [],
+          conforme: [],
+          complément: [],
+          substituant: []
+        },
+        categoriesToOmitTJ: {
+          aucune: [],
+          conforme: [],
+          complément: [],
+          substituant: []
+        }
+      })
+    )
     jest
       .spyOn(DbSderApiGateway.prototype, 'getDecisionBySourceId')
       .mockImplementation(() => Promise.resolve(null))
