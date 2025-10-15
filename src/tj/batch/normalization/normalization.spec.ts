@@ -75,7 +75,6 @@ describe('Normalization', () => {
       jest
         .spyOn(DecisionS3Repository.prototype, 'getDecisionByFilename')
         .mockImplementationOnce(() => Promise.resolve(mockDecision))
-
     })
 
     it('returns decision with its metadonnees and decision ID', async () => {

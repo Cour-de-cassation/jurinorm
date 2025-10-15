@@ -1,4 +1,3 @@
-import { Logger } from '@nestjs/common'
 import { DecisionS3Repository } from '../../../shared/infrastructure/repositories/decisionS3.repository'
 import { fetchDecisionListFromS3 } from './fetchDecisionListFromS3'
 import { InfrastructureException } from '../../../shared/infrastructure/exceptions/infrastructure.exception'
