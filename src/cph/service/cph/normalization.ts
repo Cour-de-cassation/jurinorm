@@ -1,6 +1,6 @@
 import { CodeNac } from 'dbsder-api-types'
 import { getFileByName } from '../../library/bucket'
-import { getCodeNac, sendToSder } from '../../library/DbSder'
+import { getCodeNac, sendToSder } from '../../../library/DbSder'
 import { NotFound, UnexpectedError } from '../../../library/error'
 import { htmlToPlainText } from '../../library/formats/html'
 import { extractAttachments, pdfToHtml } from '../../library/formats/pdf'
