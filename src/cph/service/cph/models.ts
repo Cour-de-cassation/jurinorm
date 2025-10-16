@@ -7,7 +7,7 @@ import {
   SuiviOccultation,
   CodeNac
 } from 'dbsder-api-types'
-import { Id } from '../../library/DbRawFile'
+import { RawFile } from '../../../services/eventSourcing'
 
 export type FileCph = {
   mimetype: string
@@ -152,30 +152,7 @@ export function mapCphDecision(
   }
 }
 
-export type Created = {
-  type: 'created'
-  date: Date
-}
-
-export type Normalized = {
-  type: 'normalized'
-  date: Date
-}
-
-export type Blocked = {
-  type: 'blocked'
-  date: Date
-  reason: string
-}
-
-export type Event = Created | Normalized | Blocked
-
-export type RawCph = {
-  _id: Id
-  path: string
-  events: [Created, ...Event[]]
-  metadatas: PublicationRules
-}
+export type RawCph = RawFile<PublicationRules>
 
 export type NormalizationSucess = {
   rawCph: RawCph

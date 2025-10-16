@@ -1,17 +1,19 @@
 import { isMissingValue, toUnexpectedError, UnexpectedError } from '../../../library/error'
-import { Created, Event, NormalizationResult, RawCph } from './models'
+import { NormalizationResult, RawCph } from './models'
 import {
   countFileInformations,
   findFileInformations,
   mapCursorSync,
   updateFileInformation
-} from '../../library/DbRawFile'
+} from '../../../library/DbRawFile'
 import { normalizeCph, rawCphToNormalize } from './normalization'
 import { logger } from '../../../library/logger'
+import { S3_BUCKET_NAME_PORTALIS } from '../../../library/env'
+import { Created, Event } from '../../../services/eventSourcing'
 
 async function updateEventRawCph(file: RawCph, event: Exclude<Event, Created>) {
   try {
-    const updated = await updateFileInformation<RawCph>(file._id, {
+    const updated = await updateFileInformation<RawCph>(S3_BUCKET_NAME_PORTALIS, file._id, {
       events: [...file.events, event]
     })
     if (!updated) throw new UnexpectedError(`file with id ${file._id} is missing but normalized`)
@@ -40,7 +42,7 @@ async function updateRawCphStatus(result: NormalizationResult): Promise<unknown>
 }
 
 export async function normalizeRawCphFiles(
-  defaultFilter?: Parameters<typeof findFileInformations<RawCph>>[0]
+  defaultFilter?: Parameters<typeof findFileInformations<RawCph>>[1]
 ) {
   logger.info({
     path: 'src/service/cph/handler.ts',
@@ -48,8 +50,8 @@ export async function normalizeRawCphFiles(
     message: `Starting CPH normalization`
   })
   const _rawCphToNormalize = defaultFilter ?? rawCphToNormalize
-  const rawCphCursor = await findFileInformations<RawCph>(_rawCphToNormalize)
-  const rawCphLength = await countFileInformations<RawCph>(_rawCphToNormalize)
+  const rawCphCursor = await findFileInformations<RawCph>(S3_BUCKET_NAME_PORTALIS, _rawCphToNormalize)
+  const rawCphLength = await countFileInformations<RawCph>(S3_BUCKET_NAME_PORTALIS, _rawCphToNormalize)
   logger.info({
     path: 'src/service/cph/handler.ts',
     operations: ['normalization', 'normalizeRawCphFiles'],
