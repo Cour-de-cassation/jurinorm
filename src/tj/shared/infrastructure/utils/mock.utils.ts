@@ -2,7 +2,8 @@ import {
   UnIdentifiedDecisionTj,
   LabelStatus,
   SuiviOccultation,
-  TypePartieExhaustive
+  TypePartieExhaustive,
+  PublishStatus
 } from 'dbsder-api-types'
 
 export class MockUtils {
@@ -111,7 +112,7 @@ export class MockUtils {
     registerNumber: this.allAttributesMetadonneesDtoMock.numeroRegistre,
     sourceId: this.uniqueDecisionIdHash,
     sourceName: 'juritj',
-    blocOccultation: 0,
+    blocOccultation: 1,
     NPCode: this.allAttributesMetadonneesDtoMock.codeNature,
     NACCode: this.allAttributesMetadonneesDtoMock.codeNAC,
     filenameSource: this.allAttributesMetadonneesDtoMock.filenameSource,
@@ -137,6 +138,8 @@ export class MockUtils {
     idDecisionTJ: this.uniqueDecisionId,
     __v: 0,
     decatt: [],
-    publication: []
+    publication: [],
+    publishStatus: PublishStatus.TOBEPUBLISHED,
+    originalTextZoning: undefined
   }
 }

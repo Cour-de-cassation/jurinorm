@@ -1,27 +1,21 @@
 import { UnIdentifiedDecisionTj, SuiviOccultation } from 'dbsder-api-types'
-import { logger, normalizationFormatLogs } from '../../../shared/infrastructure/utils/log'
-import { LogsFormat } from '../../../shared/infrastructure/utils/logsFormat.utils'
+import { logger } from '../../../../library/logger'
 
 export function computeOccultation(
   recommandationOccultation: string,
   occultationSupplementaire: string,
   debatPublic: boolean
 ): UnIdentifiedDecisionTj['occultation'] {
-  const formatLogs: LogsFormat = {
-    ...normalizationFormatLogs,
-    operationName: 'computeOccultation',
-    msg: 'Starting computeOccultation...'
-  }
-
   const additionalTerms =
     recommandationOccultation === SuiviOccultation.SUBSTITUANT ||
     recommandationOccultation === SuiviOccultation.COMPLEMENT
       ? occultationSupplementaire
       : ''
 
-  logger.info({
-    ...formatLogs,
-    msg: `additionalTerms computed`
+  logger.error({
+    path: 'src/tj/batch/normalization/services/computeOccultation.ts',
+    operations: ['normalization', 'computeOccultation-TJ'],
+    message: `additionalTerms computed`
   })
 
   const motivationOccultation =
@@ -30,9 +24,10 @@ export function computeOccultation(
       ? false
       : !debatPublic
 
-  logger.info({
-    ...formatLogs,
-    msg: `motivationOccultation computed ${motivationOccultation}`
+  logger.error({
+    path: 'src/tj/batch/normalization/services/computeOccultation.ts',
+    operations: ['normalization', 'computeOccultation-TJ'],
+    message: `motivationOccultation computed ${motivationOccultation}`
   })
 
   return {

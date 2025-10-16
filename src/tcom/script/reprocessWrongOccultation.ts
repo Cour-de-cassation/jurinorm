@@ -62,7 +62,7 @@ async function reprocessDecision(
     }
   })
   const reqParams = {
-    Bucket: process.env.S3_BUCKET_NAME_NORMALIZED,
+    Bucket: process.env.S3_BUCKET_NAME_NORMALIZED_TCOM,
     Key: decision.filenameSource
   }
   try {

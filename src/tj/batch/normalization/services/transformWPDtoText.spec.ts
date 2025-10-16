@@ -1,14 +1,10 @@
 import { getConversionCommandPath } from './transformWPDtoText'
 
-jest.mock('../../../shared/infrastructure/utils/log', () => ({
+jest.mock('../../../../library/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),
     error: jest.fn()
-  },
-  normalizationFormatLogs: {
-    operationName: 'normalizationJob',
-    msg: 'Starting normalization job...'
   }
 }))
 

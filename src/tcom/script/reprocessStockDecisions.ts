@@ -9,24 +9,21 @@ import {
 } from '@aws-sdk/client-s3'
 import { DbSderApiGateway } from '../batch/normalization/repositories/gateways/dbsderApi.gateway'
 
-let batchSize: number
 const dbSderApiGateway = new DbSderApiGateway()
 
-async function main(count: string) {
-  batchSize = parseInt(count, 10)
-
-  if (isNaN(batchSize)) {
-    batchSize = 100
-  }
-
+async function main() {
   const decisions = await dbSderApiGateway.listDecisions('ignored_controleRequis')
+  const history = []
   let decision = await decisions.next()
   let doneCount = 0
+  let count = 0
 
   while (decision) {
+    count++
     try {
       const done = await reprocessNormalizedDecisionByFilename(decision.filenameSource)
       if (done) {
+        await dbSderApiGateway.deleteDecisionById(decision._id)
         console.log(`Reprocess ${decision._id}`)
         doneCount++
       } else {
@@ -35,11 +32,15 @@ async function main(count: string) {
     } catch (_ignore) {
       console.log(`Skip ${decision._id}`)
     }
-
+    history.push(decision._id)
     decision = await decisions.next()
+    if (decision && decision._id && history.indexOf(decision._id) !== -1) {
+      console.log(`Skip ${decision._id} because next() is looping`)
+      break
+    }
   }
 
-  console.log(`Reprocessed ${doneCount} decisions`)
+  console.log(`Reprocessed ${doneCount}/${count} decisions`)
 }
 
 async function reprocessNormalizedDecisionByFilename(filename: string): Promise<boolean> {
@@ -53,7 +54,7 @@ async function reprocessNormalizedDecisionByFilename(filename: string): Promise<
     }
   })
   const reqParams = {
-    Bucket: process.env.S3_BUCKET_NAME_NORMALIZED,
+    Bucket: process.env.S3_BUCKET_NAME_NORMALIZED_TCOM,
     Key: filename
   }
   try {
@@ -71,7 +72,7 @@ async function reprocessNormalizedDecisionByFilename(filename: string): Promise<
       // 3. copy to raw:
       const reqCopyParams = {
         Body: JSON.stringify(objectDecision),
-        Bucket: process.env.S3_BUCKET_NAME_RAW,
+        Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM,
         Key: filename
       }
       await s3Client.send(new PutObjectCommand(reqCopyParams))
@@ -81,14 +82,9 @@ async function reprocessNormalizedDecisionByFilename(filename: string): Promise<
     } else {
       throw new Error('Decision incomplete or ID mismatch')
     }
-  } catch (error) {
-    console.log({
-      operationName: 'reprocessNormalizedDecisionByFilename',
-      msg: error.message,
-      data: error
-    })
+  } catch (_ignore) {
     return false
   }
 }
 
-main(process.argv[2])
+main()

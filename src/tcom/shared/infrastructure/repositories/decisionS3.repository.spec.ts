@@ -2,7 +2,6 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock'
 import 'aws-sdk-client-mock-jest'
 import { DecisionS3Repository } from './decisionS3.repository'
-import { Logger } from '@nestjs/common'
 import { BucketError } from '../../domain/errors/bucket.error'
 
 describe('DecisionS3Repository', () => {
@@ -11,7 +10,7 @@ describe('DecisionS3Repository', () => {
 
   beforeEach(() => {
     mockS3.reset()
-    repository = new DecisionS3Repository(new Logger())
+    repository = new DecisionS3Repository()
   })
 
   describe('saveDecision', () => {

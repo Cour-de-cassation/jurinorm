@@ -6,7 +6,7 @@ import {
   hasNoBreak
 } from './services/removeOrReplaceUnnecessaryCharacters'
 import { ConvertedDecisionWithMetadonneesDto } from '../../shared/infrastructure/dto/convertedDecisionWithMetadonnees.dto'
-import { logger } from '../../shared/infrastructure/utils/log'
+import { logger } from '../../../library/logger'
 import { fetchDecisionListFromS3 } from './services/fetchDecisionListFromS3'
 import { DecisionS3Repository } from '../../shared/infrastructure/repositories/decisionS3.repository'
 import { mapDecisionNormaliseeToDecisionDto } from './infrastructure/decision.dto'
@@ -21,6 +21,8 @@ import { Category, LabelStatus, PublishStatus, UnIdentifiedDecisionTj } from 'db
 
 import { strict as assert } from 'assert'
 import { annotateDecision } from '../../../library/nlp/annotation'
+import { computeRulesDecisionTj } from './services/rulesTj'
+import { fetchZoning } from './repositories/gateways/zoning'
 
 interface Diff {
   major: Array<string>
@@ -31,10 +33,14 @@ const dbSderApiGateway = new DbSderApiGateway()
 const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TJ
 
 export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonneesDto[]> {
-  logger.info({ ...normalizationFormatLogs, msg: 'Starting TJ normalization' })
+  logger.info({
+    path: 'src/tj/batch/normalization.ts',
+    operations: ['normalization', 'normalizationJob-TJ'],
+    message: 'Starting TJ normalization'
+  })
 
   const listConvertedDecision: ConvertedDecisionWithMetadonneesDto[] = []
-  const s3Repository = new DecisionS3Repository(logger)
+  const s3Repository = new DecisionS3Repository()
 
   let decisionList = await fetchDecisionListFromS3(s3Repository)
 
@@ -51,14 +57,19 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
         const decisionFromS3Clone = JSON.parse(JSON.stringify(decision))
 
         logger.info({
-          ...normalizationFormatLogs,
-          msg: 'Starting normalization of ' + decisionFilename
+          path: 'src/tj/batch/normalization.ts',
+          operations: ['normalization', 'normalizationJob-TJ'],
+          message: 'Starting normalization of ' + decisionFilename
         })
 
         // Step 3: Generating unique id for decision
         const _id = generateUniqueId(decision.metadonnees)
         normalizationFormatLogs.data = { decisionId: _id }
-        logger.info({ ...normalizationFormatLogs, msg: 'Generated unique id for decision' })
+        logger.info({
+          path: 'src/tj/batch/normalization.ts',
+          operations: ['normalization', 'normalizationJob-TJ'],
+          message: 'Generated unique id for decision'
+        })
 
         // Step 4: Transforming decision from WPD to text
         const decisionContent = await transformDecisionIntegreFromWPDToText(
@@ -66,8 +77,9 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
         )
 
         logger.info({
-          ...normalizationFormatLogs,
-          msg: 'Decision conversion finished. Removing unnecessary characters'
+          path: 'src/tj/batch/normalization.ts',
+          operations: ['normalization', 'normalizationJob-TJ'],
+          message: 'Decision conversion finished. Removing unnecessary characters'
         })
 
         // Step 5: Removing or replace (by other thing) unnecessary characters from decision
@@ -84,6 +96,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
           decision.metadonnees,
           decisionFilename
         )
+
         decisionToSave.labelStatus = computeLabelStatus(decisionToSave)
         decisionToSave.occultation = computeOccultation(
           decision.metadonnees.recommandationOccultation,
@@ -91,83 +104,113 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
           decision.metadonnees.debatPublic
         )
 
-        const annotationResult = await annotateDecision(decisionToSave)
+        /* Normalisation part that was done on dbsder-api */
+        /* ---------------------------------------- */
 
-        decisionToSave.labelTreatments = annotationResult.treatments
+        const originalTextZoning = await fetchZoning({
+          arret_id: decisionToSave.sourceId,
+          source: 'tj',
+          text: decisionToSave.originalText
+        })
+
+        const decisionWithRules = await computeRulesDecisionTj(decisionToSave, originalTextZoning)
+
+        decisionWithRules.originalTextZoning = originalTextZoning
+
+        decisionWithRules.publishStatus =
+          decisionWithRules.labelStatus !== LabelStatus.TOBETREATED
+            ? PublishStatus.BLOCKED
+            : PublishStatus.TOBEPUBLISHED
+
+        /* ---------------------------------------- */
+
+        const annotationResult = await annotateDecision(decisionWithRules)
+
+        decisionWithRules.labelTreatments = annotationResult.treatments
 
         if (
           !!annotationResult.additionalTermsToAnnotate ||
           !!annotationResult.additionalTermsToUnAnnotate
         ) {
-          decisionToSave.occultation = {
-            ...decisionToSave.occultation,
+          decisionWithRules.occultation = {
+            ...decisionWithRules.occultation,
             additionalTermsToAnnotate: annotationResult.additionalTermsToAnnotate,
             additionalTermsToUnAnnotate: annotationResult.additionalTermsToUnAnnotate
           }
         }
 
         if (!!annotationResult.newCategoriesToOmit) {
-          decisionToSave.occultation = {
-            ...decisionToSave.occultation,
+          decisionWithRules.occultation = {
+            ...decisionWithRules.occultation,
             categoriesToOmit: annotationResult.newCategoriesToOmit
           }
         }
 
         // Step 7: check diff (major/minor) and upsert/patch accordingly
         logger.info({
-          ...normalizationFormatLogs,
-          msg: `Check diff with previous version of decision ${decisionToSave.sourceId} (if any)...`
+          path: 'src/tj/batch/normalization.ts',
+          operations: ['normalization', 'normalizationJob-TJ'],
+          message: `Check diff with previous version of decision ${decisionWithRules.sourceId} (if any)...`
         })
+
         const previousVersion = await dbSderApiGateway.getDecisionBySourceId(
-          decisionToSave.sourceId
+          decisionWithRules.sourceId
         )
         if (previousVersion !== null) {
-          const diff = computeDiff(previousVersion, decisionToSave)
+          const diff = computeDiff(previousVersion, decisionWithRules)
           if (diff.major && diff.major.length > 0) {
             // Update decision with major changes:
-            await dbSderApiGateway.saveDecision(decisionToSave)
+            await dbSderApiGateway.saveDecision(decisionWithRules)
             logger.info({
-              ...normalizationFormatLogs,
-              msg: `Decision updated in database with major changes: ${JSON.stringify(diff.major)}`
+              path: 'src/tj/batch/normalization.ts',
+              operations: ['normalization', 'normalizationJob-TJ'],
+              message: `Decision updated in database with major changes: ${JSON.stringify(
+                diff.major
+              )}`
             })
           } else if (diff.minor && diff.minor.length > 0) {
             // Patch decision with minor changes:
-            delete decisionToSave.__v
-            delete decisionToSave.sourceId
-            delete decisionToSave.sourceName
-            delete decisionToSave.public
-            delete decisionToSave.debatPublic
-            delete decisionToSave.occultation
-            delete decisionToSave.originalText
+            delete decisionWithRules.__v
+            delete decisionWithRules.sourceId
+            delete decisionWithRules.sourceName
+            delete decisionWithRules.public
+            delete decisionWithRules.debatPublic
+            delete decisionWithRules.occultation
+            delete decisionWithRules.originalText
             if (
-              decisionToSave.labelStatus === LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE ||
-              decisionToSave.labelStatus === LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
+              decisionWithRules.labelStatus === LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE ||
+              decisionWithRules.labelStatus === LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
             ) {
-              decisionToSave.publishStatus = PublishStatus.BLOCKED
+              decisionWithRules.publishStatus = PublishStatus.BLOCKED
               // Bad dateDecision? Throw a warning... @TODO ODDJDashboard
               logger.warn({
-                ...normalizationFormatLogs,
-                msg: `Decision has a bad updated date: ${decisionToSave.dateDecision}`
+                path: 'src/tj/batch/normalization.ts',
+                operations: ['normalization', 'normalizationJob-TJ'],
+                message: `Decision has a bad updated date: ${decisionWithRules.dateDecision}`
               })
-            } else if (decisionToSave.labelStatus === LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC) {
-              decisionToSave.publishStatus = PublishStatus.BLOCKED
+            } else if (
+              decisionWithRules.labelStatus === LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC
+            ) {
+              decisionWithRules.publishStatus = PublishStatus.BLOCKED
               // Bad endCaseCode? Throw a warning... @TODO ODDJDashboard
               logger.warn({
-                ...normalizationFormatLogs,
-                msg: `Decision has a codeDecision in blocked codeDecision list: ${decisionToSave.endCaseCode}`
+                path: 'src/tj/batch/normalization.ts',
+                operations: ['normalization', 'normalizationJob-TJ'],
+                message: `Decision has a codeDecision in blocked codeDecision list: ${decisionWithRules.endCaseCode}`
               })
-            } else if (decisionToSave.labelStatus === LabelStatus.IGNORED_CARACTERE_INCONNU) {
-              decisionToSave.publishStatus = PublishStatus.BLOCKED
+            } else if (decisionWithRules.labelStatus === LabelStatus.IGNORED_CARACTERE_INCONNU) {
+              decisionWithRules.publishStatus = PublishStatus.BLOCKED
               // Unknown characters? Throw a warning... @TODO ODDJDashboard
               logger.warn({
-                ...normalizationFormatLogs,
-                msg: `Decision contains unknown characters`
+                path: 'src/tj/batch/normalization.ts',
+                operations: ['normalization', 'normalizationJob-TJ'],
+                message: `Decision contains unknown characters`
               })
             } else {
               if (previousVersion.labelStatus === LabelStatus.EXPORTED) {
-                decisionToSave.labelStatus = LabelStatus.DONE
+                decisionWithRules.labelStatus = LabelStatus.DONE
               } else {
-                decisionToSave.labelStatus = previousVersion.labelStatus
+                decisionWithRules.labelStatus = previousVersion.labelStatus
               }
               if (
                 previousVersion.publishStatus === PublishStatus.SUCCESS ||
@@ -175,24 +218,35 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
                 previousVersion.publishStatus === PublishStatus.FAILURE_PREPARING ||
                 previousVersion.publishStatus === PublishStatus.FAILURE_INDEXING
               ) {
-                decisionToSave.publishStatus = PublishStatus.TOBEPUBLISHED
+                decisionWithRules.publishStatus = PublishStatus.TOBEPUBLISHED
               } else {
-                decisionToSave.publishStatus = previousVersion.publishStatus
+                decisionWithRules.publishStatus = previousVersion.publishStatus
               }
             }
-            await dbSderApiGateway.patchDecision(previousVersion._id, decisionToSave)
+            await dbSderApiGateway.patchDecision(previousVersion._id, decisionWithRules)
             logger.info({
-              ...normalizationFormatLogs,
-              msg: `Decision patched in database with minor changes: ${JSON.stringify(diff.minor)}`
+              path: 'src/tj/batch/normalization.ts',
+              operations: ['normalization', 'normalizationJob-TJ'],
+              message: `Decision patched in database with minor changes: ${JSON.stringify(
+                diff.minor
+              )}`
             })
           } else {
             // No change? Throw a warning and do nothing... @TODO ODDJDashboard
-            logger.warn({ ...normalizationFormatLogs, msg: 'Decision has no change' })
+            logger.warn({
+              path: 'src/tj/batch/normalization.ts',
+              operations: ['normalization', 'normalizationJob-TJ'],
+              message: 'Decision has no change'
+            })
           }
         } else {
           // Insert new decision:
-          await dbSderApiGateway.saveDecision(decisionToSave)
-          logger.info({ ...normalizationFormatLogs, msg: `Decision saved in database` })
+          await dbSderApiGateway.saveDecision(decisionWithRules)
+          logger.info({
+            path: 'src/tj/batch/normalization.ts',
+            operations: ['normalization', 'normalizationJob-TJ'],
+            message: `Decision saved in database`
+          })
         }
 
         // Step 8: Save decision in normalized bucket
@@ -202,30 +256,30 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
         )
 
         logger.info({
-          ...normalizationFormatLogs,
-          msg: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
+          path: 'src/tj/batch/normalization.ts',
+          operations: ['normalization', 'normalizationJob-TJ'],
+          message: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
         })
 
         // Step 9: Delete decision in raw bucket
         await s3Repository.deleteDecision(decisionFilename, bucketNameIntegre)
 
         logger.info({
-          ...normalizationFormatLogs,
-          msg: 'Successful normalization of ' + decisionFilename
+          path: 'src/tj/batch/normalization.ts',
+          operations: ['normalization', 'normalizationJob-TJ'],
+          message: 'Successful normalization of ' + decisionFilename
         })
+
         listConvertedDecision.push({
-          metadonnees: decisionToSave,
+          metadonnees: decisionWithRules,
           decisionNormalisee: cleanedDecision
         })
       } catch (error) {
         logger.error({
-          ...normalizationFormatLogs,
-          msg: error.message,
-          data: error
-        })
-        logger.error({
-          ...normalizationFormatLogs,
-          msg: 'Failed to normalize the decision ' + decisionFilename + '.'
+          path: 'src/tj/batch/normalization.ts',
+          operations: ['normalization', 'normalizationJob-TJ'],
+          message: 'Failed to normalize the decision ' + decisionFilename + '.',
+          stack: error.stack
         })
         continue
       }
@@ -235,7 +289,11 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
   }
 
   if (listConvertedDecision.length == 0) {
-    logger.info({ ...normalizationFormatLogs, msg: 'No decision to normalize.' })
+    logger.info({
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: 'No decision to normalize.'
+    })
     return []
   }
 
@@ -256,15 +314,17 @@ function computeDiff(
   if (newDecision.public !== oldDecision.public) {
     diff.major.push('public')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `major change to public: '${oldDecision.public}' -> '${newDecision.public}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `major change to public: '${oldDecision.public}' -> '${newDecision.public}'`
     })
   }
   if (newDecision.debatPublic !== oldDecision.debatPublic) {
     diff.major.push('debatPublic')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `major change to debatPublic: '${oldDecision.debatPublic}' -> '${newDecision.debatPublic}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `major change to debatPublic: '${oldDecision.debatPublic}' -> '${newDecision.debatPublic}'`
     })
   }
   if (newDecision.originalText !== oldDecision.originalText) {
@@ -292,29 +352,33 @@ function computeDiff(
   if (newDecision.dateDecision !== oldDecision.dateDecision) {
     diff.minor.push('dateDecision')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to dateDecision: '${oldDecision.dateDecision}' -> '${newDecision.dateDecision}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to dateDecision: '${oldDecision.dateDecision}' -> '${newDecision.dateDecision}'`
     })
   }
   if (newDecision.jurisdictionId !== oldDecision.jurisdictionId) {
     diff.minor.push('jurisdictionId')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to jurisdictionId: '${oldDecision.jurisdictionId}' -> '${newDecision.jurisdictionId}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to jurisdictionId: '${oldDecision.jurisdictionId}' -> '${newDecision.jurisdictionId}'`
     })
   }
   if (newDecision.jurisdictionName !== oldDecision.jurisdictionName) {
     diff.minor.push('jurisdictionName')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to jurisdictionName: '${oldDecision.jurisdictionName}' -> '${newDecision.jurisdictionName}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to jurisdictionName: '${oldDecision.jurisdictionName}' -> '${newDecision.jurisdictionName}'`
     })
   }
   if (newDecision.numeroRoleGeneral !== oldDecision.numeroRoleGeneral) {
     diff.minor.push('numeroRoleGeneral')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to numeroRoleGeneral: '${oldDecision.numeroRoleGeneral}' -> '${newDecision.numeroRoleGeneral}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to numeroRoleGeneral: '${oldDecision.numeroRoleGeneral}' -> '${newDecision.numeroRoleGeneral}'`
     })
   }
   if (
@@ -336,127 +400,145 @@ function computeDiff(
   if (newDecision.selection !== oldDecision.selection) {
     diff.minor.push('selection')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to selection: '${oldDecision.selection}' -> '${newDecision.selection}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to selection: '${oldDecision.selection}' -> '${newDecision.selection}'`
     })
   }
   if (newDecision.libelleEndCaseCode !== oldDecision.libelleEndCaseCode) {
     diff.minor.push('libelleEndCaseCode')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to libelleEndCaseCode: '${oldDecision.libelleEndCaseCode}' -> '${newDecision.libelleEndCaseCode}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to libelleEndCaseCode: '${oldDecision.libelleEndCaseCode}' -> '${newDecision.libelleEndCaseCode}'`
     })
   }
   if (newDecision.registerNumber !== oldDecision.registerNumber) {
     diff.minor.push('registerNumber')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to registerNumber: '${oldDecision.registerNumber}' -> '${newDecision.registerNumber}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to registerNumber: '${oldDecision.registerNumber}' -> '${newDecision.registerNumber}'`
     })
   }
   if (newDecision.jurisdictionCode !== oldDecision.jurisdictionCode) {
     diff.minor.push('jurisdictionCode')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to jurisdictionCode: '${oldDecision.jurisdictionCode}' -> '${newDecision.jurisdictionCode}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to jurisdictionCode: '${oldDecision.jurisdictionCode}' -> '${newDecision.jurisdictionCode}'`
     })
   }
   if (newDecision.solution !== oldDecision.solution) {
     diff.minor.push('solution')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to solution: '${oldDecision.solution}' -> '${newDecision.solution}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to solution: '${oldDecision.solution}' -> '${newDecision.solution}'`
     })
   }
   if (newDecision.formation !== oldDecision.formation) {
     diff.minor.push('formation')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to formation: '${oldDecision.formation}' -> '${newDecision.formation}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to formation: '${oldDecision.formation}' -> '${newDecision.formation}'`
     })
   }
   if (newDecision.libelleNAC !== oldDecision.libelleNAC) {
     diff.minor.push('libelleNAC')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to libelleNAC: '${oldDecision.libelleNAC}' -> '${newDecision.libelleNAC}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to libelleNAC: '${oldDecision.libelleNAC}' -> '${newDecision.libelleNAC}'`
     })
   }
   if (newDecision.NPCode !== oldDecision.NPCode) {
     diff.minor.push('NPCode')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to NPCode: '${oldDecision.NPCode}' -> '${newDecision.NPCode}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to NPCode: '${oldDecision.NPCode}' -> '${newDecision.NPCode}'`
     })
   }
   if (newDecision.libelleNatureParticuliere !== oldDecision.libelleNatureParticuliere) {
     diff.minor.push('libelleNatureParticuliere')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to libelleNatureParticuliere: '${oldDecision.libelleNatureParticuliere}' -> '${newDecision.libelleNatureParticuliere}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to libelleNatureParticuliere: '${oldDecision.libelleNatureParticuliere}' -> '${newDecision.libelleNatureParticuliere}'`
     })
   }
   if (newDecision.codeService !== oldDecision.codeService) {
     diff.minor.push('codeService')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to codeService: '${oldDecision.codeService}' -> '${newDecision.codeService}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to codeService: '${oldDecision.codeService}' -> '${newDecision.codeService}'`
     })
   }
   if (newDecision.libelleService !== oldDecision.libelleService) {
     diff.minor.push('libelleService')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to libelleService: '${oldDecision.libelleService}' -> '${newDecision.libelleService}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to libelleService: '${oldDecision.libelleService}' -> '${newDecision.libelleService}'`
     })
   }
   if (newDecision.indicateurQPC !== oldDecision.indicateurQPC) {
     diff.minor.push('indicateurQPC')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to indicateurQPC: '${oldDecision.indicateurQPC}' -> '${newDecision.indicateurQPC}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to indicateurQPC: '${oldDecision.indicateurQPC}' -> '${newDecision.indicateurQPC}'`
     })
   }
   if (newDecision.matiereDeterminee !== oldDecision.matiereDeterminee) {
     diff.minor.push('matiereDeterminee')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to matiereDeterminee: '${oldDecision.matiereDeterminee}' -> '${newDecision.matiereDeterminee}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to matiereDeterminee: '${oldDecision.matiereDeterminee}' -> '${newDecision.matiereDeterminee}'`
     })
   }
   if (newDecision.pourvoiCourDeCassation !== oldDecision.pourvoiCourDeCassation) {
     diff.minor.push('pourvoiCourDeCassation')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to pourvoiCourDeCassation: '${oldDecision.pourvoiCourDeCassation}' -> '${newDecision.pourvoiCourDeCassation}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to pourvoiCourDeCassation: '${oldDecision.pourvoiCourDeCassation}' -> '${newDecision.pourvoiCourDeCassation}'`
     })
   }
   if (newDecision.pourvoiLocal !== oldDecision.pourvoiLocal) {
     diff.minor.push('pourvoiLocal')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to pourvoiLocal: '${oldDecision.pourvoiLocal}' -> '${newDecision.pourvoiLocal}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to pourvoiLocal: '${oldDecision.pourvoiLocal}' -> '${newDecision.pourvoiLocal}'`
     })
   }
   if (newDecision.sommaire !== oldDecision.sommaire) {
     diff.minor.push('sommaire')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to sommaire: '${oldDecision.sommaire}' -> '${newDecision.sommaire}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to sommaire: '${oldDecision.sommaire}' -> '${newDecision.sommaire}'`
     })
   }
   if (newDecision.president !== oldDecision.president) {
     diff.minor.push('president')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to president: '${oldDecision.president}' -> '${newDecision.president}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to president: '${oldDecision.president}' -> '${newDecision.president}'`
     })
   }
   if (newDecision.decisionAssociee !== oldDecision.decisionAssociee) {
     diff.minor.push('decisionAssociee')
     logger.info({
-      ...normalizationFormatLogs,
-      msg: `minor change to decisionAssociee: '${oldDecision.decisionAssociee}' -> '${newDecision.decisionAssociee}'`
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `minor change to decisionAssociee: '${oldDecision.decisionAssociee}' -> '${newDecision.decisionAssociee}'`
     })
   }
   diff.major.sort()

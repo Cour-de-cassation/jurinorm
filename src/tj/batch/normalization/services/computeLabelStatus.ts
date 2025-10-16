@@ -1,9 +1,7 @@
 import { UnIdentifiedDecisionTj, LabelStatus } from 'dbsder-api-types'
-import { logger } from '../../../shared/infrastructure/utils/log'
-import { LogsFormat } from '../../../shared/infrastructure/utils/logsFormat.utils'
-import { normalizationFormatLogs } from '../../../shared/infrastructure/utils/log'
 import { codeDecisionListNotTransmissibleToCC } from '../infrastructure/codeDecisionList'
 import { authorizedCharacters } from '../infrastructure/authorizedCharactersList'
+import { logger } from '../../../../library/logger'
 
 const dateMiseEnService = getMiseEnServiceDate()
 const authorizedCharactersdSet = new Set(authorizedCharacters)
@@ -12,40 +10,38 @@ export function computeLabelStatus(decisionDto: UnIdentifiedDecisionTj): LabelSt
   const dateCreation = new Date(decisionDto.dateCreation)
   const dateDecision = new Date(decisionDto.dateDecision)
 
-  const formatLogs: LogsFormat = {
-    ...normalizationFormatLogs,
-    operationName: 'computeLabelStatus',
-    msg: 'Starting computeLabelStatus...'
-  }
-
   if (isDecisionInTheFuture(dateCreation, dateDecision)) {
     logger.error({
-      ...formatLogs,
-      msg: `Incorrect date, dateDecision must be before dateCreation.. Changing LabelStatus to ${LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE}.`
+      path: 'src/tj/batch/normalization/services/computeLabelStatus.ts',
+      operations: ['normalization', 'computeLabelStatus-TJ'],
+      message: `Incorrect date, dateDecision must be before dateCreation.. Changing LabelStatus to ${LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE}.`
     })
     return LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE
   }
 
   if (isDecisionOlderThanMiseEnService(dateDecision)) {
     logger.error({
-      ...formatLogs,
-      msg: `Incorrect date, dateDecision must be after mise en service. Changing LabelStatus to ${LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE}.`
+      path: 'src/tj/batch/normalization/services/computeLabelStatus.ts',
+      operations: ['normalization', 'computeLabelStatus-TJ'],
+      message: `Incorrect date, dateDecision must be after mise en service. Changing LabelStatus to ${LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE}.`
     })
     return LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
   }
 
   if (!isDecisionFromTJTransmissibleToCC(decisionDto.endCaseCode)) {
     logger.error({
-      ...formatLogs,
-      msg: `Decision can not be treated by Judilibre because codeDecision is in blocked codeDecision list, changing LabelStatus to ${LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC}.`
+      path: 'src/tj/batch/normalization/services/computeLabelStatus.ts',
+      operations: ['normalization', 'computeLabelStatus-TJ'],
+      message: `Decision can not be treated by Judilibre because codeDecision is in blocked codeDecision list, changing LabelStatus to ${LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC}.`
     })
     return LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC
   }
 
   if (!decisionContainsOnlyAuthorizedCharacters(decisionDto.originalText)) {
     logger.error({
-      ...formatLogs,
-      msg: `Decision can not be treated by Judilibre because its text contains unknown characters, changing LabelStatus to ${LabelStatus.IGNORED_CARACTERE_INCONNU}.`
+      path: 'src/tj/batch/normalization/services/computeLabelStatus.ts',
+      operations: ['normalization', 'computeLabelStatus-TJ'],
+      message: `Decision can not be treated by Judilibre because its text contains unknown characters, changing LabelStatus to ${LabelStatus.IGNORED_CARACTERE_INCONNU}.`
     })
     return LabelStatus.IGNORED_CARACTERE_INCONNU
   }

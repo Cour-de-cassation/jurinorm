@@ -1,8 +1,6 @@
 import { DecisionS3Repository } from '../../../shared/infrastructure/repositories/decisionS3.repository'
 import { InfrastructureExpection } from '../../../shared/infrastructure/exceptions/infrastructure.exception'
-import { logger, normalizationFormatLogs } from '../../../shared/infrastructure/utils/log'
-import { LogsFormat } from '../../../shared/infrastructure/utils/logsFormat.utils'
-import { HttpStatus } from '@nestjs/common'
+import { logger } from '../../../../library/logger'
 
 const MAX_NUMBER_OF_DECISIONS_TO_RETRIEVE = 2
 
@@ -17,13 +15,12 @@ export async function fetchDecisionListFromS3(
     )
     return rawDecisionList.splice(0, rawDecisionList.length).map((decision) => decision.Key)
   } catch (error) {
-    const formatLogs: LogsFormat = {
-      ...normalizationFormatLogs,
-      operationName: 'fetchDecisionListFromS3',
-      msg: error.message,
-      statusCode: HttpStatus.SERVICE_UNAVAILABLE
-    }
-    logger.error(formatLogs)
+    logger.error({
+      path: 'src/tj/batch/normalization/services/fetchDecisionListFromS3.ts',
+      operations: ['normalization', 'fetchDecisionListFromS3-TJ'],
+      message: error.message,
+      stack: error.stack
+    })
     throw new InfrastructureExpection(error.message)
   }
 }

@@ -1,9 +1,8 @@
-import { Logger } from '@nestjs/common'
 import { DecisionS3Repository } from '../../../shared/infrastructure/repositories/decisionS3.repository'
 import { fetchDecisionListFromS3 } from './fetchDecisionListFromS3'
 import { InfrastructureExpection } from '../../../shared/infrastructure/exceptions/infrastructure.exception'
 
-jest.mock('../../../shared/infrastructure/utils/log', () => ({
+jest.mock('../../../../library/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),
@@ -11,7 +10,7 @@ jest.mock('../../../shared/infrastructure/utils/log', () => ({
   }
 }))
 describe('fetchDecisionListFromS3', () => {
-  const repository: DecisionS3Repository = new DecisionS3Repository(new Logger())
+  const repository: DecisionS3Repository = new DecisionS3Repository()
 
   beforeEach(() => {
     jest.resetAllMocks()
