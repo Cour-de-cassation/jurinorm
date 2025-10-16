@@ -352,7 +352,7 @@ export class DbSderApiGateway {
 
   async deleteDecisionById(id: string) {
     const urlToCall = process.env.DBSDER_API_URL + `/decisions/${id}`
-  
+
     const result = await axios
       .delete(urlToCall, {
         headers: {
@@ -403,7 +403,7 @@ export class DbSderApiGateway {
         }
         throw new ServiceUnavailableException('DbSder API is unavailable')
       })
-  
+
     return result.data
   }
 }
