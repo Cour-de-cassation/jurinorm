@@ -154,19 +154,6 @@ export function mapCphDecision(
 
 export type RawCph = RawFile<PublicationRules>
 
-export type NormalizationSucess = {
-  rawCph: RawCph
-  status: 'success'
-}
-
-export type NormalizationError = {
-  rawCph: RawCph
-  status: 'error'
-  error: Error
-}
-
-export type NormalizationResult = NormalizationError | NormalizationSucess
-
 const utcDateSchema = zod.iso.date().transform((val) => new Date(val))
 export const parseStatusQuery = zod.object({
   from_date: utcDateSchema,
