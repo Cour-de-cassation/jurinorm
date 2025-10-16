@@ -13,13 +13,17 @@ const dbSderApiGateway = new DbSderApiGateway()
 
 async function main() {
   const decisions = await dbSderApiGateway.listDecisions('ignored_controleRequis')
+  const history = []
   let decision = await decisions.next()
   let doneCount = 0
+  let count = 0
 
   while (decision) {
+    count++
     try {
       const done = await reprocessNormalizedDecisionByFilename(decision.filenameSource)
       if (done) {
+        await dbSderApiGateway.deleteDecisionById(decision._id)
         console.log(`Reprocess ${decision._id}`)
         doneCount++
       } else {
@@ -28,11 +32,15 @@ async function main() {
     } catch (_ignore) {
       console.log(`Skip ${decision._id}`)
     }
-
+    history.push(decision._id)
     decision = await decisions.next()
+    if (decision && decision._id && history.indexOf(decision._id) !== -1) {
+      console.log(`Skip ${decision._id} because next() is looping`)
+      break
+    }
   }
 
-  console.log(`Reprocessed ${doneCount} decisions`)
+  console.log(`Reprocessed ${doneCount}/${count} decisions`)
 }
 
 async function reprocessNormalizedDecisionByFilename(filename: string): Promise<boolean> {
