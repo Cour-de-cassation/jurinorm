@@ -1,11 +1,15 @@
 import {
   Category,
+  Entity,
   hasSourceNameTcom,
   hasSourceNameTj,
   LabelTreatments,
   UnIdentifiedDecision
 } from 'dbsder-api-types'
 import { NerParameters, NerResponse, postNer } from './ner'
+import { isCurrentZoning } from 'dbsder-api-types/dist/typeGuards/common.zod'
+import { NotSupported } from '../error'
+import { ZoneRange } from 'dbsder-api-types/dist/types/common'
 
 export type AnnotationResult = {
   treatments: LabelTreatments
@@ -57,11 +61,55 @@ export async function annotateDecision(decision: UnIdentifiedDecision): Promise<
     result.additionalTermsToUnAnnotate = nerResult.additionalTermsToUnAnnotate
   }
 
-  if (hasSourceNameTj(decision) || hasSourceNameTcom(decision)) {
-    if (decision.occultation.motivationOccultation) {
-      //occult motivation
+  if (
+    (hasSourceNameTj(decision) || hasSourceNameTcom(decision)) &&
+    decision.occultation.motivationOccultation
+  ) {
+    if (isCurrentZoning(decision.originalTextZoning)) {
+      const motivation = decision.originalTextZoning.zones.motivations
+      const exposeDuLitige = decision.originalTextZoning.zones['expose du litige']
+
+      if ((motivation || exposeDuLitige) && motivation.length <= 1) {
+        const motifsAnnotations: Entity[] = []
+
+        if (motivation) {
+          const annotation = extractZoneEntity(motivation[0], decision.originalText, 'motivation')
+          if (annotation) {
+            motifsAnnotations.push(annotation)
+          }
+        }
+
+        if (exposeDuLitige) {
+          const annotation = extractZoneEntity(
+            exposeDuLitige,
+            decision.originalText,
+            'exposeDuLitige'
+          )
+          if (annotation) {
+            motifsAnnotations.push(annotation)
+          }
+        }
+
+        result.treatments = [
+          ...result.treatments,
+          {
+            order: 2,
+            source: 'supplementaryAnnotations',
+            annotations: removeOverlappingEntities([...nerResult.entities, ...motifsAnnotations]),
+            treatmentDate: new Date().toISOString()
+          }
+        ]
+      } else {
+        throw new Error(
+          'Cannot annotate motifs with multiple motivations/expose du litige zones or without zones'
+        )
+      }
+    } else {
+      //log
+      throw new NotSupported('originalTextZoning', decision.originalTextZoning)
     }
   }
+
   return result
 }
 
@@ -115,4 +163,56 @@ function computeNewCategoriesToOmit(
   }
 
   return newCategoriesToOmit
+}
+
+function extractZoneEntity(range: ZoneRange, originalText: string, source: string): Entity | null {
+  const rawZoneText = originalText.substring(range.start, range.end)
+  const trimmedStart = rawZoneText.replace(/^[\s\r\n]+/, '')
+  const removedCharactersAtStart = rawZoneText.length - trimmedStart.length
+  const finalTrimmedText = trimmedStart.replace(/[\s\r\n]+$/, '')
+
+  if (!finalTrimmedText) return null
+
+  return {
+    category: Category.MOTIVATIONS,
+    score: 1,
+    entityId: `${Category.MOTIVATIONS}_${finalTrimmedText.length}`,
+    source,
+    text: finalTrimmedText,
+    start: range.start + removedCharactersAtStart,
+    end: range.start + removedCharactersAtStart + finalTrimmedText.length
+  }
+}
+
+function removeOverlappingEntities(entities: Entity[]): Entity[] {
+  const sortedEntities = entities.sort((entityA, entityB) => entityA.start - entityB.start)
+  const cleanedEntities = []
+  cleanedEntities.push(sortedEntities[0])
+  for (let i = 1, l = sortedEntities.length; i < l; i++) {
+    const entityA = cleanedEntities[cleanedEntities.length - 1]
+    const entityB = sortedEntities[i]
+    if (areOverlapping(entityA, entityB)) {
+      if (entityA.text.length < entityB.text.length) {
+        cleanedEntities.pop()
+        cleanedEntities.push(entityB)
+      }
+    } else {
+      cleanedEntities.push(entityB)
+    }
+  }
+  return cleanedEntities
+}
+
+function areOverlapping(entity1: Entity, entity2: Entity) {
+  const startA = entity1.start
+  const endA = entity1.start + entity1.text.length
+  const startB = entity2.start
+  const endB = entity2.start + entity2.text.length
+
+  return (
+    (startA < startB && endA > startB) ||
+    (startA <= startB && endA >= endB) ||
+    (startB < startA && endB > startA) ||
+    (startB <= startA && endB >= endA)
+  )
 }
