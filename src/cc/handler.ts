@@ -6,7 +6,7 @@ import {
   mapCursorSync,
 } from '../library/DbRawFile'
 import { logger } from '../library/logger'
-import { S3_BUCKET_NAME_PORTALIS } from '../library/env'
+import { COLLECTION_JURINET_RAW } from '../library/env'
 import { updateRawFileStatus, NormalizationResult } from '../services/eventSourcing'
 import { sendToSder } from '../library/DbSder'
 
@@ -47,8 +47,8 @@ export async function normalizeRawCcFiles(
     message: `Starting CC normalization`
   })
   const _rawCcToNormalize = defaultFilter ?? rawCcToNormalize
-  const rawCcCursor = await findFileInformations<RawCc>(S3_BUCKET_NAME_PORTALIS, _rawCcToNormalize)
-  const rawCcLength = await countFileInformations<RawCc>(S3_BUCKET_NAME_PORTALIS, _rawCcToNormalize)
+  const rawCcCursor = await findFileInformations<RawCc>(COLLECTION_JURINET_RAW, _rawCcToNormalize)
+  const rawCcLength = await countFileInformations<RawCc>(COLLECTION_JURINET_RAW, _rawCcToNormalize)
   logger.info({
     path: 'src/cc/handler.ts',
     operations: ['normalization', 'normalizeRawCcFiles'],
@@ -81,7 +81,7 @@ export async function normalizeRawCcFiles(
     }
   })
 
-  await Promise.all(results.map(_ => updateRawFileStatus(S3_BUCKET_NAME_PORTALIS, _)))
+  await Promise.all(results.map(_ => updateRawFileStatus(COLLECTION_JURINET_RAW, _)))
 
   logger.info({
     path: 'src/cc/handler.ts',

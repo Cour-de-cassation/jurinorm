@@ -16,6 +16,8 @@ if (process.env.S3_BUCKET_NAME_PORTALIS == null)
 if (process.env.S3_REGION == null) throw new MissingValue('process.env.S3_REGION')
 if (process.env.S3_SECRET_KEY == null) throw new MissingValue('process.env.S3_SECRET_KEY')
 if (process.env.S3_URL == null) throw new MissingValue('process.env.S3_URL')
+if (process.env.COLLECTION_JURINET_RAW == null) throw new MissingValue('process.env.COLLECTION_JURINET_RAW')
+if (process.env.COLLECTION_JURICA_RAW == null) throw new MissingValue('process.env.COLLECTION_JURICA_RAW')
 
 export const {
   DBSDER_API_KEY,
@@ -28,5 +30,7 @@ export const {
   S3_BUCKET_NAME_PORTALIS,
   S3_REGION,
   S3_SECRET_KEY,
-  S3_URL
+  S3_URL,
+  COLLECTION_JURINET_RAW,
+  COLLECTION_JURICA_RAW
 } = process.env

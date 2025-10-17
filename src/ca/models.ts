@@ -1,15 +1,15 @@
 import { UnIdentifiedDecisionCc } from "dbsder-api-types";
 import { RawFile } from "../services/eventSourcing";
 
-export type RawCc = RawFile<UnIdentifiedDecisionCc>
+export type RawCa = RawFile<UnIdentifiedDecisionCc>
 
 export type NormalizationSucess = {
-  rawCph: RawCc
+  rawCph: RawCa
   status: 'success'
 }
 
 export type NormalizationError = {
-  rawCph: RawCc
+  rawCph: RawCa
   status: 'error'
   error: Error
 }
