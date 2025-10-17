@@ -30,8 +30,6 @@ export async function annotateDecision(decision: UnIdentifiedDecision): Promise<
 
   const nerResult = await postNer(nerParameters)
 
-  console.log(`nerResult: ${JSON.stringify(nerResult)}`)
-
   const result: AnnotationResult = {
     treatments: [
       {
