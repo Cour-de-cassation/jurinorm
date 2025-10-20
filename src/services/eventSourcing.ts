@@ -2,7 +2,6 @@ import { isMissingValue, toUnexpectedError, UnexpectedError } from '../library/e
 import { Id, updateFileInformation } from '../library/DbRawFile'
 import { logger } from '../library/logger'
 
-
 export type Created = {
   type: 'created'
   date: Date
@@ -44,9 +43,15 @@ export type NormalizationError<T extends RawFile<unknown>> = {
   error: Error
 }
 
-export type NormalizationResult<T extends RawFile<unknown>> = NormalizationError<T> | NormalizationSucess<T>
+export type NormalizationResult<T extends RawFile<unknown>> =
+  | NormalizationError<T>
+  | NormalizationSucess<T>
 
-async function updateEventRawFile<T>(collection: string, file: RawFile<T>, event: Exclude<Event, Created>) {
+async function updateEventRawFile<T>(
+  collection: string,
+  file: RawFile<T>,
+  event: Exclude<Event, Created>
+) {
   try {
     const updated = await updateFileInformation<typeof file>(collection, file._id, {
       events: [...file.events, event]
@@ -59,12 +64,19 @@ async function updateEventRawFile<T>(collection: string, file: RawFile<T>, event
   }
 }
 
-export async function updateRawFileStatus<T extends RawFile<unknown>>(collection: string, result: NormalizationResult<T>): Promise<unknown> {
+export async function updateRawFileStatus<T extends RawFile<unknown>>(
+  collection: string,
+  result: NormalizationResult<T>
+): Promise<unknown> {
   const date = new Date()
   try {
     if (result.status === 'success')
       return updateEventRawFile(collection, result.rawFile, { type: 'normalized', date })
-    return updateEventRawFile(collection, result.rawFile, { type: 'blocked', date, reason: `${result.error}` })
+    return updateEventRawFile(collection, result.rawFile, {
+      type: 'blocked',
+      date,
+      reason: `${result.error}`
+    })
   } catch (err) {
     const error = toUnexpectedError(err)
     logger.error({

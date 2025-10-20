@@ -1,6 +1,5 @@
-
-import { disconnect } from "../../library/DbRawFile";
-import { normalizeRawCphFiles } from "../service/cph/handler";
+import { disconnect } from '../../library/DbRawFile'
+import { normalizeRawCphFiles } from '../service/cph/handler'
 
 normalizeRawCphFiles().finally(() => {
   setTimeout(disconnect, 3000)

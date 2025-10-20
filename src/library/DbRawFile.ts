@@ -19,7 +19,7 @@ async function dbConnect() {
 }
 
 export async function updateFileInformation<T extends Document>(
-  collection: string, 
+  collection: string,
   id: ObjectId,
   file: Partial<WithoutId<T>>
 ): Promise<WithId<T> | null> {

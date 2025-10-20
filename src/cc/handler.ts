@@ -1,10 +1,6 @@
 import { toUnexpectedError } from '../library/error'
 import { RawCc } from './models'
-import {
-  countFileInformations,
-  findFileInformations,
-  mapCursorSync,
-} from '../library/DbRawFile'
+import { countFileInformations, findFileInformations, mapCursorSync } from '../library/DbRawFile'
 import { logger } from '../library/logger'
 import { COLLECTION_JURINET_RAW } from '../library/env'
 import { updateRawFileStatus, NormalizationResult } from '../services/eventSourcing'
@@ -81,13 +77,14 @@ export async function normalizeRawCcFiles(
     }
   })
 
-  await Promise.all(results.map(_ => updateRawFileStatus(COLLECTION_JURINET_RAW, _)))
+  await Promise.all(results.map((_) => updateRawFileStatus(COLLECTION_JURINET_RAW, _)))
 
   logger.info({
     path: 'src/cc/handler.ts',
     operations: ['normalization', 'normalizeRawCcFiles'],
-    message: `Decisions successfully normalized: ${results.filter(({ status }) => status === 'success').length
-      }`
+    message: `Decisions successfully normalized: ${
+      results.filter(({ status }) => status === 'success').length
+    }`
   })
   logger.info({
     path: 'src/cc/handler.ts',
