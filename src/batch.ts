@@ -5,6 +5,8 @@ import { NORMALIZATION_BATCH_SCHEDULE } from './library/env'
 // import { normalizeRawCphFiles } from './cph/service/cph/handler'
 import { normalizationJob as normalizeRawTcomFiles } from './tcom/batch/normalization/normalization'
 import { normalizationJob as normalizeRawTjFiles } from './tj/batch/normalization/normalization'
+import { normalizeRawCcFiles } from './cc/handler'
+import { normalizeRawCaFiles } from './ca/handler'
 
 const CRON_EVERY_HOUR = '0 * * * *'
 
@@ -16,6 +18,8 @@ async function startNormalization() {
         path: 'src/batch.ts',
         operations: ['normalization', 'startNormalization']
       })
+      await normalizeRawCcFiles()
+      await normalizeRawCaFiles()
       await normalizeRawTjFiles()
       await normalizeRawTcomFiles()
       // await normalizeRawCphFiles()
