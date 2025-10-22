@@ -1,9 +1,11 @@
 import axios from 'axios'
-import { CodeNac, UnIdentifiedDecisionCph } from 'dbsder-api-types'
-import { UnexpectedError } from '../../library/error'
-import { DBSDER_API_KEY, DBSDER_API_URL } from '../../library/env'
+import { CodeNac, UnIdentifiedDecision, UnIdentifiedDecisionDila } from 'dbsder-api-types'
+import { UnexpectedError } from './error'
+import { DBSDER_API_KEY, DBSDER_API_URL } from './env'
 
-export async function sendToSder(decision: UnIdentifiedDecisionCph) {
+type UnIdentifiedDecisionSupported = Exclude<UnIdentifiedDecision, UnIdentifiedDecisionDila>
+
+export async function sendToSder(decision: UnIdentifiedDecisionSupported) {
   const route = `${DBSDER_API_URL}/decisions`
   try {
     const response = await axios.put(

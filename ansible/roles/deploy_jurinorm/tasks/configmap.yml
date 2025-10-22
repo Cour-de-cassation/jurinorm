@@ -31,4 +31,6 @@
         S3_BUCKET_NAME_PORTALIS: "{{ s3_bucket_name_portalis }}"
         NODE_ENV: "{{ node_env }}"
         NORMALIZATION_BATCH_SCHEDULE: "{{ normalization_batch_schedule }}"
+        COLLECTION_JURICA_RAW: "{{ collection_jurica_raw }}"
+        COLLECTION_JURINET_RAW: "{{ collection_jurinet_raw }}"
 ...

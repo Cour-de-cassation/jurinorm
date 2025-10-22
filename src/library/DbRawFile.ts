@@ -8,7 +8,7 @@ import {
   WithoutId,
   UpdateFilter
 } from 'mongodb'
-import { FILE_DB_URL, S3_BUCKET_NAME_PORTALIS } from '../../library/env'
+import { FILE_DB_URL } from './env'
 
 const client = new MongoClient(FILE_DB_URL)
 
@@ -19,11 +19,12 @@ async function dbConnect() {
 }
 
 export async function updateFileInformation<T extends Document>(
+  collection: string,
   id: ObjectId,
   file: Partial<WithoutId<T>>
 ): Promise<WithId<T> | null> {
   const db = await dbConnect()
-  return await db.collection<T>(S3_BUCKET_NAME_PORTALIS).findOneAndUpdate(
+  return await db.collection<T>(collection).findOneAndUpdate(
     { _id: id } as Filter<T>, // MongoType seems dumb with inferId type
     { $set: file } as UpdateFilter<T>, // MongoType seems dumb with inferId type
     { returnDocument: 'after' }
@@ -31,17 +32,19 @@ export async function updateFileInformation<T extends Document>(
 }
 
 export async function countFileInformations<T extends Document>(
+  collection: string,
   filters: Filter<T>
 ): Promise<number> {
   const db = await dbConnect()
-  return db.collection<T>(S3_BUCKET_NAME_PORTALIS).countDocuments(filters)
+  return db.collection<T>(collection).countDocuments(filters)
 }
 
 export async function findFileInformations<T extends Document>(
+  collection: string,
   filters: Filter<T>
 ): Promise<FindCursor<WithId<T>>> {
   const db = await dbConnect()
-  return db.collection<T>(S3_BUCKET_NAME_PORTALIS).find(filters)
+  return db.collection<T>(collection).find(filters)
 }
 
 export async function disconnect() {
