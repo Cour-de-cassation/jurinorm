@@ -4,7 +4,8 @@ import {
   hasSourceNameTcom,
   hasSourceNameTj,
   LabelTreatments,
-  UnIdentifiedDecision
+  UnIdentifiedDecision,
+  UnIdentifiedDecisionDila
 } from 'dbsder-api-types'
 import { NerParameters, NerResponse, postNer } from './ner'
 import { isCurrentZoning } from 'dbsder-api-types/dist/typeGuards/common.zod'
@@ -18,7 +19,9 @@ export type AnnotationResult = {
   additionalTermsToUnAnnotate?: string[]
 }
 
-export async function annotateDecision(decision: UnIdentifiedDecision): Promise<AnnotationResult> {
+export async function annotateDecision<
+  T extends Exclude<UnIdentifiedDecision, UnIdentifiedDecisionDila>
+>(decision: T): Promise<T> {
   const nerParameters: NerParameters = {
     sourceId: decision.sourceId,
     sourceName: decision.sourceName,
@@ -28,23 +31,23 @@ export async function annotateDecision(decision: UnIdentifiedDecision): Promise<
     additionalTerms: decision.occultation.additionalTerms
   }
 
+  const annotatedDecision = decision
+
   const nerResult = await postNer(nerParameters)
 
-  const result: AnnotationResult = {
-    treatments: [
-      {
-        annotations: nerResult.entities,
-        source: 'NLP',
-        order: 1,
-        checklist: nerResult.checklist,
-        version: nerResult.versions,
-        treatmentDate: new Date().toISOString()
-      }
-    ]
-  }
+  annotatedDecision.labelTreatments = [
+    {
+      annotations: nerResult.entities,
+      source: 'NLP',
+      order: 1,
+      checklist: nerResult.checklist,
+      version: nerResult.versions,
+      treatmentDate: new Date().toISOString()
+    }
+  ]
 
   if (nerResult.newCategoriesToAnnotate || nerResult.newCategoriesToUnAnnotate) {
-    result.newCategoriesToOmit = computeNewCategoriesToOmit(
+    annotatedDecision.occultation.categoriesToOmit = computeNewCategoriesToOmit(
       decision.occultation.categoriesToOmit,
       nerResult.newCategoriesToAnnotate,
       nerResult.newCategoriesToUnAnnotate
@@ -55,8 +58,9 @@ export async function annotateDecision(decision: UnIdentifiedDecision): Promise<
     nerResult.additionalTermsToAnnotate?.length ||
     nerResult.additionalTermsToUnAnnotate?.length
   ) {
-    result.additionalTermsToAnnotate = nerResult.additionalTermsToAnnotate
-    result.additionalTermsToUnAnnotate = nerResult.additionalTermsToUnAnnotate
+    annotatedDecision.occultation.additionalTermsToAnnotate = nerResult.additionalTermsToAnnotate
+    annotatedDecision.occultation.additionalTermsToUnAnnotate =
+      nerResult.additionalTermsToUnAnnotate
   }
 
   if (
@@ -88,8 +92,8 @@ export async function annotateDecision(decision: UnIdentifiedDecision): Promise<
           }
         }
 
-        result.treatments = [
-          ...result.treatments,
+        annotatedDecision.labelTreatments = [
+          ...annotatedDecision.labelTreatments,
           {
             order: 2,
             source: 'supplementaryAnnotations',
@@ -103,12 +107,11 @@ export async function annotateDecision(decision: UnIdentifiedDecision): Promise<
         )
       }
     } else {
-      //log
       throw new NotSupported('originalTextZoning', decision.originalTextZoning)
     }
   }
 
-  return result
+  return annotatedDecision
 }
 
 function computeCategories(categoriesToOmit: Category[]): Category[] {

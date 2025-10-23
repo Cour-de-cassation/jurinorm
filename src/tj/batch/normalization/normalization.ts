@@ -17,7 +17,7 @@ import { DbSderApiGateway } from './repositories/gateways/dbsderApi.gateway'
 import { normalizationFormatLogs } from '../../shared/infrastructure/utils/log'
 import { computeOccultation } from './services/computeOccultation'
 
-import { Category, LabelStatus, PublishStatus, UnIdentifiedDecisionTj } from 'dbsder-api-types'
+import { LabelStatus, PublishStatus, UnIdentifiedDecisionTj } from 'dbsder-api-types'
 
 import { strict as assert } from 'assert'
 import { annotateDecision } from '../../../library/nlp/annotation'
@@ -124,43 +124,23 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
 
         /* ---------------------------------------- */
 
-        const annotationResult = await annotateDecision(decisionWithRules)
-
-        decisionWithRules.labelTreatments = annotationResult.treatments
-
-        if (
-          !!annotationResult.additionalTermsToAnnotate ||
-          !!annotationResult.additionalTermsToUnAnnotate
-        ) {
-          decisionWithRules.occultation = {
-            ...decisionWithRules.occultation,
-            additionalTermsToAnnotate: annotationResult.additionalTermsToAnnotate,
-            additionalTermsToUnAnnotate: annotationResult.additionalTermsToUnAnnotate
-          }
-        }
-
-        if (!!annotationResult.newCategoriesToOmit) {
-          decisionWithRules.occultation = {
-            ...decisionWithRules.occultation,
-            categoriesToOmit: annotationResult.newCategoriesToOmit
-          }
-        }
+        const annotatedDecision = await annotateDecision(decisionWithRules)
 
         // Step 7: check diff (major/minor) and upsert/patch accordingly
         logger.info({
           path: 'src/tj/batch/normalization.ts',
           operations: ['normalization', 'normalizationJob-TJ'],
-          message: `Check diff with previous version of decision ${decisionWithRules.sourceId} (if any)...`
+          message: `Check diff with previous version of decision ${annotatedDecision.sourceId} (if any)...`
         })
 
         const previousVersion = await dbSderApiGateway.getDecisionBySourceId(
-          decisionWithRules.sourceId
+          annotatedDecision.sourceId
         )
         if (previousVersion !== null) {
-          const diff = computeDiff(previousVersion, decisionWithRules)
+          const diff = computeDiff(previousVersion, annotatedDecision)
           if (diff.major && diff.major.length > 0) {
             // Update decision with major changes:
-            await dbSderApiGateway.saveDecision(decisionWithRules)
+            await dbSderApiGateway.saveDecision(annotatedDecision)
             logger.info({
               path: 'src/tj/batch/normalization.ts',
               operations: ['normalization', 'normalizationJob-TJ'],
@@ -170,36 +150,36 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
             })
           } else if (diff.minor && diff.minor.length > 0) {
             // Patch decision with minor changes:
-            delete decisionWithRules.__v
-            delete decisionWithRules.sourceId
-            delete decisionWithRules.sourceName
-            delete decisionWithRules.public
-            delete decisionWithRules.debatPublic
-            delete decisionWithRules.occultation
-            delete decisionWithRules.originalText
+            delete annotatedDecision.__v
+            delete annotatedDecision.sourceId
+            delete annotatedDecision.sourceName
+            delete annotatedDecision.public
+            delete annotatedDecision.debatPublic
+            delete annotatedDecision.occultation
+            delete annotatedDecision.originalText
             if (
-              decisionWithRules.labelStatus === LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE ||
-              decisionWithRules.labelStatus === LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
+              annotatedDecision.labelStatus === LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE ||
+              annotatedDecision.labelStatus === LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
             ) {
-              decisionWithRules.publishStatus = PublishStatus.BLOCKED
+              annotatedDecision.publishStatus = PublishStatus.BLOCKED
               // Bad dateDecision? Throw a warning... @TODO ODDJDashboard
               logger.warn({
                 path: 'src/tj/batch/normalization.ts',
                 operations: ['normalization', 'normalizationJob-TJ'],
-                message: `Decision has a bad updated date: ${decisionWithRules.dateDecision}`
+                message: `Decision has a bad updated date: ${annotatedDecision.dateDecision}`
               })
             } else if (
-              decisionWithRules.labelStatus === LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC
+              annotatedDecision.labelStatus === LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC
             ) {
-              decisionWithRules.publishStatus = PublishStatus.BLOCKED
+              annotatedDecision.publishStatus = PublishStatus.BLOCKED
               // Bad endCaseCode? Throw a warning... @TODO ODDJDashboard
               logger.warn({
                 path: 'src/tj/batch/normalization.ts',
                 operations: ['normalization', 'normalizationJob-TJ'],
-                message: `Decision has a codeDecision in blocked codeDecision list: ${decisionWithRules.endCaseCode}`
+                message: `Decision has a codeDecision in blocked codeDecision list: ${annotatedDecision.endCaseCode}`
               })
-            } else if (decisionWithRules.labelStatus === LabelStatus.IGNORED_CARACTERE_INCONNU) {
-              decisionWithRules.publishStatus = PublishStatus.BLOCKED
+            } else if (annotatedDecision.labelStatus === LabelStatus.IGNORED_CARACTERE_INCONNU) {
+              annotatedDecision.publishStatus = PublishStatus.BLOCKED
               // Unknown characters? Throw a warning... @TODO ODDJDashboard
               logger.warn({
                 path: 'src/tj/batch/normalization.ts',
@@ -208,9 +188,9 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
               })
             } else {
               if (previousVersion.labelStatus === LabelStatus.EXPORTED) {
-                decisionWithRules.labelStatus = LabelStatus.DONE
+                annotatedDecision.labelStatus = LabelStatus.DONE
               } else {
-                decisionWithRules.labelStatus = previousVersion.labelStatus
+                annotatedDecision.labelStatus = previousVersion.labelStatus
               }
               if (
                 previousVersion.publishStatus === PublishStatus.SUCCESS ||
@@ -218,12 +198,12 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
                 previousVersion.publishStatus === PublishStatus.FAILURE_PREPARING ||
                 previousVersion.publishStatus === PublishStatus.FAILURE_INDEXING
               ) {
-                decisionWithRules.publishStatus = PublishStatus.TOBEPUBLISHED
+                annotatedDecision.publishStatus = PublishStatus.TOBEPUBLISHED
               } else {
-                decisionWithRules.publishStatus = previousVersion.publishStatus
+                annotatedDecision.publishStatus = previousVersion.publishStatus
               }
             }
-            await dbSderApiGateway.patchDecision(previousVersion._id, decisionWithRules)
+            await dbSderApiGateway.patchDecision(previousVersion._id, annotatedDecision)
             logger.info({
               path: 'src/tj/batch/normalization.ts',
               operations: ['normalization', 'normalizationJob-TJ'],
@@ -241,7 +221,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
           }
         } else {
           // Insert new decision:
-          await dbSderApiGateway.saveDecision(decisionWithRules)
+          await dbSderApiGateway.saveDecision(annotatedDecision)
           logger.info({
             path: 'src/tj/batch/normalization.ts',
             operations: ['normalization', 'normalizationJob-TJ'],
@@ -271,7 +251,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
         })
 
         listConvertedDecision.push({
-          metadonnees: decisionWithRules,
+          metadonnees: annotatedDecision,
           decisionNormalisee: cleanedDecision
         })
       } catch (error) {
