@@ -26,9 +26,9 @@ plaintext_source: "nlp"
 s3_bucket_name_portalis: "portalis-collect-test-bucket"
 
 ## CA
-collection_jurica_raw: "jurica-ca-raw"
+collection_jurica_raw: "ca-raw"
 
 ## CC
-collection_jurinet_raw: "jurinet-cc-raw"
+collection_jurinet_raw: "cc-raw"
 
 node_env: "production"
