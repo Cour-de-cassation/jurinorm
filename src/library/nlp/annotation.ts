@@ -11,6 +11,7 @@ import { NerParameters, NerResponse, postNer } from './ner'
 import { isCurrentZoning } from 'dbsder-api-types/dist/typeGuards/common.zod'
 import { NotSupported } from '../error'
 import { ZoneRange } from 'dbsder-api-types/dist/types/common'
+import { logger } from '../logger'
 
 export type AnnotationResult = {
   treatments: LabelTreatments
@@ -32,6 +33,12 @@ export async function annotateDecision<
   }
 
   const annotatedDecision = decision
+
+  logger.info({
+    path: 'src/library/annotation.ts',
+    operations: ['other', 'annotation'],
+    message: `Sending ${decision.sourceName} ${decision.sourceId} to /ner endpoint`
+  })
 
   const nerResult = await postNer(nerParameters)
 
