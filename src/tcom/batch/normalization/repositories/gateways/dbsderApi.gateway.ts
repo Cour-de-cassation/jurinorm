@@ -147,7 +147,7 @@ export class DbSderApiGateway {
 
     const result = await axios
       .get<Response>(urlToCall, {
-        params: { sourceName: 'juritcom', status, startDate, endDate, nextCursor },
+        params: { sourceName: 'juritcom', status, startDate, endDate, searchAfter: nextCursor },
         headers: {
           'x-api-key': process.env.DBSDER_OTHER_API_KEY
         }
