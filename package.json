@@ -14,7 +14,8 @@
     "start:watch": "nodemon --config nodemon.json",
     "test": "jest && npm run test:integration",
     "test:cov": "jest --coverage",
-    "test:integration": "jest --config ./jest-integration.json --runInBand"
+    "test:integration": "jest --config ./jest-integration.json --runInBand",
+    "scripts:tj:reprocessStockDecisions": "docker compose run --rm jurinorm-batch npx ts-node /home/node/src/tcom/script/reprocessStockDecisions.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.890.0",
