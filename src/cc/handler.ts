@@ -5,6 +5,7 @@ import { logger } from '../library/logger'
 import { COLLECTION_JURINET_RAW } from '../library/env'
 import { updateRawFileStatus, NormalizationResult } from '../services/eventSourcing'
 import { sendToSder } from '../library/DbSder'
+import { annotateDecision } from '../library/nlp/annotation'
 
 export const rawCcToNormalize = {
   // Ne contient pas normalized:
@@ -31,7 +32,9 @@ export const rawCcToNormalize = {
 export async function normalizeCc(rawCc: RawCc): Promise<unknown> {
   const ccDecision = rawCc.metadatas
 
-  return sendToSder(ccDecision)
+  const annotatedDecision = await annotateDecision(ccDecision)
+
+  return sendToSder(annotatedDecision)
 }
 
 export async function normalizeRawCcFiles(
