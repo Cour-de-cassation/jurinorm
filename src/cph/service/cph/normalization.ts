@@ -7,6 +7,7 @@ import { extractAttachments, pdfToHtml } from '../../library/formats/pdf'
 import { parseXml } from '../../library/formats/xml'
 import { logger } from '../../../library/logger'
 import { CphMetadatas, mapCphDecision, parseCphMetadatas, RawCph } from './models'
+import { annotateDecision } from '../../../library/nlp/annotation'
 
 function searchXml(attachments: { name: string; data: Buffer }[]): unknown {
   const attachment = attachments.reduce<CphMetadatas | undefined>((acc, attachment, index) => {
@@ -89,7 +90,9 @@ export async function normalizeCph(rawCph: RawCph): Promise<unknown> {
     rawCph.path
   )
 
-  return sendToSder(cphDecision)
+  const annotatedDecision = await annotateDecision(cphDecision)
+
+  return sendToSder(annotatedDecision)
 }
 
 export const rawCphToNormalize = {

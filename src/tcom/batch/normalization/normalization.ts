@@ -22,6 +22,7 @@ import { LabelStatus, PublishStatus, UnIdentifiedDecisionTcom } from 'dbsder-api
 import { logger } from '../../../library/logger'
 
 import { strict as assert } from 'assert'
+import { annotateDecision } from '../../../library/nlp/annotation'
 
 const dbSderApiGateway = new DbSderApiGateway()
 const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TCOM
@@ -170,15 +171,17 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
             ? PublishStatus.BLOCKED
             : PublishStatus.TOBEPUBLISHED
 
+        const annotatedDecision = await annotateDecision(decisionToSave)
+
         // Step 7: check diff (major/minor) and upsert/patch accordingly
         const previousVersion = await dbSderApiGateway.getDecisionBySourceId(
-          decisionToSave.sourceId
+          annotatedDecision.sourceId
         )
         if (previousVersion !== null) {
-          const diff = computeDiff(previousVersion, decisionToSave)
+          const diff = computeDiff(previousVersion, annotatedDecision)
           if (diff.major && diff.major.length > 0) {
             // Update decision with major changes:
-            await dbSderApiGateway.saveDecision(decisionToSave)
+            await dbSderApiGateway.saveDecision(annotatedDecision)
             logger.info({
               operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
               path: 'src/tcom/batch/normalization/normalization.ts',
@@ -188,29 +191,29 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
             })
           } else if (diff.minor && diff.minor.length > 0) {
             // Patch decision with minor changes:
-            delete decisionToSave.__v
-            delete decisionToSave.sourceId
-            delete decisionToSave.sourceName
-            delete decisionToSave.public
-            delete decisionToSave.debatPublic
-            delete decisionToSave.occultation
-            delete decisionToSave.originalText
+            delete annotatedDecision.__v
+            delete annotatedDecision.sourceId
+            delete annotatedDecision.sourceName
+            delete annotatedDecision.public
+            delete annotatedDecision.debatPublic
+            delete annotatedDecision.occultation
+            delete annotatedDecision.originalText
             if (
-              decisionToSave.labelStatus === LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE ||
-              decisionToSave.labelStatus === LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
+              annotatedDecision.labelStatus === LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE ||
+              annotatedDecision.labelStatus === LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
             ) {
-              decisionToSave.publishStatus = PublishStatus.BLOCKED
+              annotatedDecision.publishStatus = PublishStatus.BLOCKED
               // Bad new date? Throw a warning... @TODO ODDJDashboard
               logger.warn({
                 operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
                 path: 'src/tcom/batch/normalization/normalization.ts',
-                message: `Decision has a bad updated date: ${decisionToSave.dateDecision}`
+                message: `Decision has a bad updated date: ${annotatedDecision.dateDecision}`
               })
             } else {
               if (previousVersion.labelStatus === LabelStatus.EXPORTED) {
-                decisionToSave.labelStatus = LabelStatus.DONE
+                annotatedDecision.labelStatus = LabelStatus.DONE
               } else {
-                decisionToSave.labelStatus = previousVersion.labelStatus
+                annotatedDecision.labelStatus = previousVersion.labelStatus
               }
               if (
                 previousVersion.publishStatus === PublishStatus.SUCCESS ||
@@ -218,12 +221,12 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
                 previousVersion.publishStatus === PublishStatus.FAILURE_PREPARING ||
                 previousVersion.publishStatus === PublishStatus.FAILURE_INDEXING
               ) {
-                decisionToSave.publishStatus = PublishStatus.TOBEPUBLISHED
+                annotatedDecision.publishStatus = PublishStatus.TOBEPUBLISHED
               } else {
-                decisionToSave.publishStatus = previousVersion.publishStatus
+                annotatedDecision.publishStatus = previousVersion.publishStatus
               }
             }
-            await dbSderApiGateway.patchDecision(previousVersion._id, decisionToSave)
+            await dbSderApiGateway.patchDecision(previousVersion._id, annotatedDecision)
             logger.info({
               operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
               path: 'src/tcom/batch/normalization/normalization.ts',
@@ -241,7 +244,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
           }
         } else {
           // Insert new decision:
-          await dbSderApiGateway.saveDecision(decisionToSave)
+          await dbSderApiGateway.saveDecision(annotatedDecision)
           logger.info({
             operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
             path: 'src/tcom/batch/normalization/normalization.ts',
@@ -275,7 +278,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
         })
 
         listConvertedDecision.push({
-          metadonnees: decisionToSave,
+          metadonnees: annotatedDecision,
           decisionNormalisee: cleanedDecision
         })
       } catch (error) {

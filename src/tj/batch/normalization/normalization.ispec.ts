@@ -16,6 +16,7 @@ import { DbSderApiGateway } from './repositories/gateways/dbsderApi.gateway'
 import { InfrastructureExpection } from '../../shared/infrastructure/exceptions/infrastructure.exception'
 import { LabelStatus } from 'dbsder-api-types'
 import { ObjectId } from 'mongodb'
+import * as annotation from '../../../library/nlp/annotation'
 
 jest.mock('./repositories/gateways/zoning', () => ({
   fetchZoning: jest.fn()
@@ -47,6 +48,10 @@ describe('Normalization', () => {
 
     mockS3.on(PutObjectCommand).resolves({})
     mockS3.on(DeleteObjectCommand).resolves({})
+
+    jest
+      .spyOn(annotation, 'annotateDecision')
+      .mockImplementation((decision: any) => Promise.resolve(decision))
 
     jest
       .spyOn(transformDecisionIntegreFromWPDToText, 'transformDecisionIntegreFromWPDToText')

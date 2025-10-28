@@ -5,6 +5,7 @@ import { logger } from '../library/logger'
 import { COLLECTION_JURICA_RAW } from '../library/env'
 import { updateRawFileStatus, NormalizationResult } from '../services/eventSourcing'
 import { sendToSder } from '../library/DbSder'
+import { annotateDecision } from '../library/nlp/annotation'
 
 export const rawCaToNormalize = {
   // Ne contient pas normalized:
@@ -31,7 +32,9 @@ export const rawCaToNormalize = {
 export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
   const caDecision = rawCa.metadatas
 
-  return sendToSder(caDecision)
+  const annotatedDecision = await annotateDecision(caDecision)
+
+  return sendToSder(annotatedDecision)
 }
 
 export async function normalizeRawCaFiles(

@@ -7,6 +7,7 @@ import * as transformDecisionIntegreFromWPDToText from './services/transformDeci
 import { MockUtils } from '../../shared/infrastructure/utils/mock.utils'
 import { CollectDto } from '../../shared/infrastructure/dto/collect.dto'
 import { DecisionS3Repository } from '../../shared/infrastructure/repositories/decisionS3.repository'
+import * as annotation from '../../../library/nlp/annotation'
 
 jest.mock('./repositories/gateways/zoning', () => ({
   fetchZoning: jest.fn()
@@ -85,6 +86,10 @@ describe('Normalization', () => {
     jest
       .spyOn(DbSderApiGateway.prototype, 'getDecisionBySourceId')
       .mockImplementation(() => Promise.resolve(null))
+
+    jest
+      .spyOn(annotation, 'annotateDecision')
+      .mockImplementation((decision: any) => Promise.resolve(decision))
   })
 
   beforeAll(() => {
