@@ -8,8 +8,8 @@ import {
   UnIdentifiedDecisionDila
 } from 'dbsder-api-types'
 import { NerParameters, NerResponse, postNer } from './ner'
-import { isCurrentZoning } from 'dbsder-api-types/dist/typeGuards/common.zod'
-import { NotSupported } from '../error'
+import { isCurrentZoning, parseCurrentZoning } from 'dbsder-api-types/dist/typeGuards/common.zod'
+import { NotSupported, toNotSupported } from '../error'
 import { ZoneRange } from 'dbsder-api-types/dist/types/common'
 import { logger } from '../logger'
 
@@ -74,47 +74,53 @@ export async function annotateDecision<
     (hasSourceNameTj(decision) || hasSourceNameTcom(decision)) &&
     decision.occultation.motivationOccultation
   ) {
-    if (isCurrentZoning(decision.originalTextZoning)) {
-      const motivation = decision.originalTextZoning.zones.motivations
-      const exposeDuLitige = decision.originalTextZoning.zones['expose du litige']
+    try {
+      // parse to have zod error, typeguard to ensure type
+      parseCurrentZoning(decision.originalTextZoning)
+      if (isCurrentZoning(decision.originalTextZoning)) {
+        const motivation = decision.originalTextZoning.zones.motivations
+        const exposeDuLitige = decision.originalTextZoning.zones['expose du litige']
 
-      if ((motivation || exposeDuLitige) && motivation.length <= 1) {
-        const motifsAnnotations: Entity[] = []
+        if ((motivation || exposeDuLitige) && motivation.length <= 1) {
+          const motifsAnnotations: Entity[] = []
 
-        if (motivation) {
-          const annotation = extractZoneEntity(motivation[0], decision.originalText, 'motivation')
-          if (annotation) {
-            motifsAnnotations.push(annotation)
+          if (motivation) {
+            const annotation = extractZoneEntity(motivation[0], decision.originalText, 'motivation')
+            if (annotation) {
+              motifsAnnotations.push(annotation)
+            }
           }
-        }
 
-        if (exposeDuLitige) {
-          const annotation = extractZoneEntity(
-            exposeDuLitige,
-            decision.originalText,
-            'exposeDuLitige'
+          if (exposeDuLitige) {
+            const annotation = extractZoneEntity(
+              exposeDuLitige,
+              decision.originalText,
+              'exposeDuLitige'
+            )
+            if (annotation) {
+              motifsAnnotations.push(annotation)
+            }
+          }
+
+          annotatedDecision.labelTreatments = [
+            ...annotatedDecision.labelTreatments,
+            {
+              order: 2,
+              source: 'supplementaryAnnotations',
+              annotations: removeOverlappingEntities([...nerResult.entities, ...motifsAnnotations]),
+              treatmentDate: new Date().toISOString()
+            }
+          ]
+        } else {
+          throw new Error(
+            'Cannot annotate motifs with multiple motivations/expose du litige zones or without zones'
           )
-          if (annotation) {
-            motifsAnnotations.push(annotation)
-          }
         }
-
-        annotatedDecision.labelTreatments = [
-          ...annotatedDecision.labelTreatments,
-          {
-            order: 2,
-            source: 'supplementaryAnnotations',
-            annotations: removeOverlappingEntities([...nerResult.entities, ...motifsAnnotations]),
-            treatmentDate: new Date().toISOString()
-          }
-        ]
       } else {
-        throw new Error(
-          'Cannot annotate motifs with multiple motivations/expose du litige zones or without zones'
-        )
+        throw new NotSupported('originalTextZoning', decision.originalTextZoning)
       }
-    } else {
-      throw new NotSupported('originalTextZoning', decision.originalTextZoning)
+    } catch (err) {
+      throw toNotSupported('originalTextZoning', decision.originalTextZoning, err)
     }
   }
 
