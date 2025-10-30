@@ -32,9 +32,17 @@ export const rawCaToNormalize = {
 export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
   const caDecision = rawCa.metadatas
 
-  const annotatedDecision = await annotateDecision(caDecision)
+  /* 
+    On annote uniquement les décisions qui sont "toBeTreated" car dans
+    le cas d'une réception d'une mise a jour de décision qui ne nécessite
+    pas un retraitement dans label il ne faut pas réannoter la décision.
+  */
+  if (caDecision?.labelStatus === 'toBeTreated') {
+    const annotatedDecision = await annotateDecision(caDecision)
+    return sendToSder(annotatedDecision)
+  }
 
-  return sendToSder(annotatedDecision)
+  return sendToSder(caDecision)
 }
 
 export async function normalizeRawCaFiles(

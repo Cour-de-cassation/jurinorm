@@ -32,9 +32,17 @@ export const rawCcToNormalize = {
 export async function normalizeCc(rawCc: RawCc): Promise<unknown> {
   const ccDecision = rawCc.metadatas
 
-  const annotatedDecision = await annotateDecision(ccDecision)
+  /* 
+    On annote uniquement les décisions qui sont "toBeTreated" car dans
+    le cas d'une réception d'une mise a jour de décision qui ne nécessite
+    pas un retraitement dans label il ne faut pas réannoter la décision.
+  */
+  if (ccDecision?.labelStatus === 'toBeTreated') {
+    const annotatedDecision = await annotateDecision(ccDecision)
+    return sendToSder(annotatedDecision)
+  }
 
-  return sendToSder(annotatedDecision)
+  return sendToSder(ccDecision)
 }
 
 export async function normalizeRawCcFiles(

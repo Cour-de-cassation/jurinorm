@@ -1,7 +1,7 @@
-import { UnIdentifiedDecisionCc } from 'dbsder-api-types'
+import { UnIdentifiedDecisionCa } from 'dbsder-api-types'
 import { RawFile } from '../services/eventSourcing'
 
-export type RawCa = RawFile<UnIdentifiedDecisionCc>
+export type RawCa = RawFile<UnIdentifiedDecisionCa>
 
 export type NormalizationSucess = {
   rawCph: RawCa
