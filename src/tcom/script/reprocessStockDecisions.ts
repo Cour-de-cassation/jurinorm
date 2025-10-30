@@ -34,10 +34,6 @@ async function main() {
     }
     history.push(decision._id)
     decision = await decisions.next()
-    if (decision && decision._id && history.indexOf(decision._id) !== -1) {
-      console.log(`Skip ${decision._id} because next() is looping`)
-      break
-    }
   }
 
   console.log(`Reprocessed ${doneCount}/${count} decisions`)
