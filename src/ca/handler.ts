@@ -6,6 +6,7 @@ import { COLLECTION_JURICA_RAW } from '../library/env'
 import { updateRawFileStatus, NormalizationResult } from '../services/eventSourcing'
 import { sendToSder } from '../library/DbSder'
 import { annotateDecision } from '../library/nlp/annotation'
+import { LabelStatus } from 'dbsder-api-types'
 
 export const rawCaToNormalize = {
   // Ne contient pas normalized:
@@ -37,7 +38,7 @@ export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
     le cas d'une réception d'une mise a jour de décision qui ne nécessite
     pas un retraitement dans label il ne faut pas réannoter la décision.
   */
-  if (caDecision?.labelStatus === 'toBeTreated') {
+  if (caDecision?.labelStatus === LabelStatus.TOBETREATED) {
     const annotatedDecision = await annotateDecision(caDecision)
     return sendToSder(annotatedDecision)
   }
