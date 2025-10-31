@@ -42,7 +42,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
   const listConvertedDecision: ConvertedDecisionWithMetadonneesDto[] = []
   const s3Repository = new DecisionS3Repository()
 
-  let decisionList = (await fetchDecisionListFromS3(s3Repository)).filter((name) =>
+  const decisionList = (await fetchDecisionListFromS3(s3Repository)).filter((name) =>
     name.endsWith('.json')
   )
 
@@ -321,8 +321,10 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
         continue
       }
     }
+    /*
     const lastTreatedDecisionFileName = decisionList[decisionList.length - 1]
     decisionList = await fetchDecisionListFromS3(s3Repository, lastTreatedDecisionFileName)
+    */
   }
 
   if (listConvertedDecision.length == 0) {
