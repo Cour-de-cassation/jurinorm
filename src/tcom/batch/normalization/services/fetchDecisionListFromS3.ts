@@ -4,7 +4,7 @@ import { logger, normalizationFormatLogs } from '../logger'
 import { LogsFormat } from '../../../shared/infrastructure/utils/logsFormat.utils'
 import { HttpStatus } from '@nestjs/common'
 
-const MAX_NUMBER_OF_DECISIONS_TO_RETRIEVE = 10 // 2
+const MAX_NUMBER_OF_DECISIONS_TO_RETRIEVE = 10
 
 export async function fetchDecisionListFromS3(
   repository: DecisionS3Repository,

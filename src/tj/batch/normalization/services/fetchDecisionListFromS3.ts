@@ -2,7 +2,7 @@ import { DecisionS3Repository } from '../../../shared/infrastructure/repositorie
 import { InfrastructureExpection } from '../../../shared/infrastructure/exceptions/infrastructure.exception'
 import { logger } from '../../../../library/logger'
 
-const MAX_NUMBER_OF_DECISIONS_TO_RETRIEVE = 2
+const MAX_NUMBER_OF_DECISIONS_TO_RETRIEVE = 10
 
 export async function fetchDecisionListFromS3(
   repository: DecisionS3Repository,

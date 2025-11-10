@@ -8,6 +8,8 @@ import { sendToSder } from '../library/DbSder'
 import { annotateDecision } from '../library/nlp/annotation'
 import { LabelStatus } from 'dbsder-api-types'
 
+const MAX_NUMBER_OF_DECISIONS_TO_RETRIEVE = 10
+
 export const rawCaToNormalize = {
   // Ne contient pas normalized:
   events: { $not: { $elemMatch: { type: 'normalized' } } },
@@ -55,12 +57,16 @@ export async function normalizeRawCaFiles(
     message: `Starting CA normalization`
   })
   const _rawCaToNormalize = defaultFilter ?? rawCaToNormalize
-  const rawCaCursor = await findFileInformations<RawCa>(COLLECTION_JURICA_RAW, _rawCaToNormalize)
+  const rawCaCursor = await findFileInformations<RawCa>(
+    COLLECTION_JURICA_RAW,
+    _rawCaToNormalize,
+    MAX_NUMBER_OF_DECISIONS_TO_RETRIEVE
+  )
   const rawCaLength = await countFileInformations<RawCa>(COLLECTION_JURICA_RAW, _rawCaToNormalize)
   logger.info({
     path: 'src/ca/handler.ts',
     operations: ['normalization', 'normalizeRawCaFiles'],
-    message: `Find ${rawCaLength} raw decisions to normalize`
+    message: `Find ${rawCaLength} raw decisions to normalize, batch limit is set to ${MAX_NUMBER_OF_DECISIONS_TO_RETRIEVE}`
   })
 
   const results: NormalizationResult<RawCa>[] = await mapCursorSync(rawCaCursor, async (rawCa) => {
