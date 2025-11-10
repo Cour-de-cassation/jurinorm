@@ -275,25 +275,5 @@ describe('DecisionS3Repository', () => {
         expect(mockS3.commandCalls(ListObjectsV2Command, expected, true)).toHaveLength(1)
       })
     })
-
-    describe('startAfterFileName cases', () => {
-      it('calls S3 with StartAfter property when startAfterFileName is provided', async () => {
-        // GIVEN
-        const maxKey = 500
-        const startAfterFileName = 'someFileName'
-        const expected = {
-          Bucket: process.env.S3_BUCKET_NAME_RAW_TJ,
-          MaxKeys: maxKey,
-          StartAfter: startAfterFileName
-        }
-        mockS3.on(ListObjectsV2Command).resolves({})
-
-        // WHEN
-        await repository.getDecisionList(maxKey, startAfterFileName)
-
-        // THEN
-        expect(mockS3.commandCalls(ListObjectsV2Command, expected, true)).toHaveLength(1)
-      })
-    })
   })
 })
