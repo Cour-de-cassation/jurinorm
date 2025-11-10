@@ -4,15 +4,9 @@ import { logger } from '../../../../library/logger'
 
 const MAX_NUMBER_OF_DECISIONS_TO_RETRIEVE = 10
 
-export async function fetchDecisionListFromS3(
-  repository: DecisionS3Repository,
-  filename?: string
-): Promise<string[]> {
+export async function fetchDecisionListFromS3(repository: DecisionS3Repository): Promise<string[]> {
   try {
-    const rawDecisionList = await repository.getDecisionList(
-      MAX_NUMBER_OF_DECISIONS_TO_RETRIEVE,
-      filename
-    )
+    const rawDecisionList = await repository.getDecisionList(MAX_NUMBER_OF_DECISIONS_TO_RETRIEVE)
     return rawDecisionList.splice(0, rawDecisionList.length).map((decision) => decision.Key)
   } catch (error) {
     logger.error({
