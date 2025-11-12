@@ -65,6 +65,7 @@ export async function normalizeRawCcFiles(
 
   const results: NormalizationResult<RawCc>[] = await mapCursorSync(rawCcCursor, async (rawCc) => {
     try {
+
       logger.info({
         path: 'src/cc/handler.ts',
         operations: ['normalization', 'normalizeRawCcFiles'],
@@ -76,8 +77,13 @@ export async function normalizeRawCcFiles(
         operations: ['normalization', 'normalizeRawCcFiles'],
         message: `${rawCc._id} normalized with success`
       })
-      return { rawFile: rawCc, status: 'success' }
+
+      const result = { rawFile: rawCc, status: 'success' } as const
+      await updateRawFileStatus(COLLECTION_JURINET_RAW, result)
+      return result
+
     } catch (err) {
+
       const error = toUnexpectedError(err)
       logger.error({
         path: 'src/cc/handler.ts',
@@ -85,18 +91,21 @@ export async function normalizeRawCcFiles(
         message: `${rawCc._id} failed to normalize`,
         stack: error.stack
       })
-      return { rawFile: rawCc, status: 'error', error }
+
+      const result = { rawFile: rawCc, status: 'error', error } as const
+      await updateRawFileStatus(COLLECTION_JURINET_RAW, result)
+      return result
+
     }
   })
 
-  await Promise.all(results.map((_) => updateRawFileStatus(COLLECTION_JURINET_RAW, _)))
+  await Promise.all(results)
 
   logger.info({
     path: 'src/cc/handler.ts',
     operations: ['normalization', 'normalizeRawCcFiles'],
-    message: `Decisions successfully normalized: ${
-      results.filter(({ status }) => status === 'success').length
-    }`
+    message: `Decisions successfully normalized: ${results.filter(({ status }) => status === 'success').length
+      }`
   })
   logger.info({
     path: 'src/cc/handler.ts',
