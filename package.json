@@ -12,10 +12,12 @@
     "format": "prettier \"src/**/*.ts\" --check",
     "start": "npx ts-node -r dotenv/config src/batch.ts",
     "start:watch": "nodemon --config nodemon.json",
+    "start:docker": "docker compose up -d",
     "test": "jest && npm run test:integration",
     "test:cov": "jest --coverage",
     "test:integration": "jest --config ./jest-integration.json --runInBand",
-    "scripts:tj:reprocessStockDecisions": "docker compose run --rm jurinorm-batch npx ts-node /home/node/src/tcom/script/reprocessStockDecisions.ts"
+    "scripts:tj:reprocessStockDecisions": "docker compose run --rm jurinorm-batch npx ts-node /home/node/src/tj/script/reprocessStockDecisions.ts",
+    "scripts:tcom:reprocessStockDecisions": "docker compose run --rm jurinorm-batch npx ts-node /home/node/src/tcom/script/reprocessStockDecisions.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.890.0",
