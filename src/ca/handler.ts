@@ -65,7 +65,6 @@ export async function normalizeRawCaFiles(
 
   const results: NormalizationResult<RawCa>[] = await mapCursorSync(rawCaCursor, async (rawCa) => {
     try {
-
       logger.info({
         path: 'src/ca/handler.ts',
         operations: ['normalization', 'normalizeRawCaFiles'],
@@ -81,9 +80,7 @@ export async function normalizeRawCaFiles(
       const result = { rawFile: rawCa, status: 'success' } as const
       await updateRawFileStatus(COLLECTION_JURICA_RAW, result)
       return result
-
     } catch (err) {
-
       const error = toUnexpectedError(err)
       logger.error({
         path: 'src/ca/handler.ts',
@@ -91,11 +88,10 @@ export async function normalizeRawCaFiles(
         message: `${rawCa._id} failed to normalize`,
         stack: error.stack
       })
-      
+
       const result = { rawFile: rawCa, status: 'error', error } as const
       await updateRawFileStatus(COLLECTION_JURICA_RAW, result)
       return result
-
     }
   })
 

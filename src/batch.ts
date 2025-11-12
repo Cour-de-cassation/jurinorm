@@ -22,7 +22,7 @@ async function startNormalization() {
       await normalizeRawCaFiles()
       await normalizeRawTjFiles()
       await normalizeRawTcomFiles()
-      if (["LOCAL", "DEV", "PREPROD"].includes(ENV)) await normalizeRawCphFiles()
+      if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV)) await normalizeRawCphFiles()
     },
     waitForCompletion: true, // onTick cannot be retry if an instance of it is running
     timeZone: 'Europe/Paris',

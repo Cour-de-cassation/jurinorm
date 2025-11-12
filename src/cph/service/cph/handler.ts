@@ -37,7 +37,6 @@ export async function normalizeRawCphFiles(
     rawCphCursor,
     async (rawCph) => {
       try {
-
         logger.info({
           path: 'src/service/cph/handler.ts',
           operations: ['normalization', 'normalizeRawCphFiles'],
@@ -53,9 +52,7 @@ export async function normalizeRawCphFiles(
         const result = { rawFile: rawCph, status: 'success' } as const
         await updateRawFileStatus(S3_BUCKET_NAME_PORTALIS, result)
         return result
-
       } catch (err) {
-
         const error = toUnexpectedError(err)
         logger.error({
           path: 'src/service/cph/handler.ts',
@@ -67,7 +64,6 @@ export async function normalizeRawCphFiles(
         const result = { rawFile: rawCph, status: 'error', error } as const
         await updateRawFileStatus(S3_BUCKET_NAME_PORTALIS, result)
         return result
-
       }
     }
   )
