@@ -2,10 +2,11 @@ import dotenv from 'dotenv'
 import { MissingValue } from './error'
 import { resolve } from 'path'
 
-if (!process.env.NODE_ENV) dotenv.config({ path: resolve(__dirname, '..', '..', '.env') })
+if (process.env.ENV === "LOCAL") dotenv.config({ path: resolve(__dirname, '..', '..', '.env') })
 
 if (process.env.DBSDER_API_KEY == null) throw new MissingValue('process.env.DBSDER_API_KEY')
 if (process.env.DBSDER_API_URL == null) throw new MissingValue('process.env.DBSDER_API_URL')
+if (process.env.ENV == null) throw new MissingValue('process.env.ENV')
 if (process.env.FILE_DB_URL == null) throw new MissingValue('process.env.FILE_DB_URL')
 if (process.env.NLP_PSEUDONYMISATION_API_URL == null)
   throw new MissingValue('process.env.NLP_PSEUDONYMISATION_API_URL')
@@ -24,6 +25,7 @@ if (process.env.COLLECTION_JURICA_RAW == null)
 export const {
   DBSDER_API_KEY,
   DBSDER_API_URL,
+  ENV,
   FILE_DB_URL,
   NLP_PSEUDONYMISATION_API_URL,
   NODE_ENV,
