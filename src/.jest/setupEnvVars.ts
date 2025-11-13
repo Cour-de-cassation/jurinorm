@@ -15,5 +15,6 @@ process.env = {
   S3_BUCKET_NAME_PORTALIS: 'S3_BUCKET_NAME_PORTALIS',
   NODE_ENV: process.env.NODE_ENV,
   COLLECTION_JURINET_RAW: 'jurinet-raw-files',
-  COLLECTION_JURICA_RAW: 'jurica-raw-files'
+  COLLECTION_JURICA_RAW: 'jurica-raw-files',
+  ENV: 'LOCAL'
 }
