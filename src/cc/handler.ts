@@ -38,7 +38,7 @@ export async function normalizeCc(rawCc: RawCc): Promise<NormalizationResult<Raw
     CC est encore réalisée dans openjustice-sder. Une fois que toute la normalisation
     sera réalisée dans jurinorm ce code pourra être supprimé
   */
-  const { sourceId } = rawCc.metadatas
+  const { sourceId } = ccDecision
   const candidateToNewReception = await findFileInformations<RawCc>(COLLECTION_JURINET_RAW, {
     'metadatas.sourceId': sourceId,
     _id: { $ne: rawCc._id }
