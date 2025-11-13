@@ -5,7 +5,7 @@ import { DBSDER_API_KEY, DBSDER_API_URL } from './env'
 
 type UnIdentifiedDecisionSupported = Exclude<UnIdentifiedDecision, UnIdentifiedDecisionDila>
 
-export async function sendToSder(decision: UnIdentifiedDecisionSupported) {
+export async function sendToSder(decision: UnIdentifiedDecisionSupported): Promise<unknown> {
   const route = `${DBSDER_API_URL}/decisions`
   try {
     const response = await axios.put(
