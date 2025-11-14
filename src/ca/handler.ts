@@ -40,7 +40,6 @@ export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
   */
   const { sourceId } = caDecision
   const candidateToNewReception = await findFileInformations<RawCa>(COLLECTION_JURICA_RAW, {
-    events: { $not: { $elemMatch: { type: 'normalized' } } },
     'metadatas.sourceId': sourceId,
     _id: { $ne: rawCa._id }
   }).then((_) => _.toArray())

@@ -40,7 +40,6 @@ export async function normalizeCc(rawCc: RawCc): Promise<NormalizationResult<Raw
   */
   const { sourceId } = ccDecision
   const candidateToNewReception = await findFileInformations<RawCc>(COLLECTION_JURINET_RAW, {
-    events: { $not: { $elemMatch: { type: 'normalized' } } },
     'metadatas.sourceId': sourceId,
     _id: { $ne: rawCc._id }
   }).then((_) => _.toArray())
