@@ -19,17 +19,21 @@ async function main() {
 
   while (decision) {
     totalCount++
-    try {
-      const done = await reprocessNormalizedDecisionByFilename(decision.filenameSource)
-      if (done) {
-        await dbSderApiGateway.deleteDecisionById(decision._id)
-        console.log(`Reprocess ${decision._id}`)
-        doneCount++
-      } else {
-        console.log(`Skip ${decision._id}`)
+    if (decision.sourceName === 'juritcom' && decision.labelStatus === 'ignored_controleRequis') {
+      try {
+        const done = await reprocessNormalizedDecisionByFilename(decision.filenameSource)
+        if (done) {
+          await dbSderApiGateway.deleteDecisionById(decision._id)
+          console.log(`Reprocess ${decision._id}`)
+          doneCount++
+        } else {
+          console.log(`Skip not done ${decision._id}`)
+        }
+      } catch (_ignore) {
+        console.log(`Skip error ${decision._id}`)
       }
-    } catch (_ignore) {
-      console.log(`Skip ${decision._id}`)
+    } else {
+      console.log(`Skip wrong decision ${decision._id}`)
     }
     decision = await decisions.next()
   }
