@@ -40,6 +40,7 @@ export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
   */
   const { sourceId } = caDecision
   const candidateToNewReception = await findFileInformations<RawCa>(COLLECTION_JURICA_RAW, {
+    events: { $not: { $elemMatch: { type: 'normalized' } } },
     'metadatas.sourceId': sourceId,
     _id: { $ne: rawCa._id }
   }).then((_) => _.toArray())
@@ -51,7 +52,7 @@ export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
     logger.info({
       path: 'src/ca/handler.ts',
       operations: ['normalization', 'normalizeCa'],
-      message: `jurica:${rawCa.metadatas.sourceId} marked as deleted because new reception`
+      message: `rawCa ${rawCa._id} marked as deleted because new reception`
     })
     return { status: 'deleted', rawFile: rawCa }
   }

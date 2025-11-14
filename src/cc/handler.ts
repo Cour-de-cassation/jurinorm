@@ -40,6 +40,7 @@ export async function normalizeCc(rawCc: RawCc): Promise<NormalizationResult<Raw
   */
   const { sourceId } = ccDecision
   const candidateToNewReception = await findFileInformations<RawCc>(COLLECTION_JURINET_RAW, {
+    events: { $not: { $elemMatch: { type: 'normalized' } } },
     'metadatas.sourceId': sourceId,
     _id: { $ne: rawCc._id }
   }).then((_) => _.toArray())
@@ -51,7 +52,7 @@ export async function normalizeCc(rawCc: RawCc): Promise<NormalizationResult<Raw
     logger.info({
       path: 'src/cc/handler.ts',
       operations: ['normalization', 'normalizeCc'],
-      message: `jurinet:${rawCc.metadatas.sourceId} marked as deleted because new reception`
+      message: `rawCc ${rawCc._id} marked as deleted because new reception`
     })
     return { status: 'deleted', rawFile: rawCc }
   }
