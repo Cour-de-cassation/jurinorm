@@ -9,8 +9,8 @@ import { annotateDecision } from '../library/nlp/annotation'
 import { LabelStatus } from 'dbsder-api-types'
 
 export const rawCaToNormalize = {
-  // Ne contient pas normalized:
-  events: { $not: { $elemMatch: { type: 'normalized' } } },
+  // Ne contient ni normalized ni deleted:
+  events: { $not: { $elemMatch: { type: { $in: ['normalized', 'deleted'] } } } },
   // Les 3 derniers events ne sont pas "blocked":
   $expr: {
     $not: {
@@ -133,5 +133,12 @@ export async function normalizeRawCaFiles(
     path: 'src/ca/handler.ts',
     operations: ['normalization', 'normalizeRawCaFiles'],
     message: `Decisions skipped: ${results.filter(({ status }) => status === 'error').length}`
+  })
+  logger.info({
+    path: 'src/ca/handler.ts',
+    operations: ['normalization', 'normalizeRawCaFiles'],
+    message: `Decisions marked as deleted: ${
+      results.filter(({ status }) => status === 'deleted').length
+    }`
   })
 }
