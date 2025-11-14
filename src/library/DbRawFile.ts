@@ -41,10 +41,12 @@ export async function countFileInformations<T extends Document>(
 
 export async function findFileInformations<T extends Document>(
   collection: string,
-  filters: Filter<T>
+  filters: Filter<T>,
+  limit?: number
 ): Promise<FindCursor<WithId<T>>> {
   const db = await dbConnect()
-  return db.collection<T>(collection).find(filters)
+  const cursor = db.collection<T>(collection).find(filters)
+  return limit ? cursor.limit(limit) : cursor
 }
 
 export async function disconnect() {

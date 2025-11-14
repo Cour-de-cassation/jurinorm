@@ -233,17 +233,13 @@ export class DecisionS3Repository implements DecisionRepository {
     }
   }
 
-  async getDecisionList(
-    maxNumberOfDecisionsToRetrieve?: number,
-    startAfterFileName?: string
-  ): Promise<_Object[]> {
+  async getDecisionList(maxNumberOfDecisionsToRetrieve?: number): Promise<_Object[]> {
     const reqParams: ListObjectsV2CommandInput = {
       Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM
     }
     if (maxNumberOfDecisionsToRetrieve >= 1 && maxNumberOfDecisionsToRetrieve <= 1000) {
       reqParams.MaxKeys = maxNumberOfDecisionsToRetrieve
     }
-    if (startAfterFileName) reqParams.StartAfter = startAfterFileName
 
     try {
       const decisionListFromS3 = await this.s3Client.send(new ListObjectsV2Command(reqParams))

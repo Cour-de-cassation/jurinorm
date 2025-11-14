@@ -175,18 +175,11 @@ describe('Normalization', () => {
       const thirdFilename = 'thirdFilename'
       const thirdSourceId = 4103784243
 
-      // S3 must be called 3 times to return 2 + 1 decision filename
-      const listWithTwoElementsFromS3 = {
-        Contents: [{ Key: firstFilename }, { Key: secondFilename }]
+      // S3 must be called 1 times to return 3 decision filename
+      const listWithAllElementsFromS3 = {
+        Contents: [{ Key: firstFilename }, { Key: secondFilename }, { Key: thirdFilename }]
       }
-      const listWithOneElementFromS3 = {
-        Contents: [{ Key: thirdFilename }]
-      }
-      mockS3
-        .on(ListObjectsV2Command)
-        .resolvesOnce(listWithTwoElementsFromS3)
-        .resolvesOnce(listWithOneElementFromS3)
-        .resolves({})
+      mockS3.on(ListObjectsV2Command).resolvesOnce(listWithAllElementsFromS3).resolves({})
 
       // S3 must be called 3 times to retrieve decisions content
       mockS3
@@ -262,7 +255,7 @@ describe('Normalization', () => {
       const result = await normalizationJob()
 
       // THEN
-      expect(mockS3).toHaveReceivedCommandTimes(ListObjectsV2Command, 3)
+      expect(mockS3).toHaveReceivedCommandTimes(ListObjectsV2Command, 1)
       expect(result).toEqual(expected)
     })
   })
