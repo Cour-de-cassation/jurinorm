@@ -32,7 +32,9 @@ interface Diff {
 const dbSderApiGateway = new DbSderApiGateway()
 const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TJ
 
-export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonneesDto[]> {
+export async function normalizationJob(
+  limit?: number
+): Promise<ConvertedDecisionWithMetadonneesDto[]> {
   logger.info({
     path: 'src/tj/batch/normalization.ts',
     operations: ['normalization', 'normalizationJob-TJ'],
@@ -42,7 +44,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
   const listConvertedDecision: ConvertedDecisionWithMetadonneesDto[] = []
   const s3Repository = new DecisionS3Repository()
 
-  const decisionList = await fetchDecisionListFromS3(s3Repository)
+  const decisionList = await fetchDecisionListFromS3(s3Repository, limit)
 
   for (const decisionFilename of decisionList) {
     try {

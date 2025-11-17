@@ -1,6 +1,6 @@
 import { disconnect } from '../../library/DbRawFile'
-import { runNormalizationLoop } from './normalizationLoop'
+import { normalizeRawCaFiles } from '../handler'
 
-runNormalizationLoop({ events: { $not: { $elemMatch: { type: 'normalized' } } } }).finally(() => {
+normalizeRawCaFiles({ events: { $not: { $elemMatch: { type: 'normalized' } } } }).finally(() => {
   setTimeout(disconnect, 3000)
 }) // probably useless to wait - just in case

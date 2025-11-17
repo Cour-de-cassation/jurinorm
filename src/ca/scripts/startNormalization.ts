@@ -1,6 +1,6 @@
 import { disconnect } from '../../library/DbRawFile'
-import { runNormalizationLoop } from './normalizationLoop'
+import { normalizeRawCaFiles } from '../handler'
 
-runNormalizationLoop().finally(() => {
+normalizeRawCaFiles().finally(() => {
   setTimeout(disconnect, 3000)
 }) // probably useless to wait - just in case

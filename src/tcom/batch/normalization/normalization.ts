@@ -32,7 +32,9 @@ interface Diff {
   minor: Array<string>
 }
 
-export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonneesDto[]> {
+export async function normalizationJob(
+  limit?: number
+): Promise<ConvertedDecisionWithMetadonneesDto[]> {
   logger.info({
     operations: ['normalization', `normalizationJob-TCOM`],
     path: 'src/tcom/batch/normalization/normalization.ts',
@@ -42,7 +44,7 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
   const listConvertedDecision: ConvertedDecisionWithMetadonneesDto[] = []
   const s3Repository = new DecisionS3Repository()
 
-  const decisionList = (await fetchDecisionListFromS3(s3Repository)).filter((name) =>
+  const decisionList = (await fetchDecisionListFromS3(s3Repository, limit)).filter((name) =>
     name.endsWith('.json')
   )
 
