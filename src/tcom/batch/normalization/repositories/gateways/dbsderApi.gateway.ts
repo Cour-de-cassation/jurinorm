@@ -132,7 +132,7 @@ export class DbSderApiGateway {
   }
 
   private async getListDecisions(
-    status: string,
+    labelStatus: string,
     startDate?: string,
     endDate?: string,
     nextCursor?: string
@@ -147,7 +147,13 @@ export class DbSderApiGateway {
 
     const result = await axios
       .get<Response>(urlToCall, {
-        params: { sourceName: 'juritcom', status, startDate, endDate, searchAfter: nextCursor },
+        params: {
+          sourceName: 'juritcom',
+          labelStatus,
+          startDate,
+          endDate,
+          searchAfter: nextCursor
+        },
         headers: {
           'x-api-key': process.env.DBSDER_OTHER_API_KEY
         }
@@ -201,8 +207,8 @@ export class DbSderApiGateway {
     return result.data
   }
 
-  async listDecisions(status: string, startDate?: string, endDate?: string) {
-    let response = await this.getListDecisions(status, startDate, endDate)
+  async listDecisions(labelStatus: string, startDate?: string, endDate?: string) {
+    let response = await this.getListDecisions(labelStatus, startDate, endDate)
     let index = 0
 
     return {
@@ -214,7 +220,12 @@ export class DbSderApiGateway {
 
         if (!!response.nextCursor) {
           console.log(`listDecisions nextCursor:${response.nextCursor}`)
-          response = await this.getListDecisions(status, startDate, endDate, response.nextCursor)
+          response = await this.getListDecisions(
+            labelStatus,
+            startDate,
+            endDate,
+            response.nextCursor
+          )
           index = 1
           return response.decisions[0]
         }

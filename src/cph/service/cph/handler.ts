@@ -51,7 +51,10 @@ export async function normalizeRawCphFiles(
           operations: ['normalization', 'normalizeRawCphFiles'],
           message: `${rawCph._id} normalized with success`
         })
-        return { rawFile: rawCph, status: 'success' }
+
+        const result = { rawFile: rawCph, status: 'success' } as const
+        await updateRawFileStatus(S3_BUCKET_NAME_PORTALIS, result)
+        return result
       } catch (err) {
         const error = toUnexpectedError(err)
         logger.error({
@@ -60,12 +63,15 @@ export async function normalizeRawCphFiles(
           message: `${rawCph._id} failed to normalize`,
           stack: error.stack
         })
-        return { rawFile: rawCph, status: 'error', error }
+
+        const result = { rawFile: rawCph, status: 'error', error } as const
+        await updateRawFileStatus(S3_BUCKET_NAME_PORTALIS, result)
+        return result
       }
     }
   )
 
-  await Promise.all(results.map((_) => updateRawFileStatus(S3_BUCKET_NAME_PORTALIS, _)))
+  await Promise.all(results)
 
   logger.info({
     path: 'src/service/cph/handler.ts',

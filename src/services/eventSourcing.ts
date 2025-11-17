@@ -43,9 +43,15 @@ export type NormalizationError<T extends RawFile<unknown>> = {
   error: Error
 }
 
+export type NormalizationDeleted<T extends RawFile<unknown>> = {
+  rawFile: T
+  status: 'deleted'
+}
+
 export type NormalizationResult<T extends RawFile<unknown>> =
   | NormalizationError<T>
   | NormalizationSucess<T>
+  | NormalizationDeleted<T>
 
 async function updateEventRawFile<T>(
   collection: string,
@@ -72,6 +78,8 @@ export async function updateRawFileStatus<T extends RawFile<unknown>>(
   try {
     if (result.status === 'success')
       return updateEventRawFile(collection, result.rawFile, { type: 'normalized', date })
+    if (result.status === 'deleted')
+      return updateEventRawFile(collection, result.rawFile, { type: 'deleted', date })
     return updateEventRawFile(collection, result.rawFile, {
       type: 'blocked',
       date,

@@ -2,6 +2,7 @@
 normalization_batch_schedule: '* * * * *'
 commissioning_date_tj: "2023-12-15"
 commissioning_date_tcom: "2024-12-31"
+env: "PROD"
 
 s3_access_key: "{{ vault_s3_access_key }}"
 s3_secret_key: "{{ vault_s3_secret_key }}"
