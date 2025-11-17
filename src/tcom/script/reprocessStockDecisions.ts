@@ -1,5 +1,4 @@
 import * as dotenv from 'dotenv'
-import { LabelStatus } from 'dbsder-api-types'
 
 dotenv.config()
 
@@ -13,13 +12,12 @@ import { DbSderApiGateway } from '../batch/normalization/repositories/gateways/d
 
 const dbSderApiGateway = new DbSderApiGateway()
 
-async function main() {
-  const status = LabelStatus.IGNORED_CONTROLE_REQUIS // next: LabelStatus.IGNORED_CODE_NAC_INCONNU
+async function main(status: string) {
+  console.log(`Processing decisions with status ${status}...`)
   const decisions = await dbSderApiGateway.listDecisions(status)
   let decision = await decisions.next()
   let doneCount = 0
   let totalCount = 0
-
   while (decision) {
     totalCount++
     if (decision.sourceName === 'juritcom' && decision.labelStatus === status) {
@@ -41,7 +39,7 @@ async function main() {
     decision = await decisions.next()
   }
 
-  console.log(`Reprocessed ${doneCount}/${totalCount} decisions`)
+  console.log(`Reprocessed ${doneCount}/${totalCount} decisions with status ${status}`)
 }
 
 async function reprocessNormalizedDecisionByFilename(filename: string): Promise<boolean> {
@@ -62,30 +60,33 @@ async function reprocessNormalizedDecisionByFilename(filename: string): Promise<
     const decisionFromS3 = await s3Client.send(new GetObjectCommand(reqParams))
     const stringifiedDecision = await decisionFromS3.Body?.transformToString()
     const objectDecision = JSON.parse(stringifiedDecision)
-    // 1. Check .metadonnees.idDecision + '.json' === filename:
-    if (
-      objectDecision &&
-      objectDecision.metadonnees &&
-      `${objectDecision.metadonnees.idDecision}.json` === filename
-    ) {
-      // 2. remove texteDecisionIntegre
+    // 1. Check objectDecision.metadonnees:
+    if (!objectDecision || !objectDecision.metadonnees || !objectDecision.metadonnees.idDecision) {
+      throw new Error('Decision not found or incomplete')
+    }
+    // 2. Check objectDecision.metadonnees.idDecision + '.json' === filename:
+    if (`${objectDecision.metadonnees.idDecision}.json` === filename) {
+      // 3. remove texteDecisionIntegre
       objectDecision.texteDecisionIntegre = null
-      // 3. copy to raw:
+      // 4. copy to raw:
       const reqCopyParams = {
         Body: JSON.stringify(objectDecision),
         Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM,
         Key: filename
       }
       await s3Client.send(new PutObjectCommand(reqCopyParams))
-      // 4. Delete from normalized:
+      // 5. Delete from normalized:
       await s3Client.send(new DeleteObjectCommand(reqParams))
       return true
     } else {
-      throw new Error('Decision incomplete or ID mismatch')
+      throw new Error(
+        `File ID mismatch, looking for ${filename} but found ${objectDecision.metadonnees.idDecision}.json`
+      )
     }
-  } catch (_ignore) {
+  } catch (e) {
+    console.error(e)
     return false
   }
 }
 
-main()
+main(process.argv[2])
