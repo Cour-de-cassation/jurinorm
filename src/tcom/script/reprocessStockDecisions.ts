@@ -1,5 +1,4 @@
 import * as dotenv from 'dotenv'
-import { LabelStatus } from 'dbsder-api-types'
 
 dotenv.config()
 
