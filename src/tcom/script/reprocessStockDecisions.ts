@@ -1,4 +1,6 @@
 import * as dotenv from 'dotenv'
+import { LabelStatus } from 'dbsder-api-types'
+
 dotenv.config()
 
 import {
@@ -12,14 +14,15 @@ import { DbSderApiGateway } from '../batch/normalization/repositories/gateways/d
 const dbSderApiGateway = new DbSderApiGateway()
 
 async function main() {
-  const decisions = await dbSderApiGateway.listDecisions('ignored_controleRequis')
+  const status = LabelStatus.IGNORED_CONTROLE_REQUIS // next: LabelStatus.IGNORED_CODE_NAC_INCONNU
+  const decisions = await dbSderApiGateway.listDecisions(status)
   let decision = await decisions.next()
   let doneCount = 0
   let totalCount = 0
 
   while (decision) {
     totalCount++
-    if (decision.sourceName === 'juritcom' && decision.labelStatus === 'ignored_controleRequis') {
+    if (decision.sourceName === 'juritcom' && decision.labelStatus === status) {
       try {
         const done = await reprocessNormalizedDecisionByFilename(decision.filenameSource)
         if (done) {
