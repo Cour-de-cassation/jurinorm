@@ -20,56 +20,6 @@ export async function computeLabelStatus(
     msg: 'Starting computeLabelStatus...'
   }
 
-  if (decisionDto.debatPublic === false && decisionDto.public === false) {
-    logger.error({
-      ...formatLogs,
-      msg: `Decision debates are not public. Changing LabelStatus to ${LabelStatus.IGNORED_DEBAT_NON_PUBLIC}.`,
-      idJuridiction: decisionDto.jurisdictionId,
-      libelleJuridiction: decisionDto.jurisdictionName
-    })
-    return LabelStatus.IGNORED_DEBAT_NON_PUBLIC
-  }
-
-  if (decisionDto.public === false) {
-    logger.error({
-      ...formatLogs,
-      msg: `Decision is not public. Changing LabelStatus to ${LabelStatus.IGNORED_DECISION_NON_PUBLIQUE}.`,
-      idJuridiction: decisionDto.jurisdictionId,
-      libelleJuridiction: decisionDto.jurisdictionName
-    })
-    return LabelStatus.IGNORED_DECISION_NON_PUBLIQUE
-  }
-
-  try {
-    const decisionZoning: UnIdentifiedDecisionTcom['zoning'] =
-      await zoningApiService.getDecisionZoning(decisionDto)
-    decisionDto.originalTextZoning = decisionZoning
-    if (decisionZoning.is_public === 0) {
-      logger.error({
-        ...formatLogs,
-        msg: `Decision is not public *according to Zoning*. Changing LabelStatus to ${LabelStatus.IGNORED_DECISION_NON_PUBLIQUE}.`,
-        idJuridiction: decisionDto.jurisdictionId,
-        libelleJuridiction: decisionDto.jurisdictionName
-      })
-      return LabelStatus.IGNORED_DECISION_NON_PUBLIQUE
-    }
-    if (decisionZoning.is_public === 2) {
-      logger.error({
-        ...formatLogs,
-        msg: `Decision debates are not public *according to Zoning*. Changing LabelStatus to ${LabelStatus.IGNORED_DEBAT_NON_PUBLIC}.`,
-        idJuridiction: decisionDto.jurisdictionId,
-        libelleJuridiction: decisionDto.jurisdictionName
-      })
-      return LabelStatus.IGNORED_DEBAT_NON_PUBLIC
-    }
-  } catch (error) {
-    logger.error({
-      ...formatLogs,
-      msg: `Error while calling zoning.`,
-      data: error
-    })
-  }
-
   if (isDecisionInTheFuture(dateCreation, dateDecision)) {
     logger.error({
       ...formatLogs,
@@ -88,6 +38,56 @@ export async function computeLabelStatus(
       libelleJuridiction: decisionDto.jurisdictionName
     })
     return LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
+  }
+
+  if (decisionDto.public === false) {
+    logger.error({
+      ...formatLogs,
+      msg: `Decision is not public. Changing LabelStatus to ${LabelStatus.IGNORED_DECISION_NON_PUBLIQUE}.`,
+      idJuridiction: decisionDto.jurisdictionId,
+      libelleJuridiction: decisionDto.jurisdictionName
+    })
+    return LabelStatus.IGNORED_DECISION_NON_PUBLIQUE
+  }
+
+  if (decisionDto.debatPublic === false) {
+    logger.error({
+      ...formatLogs,
+      msg: `Decision debates are not public. Changing LabelStatus to ${LabelStatus.IGNORED_DEBAT_NON_PUBLIC}.`,
+      idJuridiction: decisionDto.jurisdictionId,
+      libelleJuridiction: decisionDto.jurisdictionName
+    })
+    return LabelStatus.IGNORED_DEBAT_NON_PUBLIC
+  }
+
+  try {
+    const decisionZoning: UnIdentifiedDecisionTcom['zoning'] =
+      await zoningApiService.getDecisionZoning(decisionDto)
+    decisionDto.originalTextZoning = decisionZoning
+    if (decisionZoning.is_public === 0) {
+      logger.error({
+        ...formatLogs,
+        msg: `Decision is not public *according to Zoning*. Changing LabelStatus to ${LabelStatus.IGNORED_DECISION_NON_PUBLIQUE_PAR_ZONAGE}.`,
+        idJuridiction: decisionDto.jurisdictionId,
+        libelleJuridiction: decisionDto.jurisdictionName
+      })
+      return LabelStatus.IGNORED_DECISION_NON_PUBLIQUE_PAR_ZONAGE
+    }
+    if (decisionZoning.is_public === 2) {
+      logger.error({
+        ...formatLogs,
+        msg: `Decision debates are not public *according to Zoning*. Changing LabelStatus to ${LabelStatus.IGNORED_DECISION_PARTIELLEMENT_PUBLIQUE_PAR_ZONAGE}.`,
+        idJuridiction: decisionDto.jurisdictionId,
+        libelleJuridiction: decisionDto.jurisdictionName
+      })
+      return LabelStatus.IGNORED_DECISION_PARTIELLEMENT_PUBLIQUE_PAR_ZONAGE
+    }
+  } catch (error) {
+    logger.error({
+      ...formatLogs,
+      msg: `Error while calling zoning.`,
+      data: error
+    })
   }
 
   /*
