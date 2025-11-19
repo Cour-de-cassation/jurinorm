@@ -2,17 +2,12 @@ import { DecisionS3Repository } from '../../../shared/infrastructure/repositorie
 import { InfrastructureExpection } from '../../../shared/infrastructure/exceptions/infrastructure.exception'
 import { logger } from '../../../../library/logger'
 
-const MAX_NUMBER_OF_DECISIONS_TO_RETRIEVE = 2
-
 export async function fetchDecisionListFromS3(
   repository: DecisionS3Repository,
-  filename?: string
+  limit?: number
 ): Promise<string[]> {
   try {
-    const rawDecisionList = await repository.getDecisionList(
-      MAX_NUMBER_OF_DECISIONS_TO_RETRIEVE,
-      filename
-    )
+    const rawDecisionList = await repository.getDecisionList(limit)
     return rawDecisionList.splice(0, rawDecisionList.length).map((decision) => decision.Key)
   } catch (error) {
     logger.error({

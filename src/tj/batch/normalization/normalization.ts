@@ -32,7 +32,9 @@ interface Diff {
 const dbSderApiGateway = new DbSderApiGateway()
 const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TJ
 
-export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonneesDto[]> {
+export async function normalizationJob(
+  limit?: number
+): Promise<ConvertedDecisionWithMetadonneesDto[]> {
   logger.info({
     path: 'src/tj/batch/normalization.ts',
     operations: ['normalization', 'normalizationJob-TJ'],
@@ -42,226 +44,220 @@ export async function normalizationJob(): Promise<ConvertedDecisionWithMetadonne
   const listConvertedDecision: ConvertedDecisionWithMetadonneesDto[] = []
   const s3Repository = new DecisionS3Repository()
 
-  let decisionList = await fetchDecisionListFromS3(s3Repository)
+  const decisionList = await fetchDecisionListFromS3(s3Repository, limit)
 
-  while (decisionList.length > 0) {
-    for (const decisionFilename of decisionList) {
-      try {
-        const jobId = uuidv4()
-        normalizationFormatLogs.correlationId = jobId
+  for (const decisionFilename of decisionList) {
+    try {
+      const jobId = uuidv4()
+      normalizationFormatLogs.correlationId = jobId
 
-        // Step 1: Fetch decision from S3
-        const decision: CollectDto = await s3Repository.getDecisionByFilename(decisionFilename)
+      // Step 1: Fetch decision from S3
+      const decision: CollectDto = await s3Repository.getDecisionByFilename(decisionFilename)
 
-        // Step 2: Cloning decision to save it in normalized bucket
-        const decisionFromS3Clone = JSON.parse(JSON.stringify(decision))
+      // Step 2: Cloning decision to save it in normalized bucket
+      const decisionFromS3Clone = JSON.parse(JSON.stringify(decision))
 
-        logger.info({
-          path: 'src/tj/batch/normalization.ts',
-          operations: ['normalization', 'normalizationJob-TJ'],
-          message: 'Starting normalization of ' + decisionFilename
-        })
+      logger.info({
+        path: 'src/tj/batch/normalization.ts',
+        operations: ['normalization', 'normalizationJob-TJ'],
+        message: 'Starting normalization of ' + decisionFilename
+      })
 
-        // Step 3: Generating unique id for decision
-        const _id = generateUniqueId(decision.metadonnees)
-        normalizationFormatLogs.data = { decisionId: _id }
-        logger.info({
-          path: 'src/tj/batch/normalization.ts',
-          operations: ['normalization', 'normalizationJob-TJ'],
-          message: 'Generated unique id for decision'
-        })
+      // Step 3: Generating unique id for decision
+      const _id = generateUniqueId(decision.metadonnees)
+      normalizationFormatLogs.data = { decisionId: _id }
+      logger.info({
+        path: 'src/tj/batch/normalization.ts',
+        operations: ['normalization', 'normalizationJob-TJ'],
+        message: 'Generated unique id for decision'
+      })
 
-        // Step 4: Transforming decision from WPD to text
-        const decisionContent = await transformDecisionIntegreFromWPDToText(
-          decision.decisionIntegre
-        )
+      // Step 4: Transforming decision from WPD to text
+      const decisionContent = await transformDecisionIntegreFromWPDToText(decision.decisionIntegre)
 
-        logger.info({
-          path: 'src/tj/batch/normalization.ts',
-          operations: ['normalization', 'normalizationJob-TJ'],
-          message: 'Decision conversion finished. Removing unnecessary characters'
-        })
+      logger.info({
+        path: 'src/tj/batch/normalization.ts',
+        operations: ['normalization', 'normalizationJob-TJ'],
+        message: 'Decision conversion finished. Removing unnecessary characters'
+      })
 
-        // Step 5: Removing or replace (by other thing) unnecessary characters from decision
-        const cleanedDecision = removeOrReplaceUnnecessaryCharacters(decisionContent)
+      // Step 5: Removing or replace (by other thing) unnecessary characters from decision
+      const cleanedDecision = removeOrReplaceUnnecessaryCharacters(decisionContent)
 
-        if (!cleanedDecision || isEmptyText(cleanedDecision) || hasNoBreak(cleanedDecision)) {
-          throw new Error('Empty text')
-        }
+      if (!cleanedDecision || isEmptyText(cleanedDecision) || hasNoBreak(cleanedDecision)) {
+        throw new Error('Empty text')
+      }
 
-        // Step 6: Map decision to DBSDER API Type to save it in database
-        const decisionToSave = mapDecisionNormaliseeToDecisionDto(
-          _id,
-          cleanedDecision,
-          decision.metadonnees,
-          decisionFilename
-        )
+      // Step 6: Map decision to DBSDER API Type to save it in database
+      const decisionToSave = mapDecisionNormaliseeToDecisionDto(
+        _id,
+        cleanedDecision,
+        decision.metadonnees,
+        decisionFilename
+      )
 
-        decisionToSave.labelStatus = computeLabelStatus(decisionToSave)
-        decisionToSave.occultation = computeOccultation(
-          decision.metadonnees.recommandationOccultation,
-          decision.metadonnees.occultationComplementaire,
-          decision.metadonnees.debatPublic
-        )
+      decisionToSave.labelStatus = computeLabelStatus(decisionToSave)
+      decisionToSave.occultation = computeOccultation(
+        decision.metadonnees.recommandationOccultation,
+        decision.metadonnees.occultationComplementaire,
+        decision.metadonnees.debatPublic
+      )
 
-        /* Normalisation part that was done on dbsder-api */
-        /* ---------------------------------------- */
+      /* Normalisation part that was done on dbsder-api */
+      /* ---------------------------------------- */
 
-        const originalTextZoning = await fetchZoning({
-          arret_id: decisionToSave.sourceId,
-          source: 'tj',
-          text: decisionToSave.originalText
-        })
+      const originalTextZoning = await fetchZoning({
+        arret_id: decisionToSave.sourceId,
+        source: 'tj',
+        text: decisionToSave.originalText
+      })
 
-        const decisionWithRules = await computeRulesDecisionTj(decisionToSave, originalTextZoning)
+      const decisionWithRules = await computeRulesDecisionTj(decisionToSave, originalTextZoning)
 
-        decisionWithRules.originalTextZoning = originalTextZoning
+      decisionWithRules.originalTextZoning = originalTextZoning
 
-        decisionWithRules.publishStatus =
-          decisionWithRules.labelStatus !== LabelStatus.TOBETREATED
-            ? PublishStatus.BLOCKED
-            : PublishStatus.TOBEPUBLISHED
+      decisionWithRules.publishStatus =
+        decisionWithRules.labelStatus !== LabelStatus.TOBETREATED
+          ? PublishStatus.BLOCKED
+          : PublishStatus.TOBEPUBLISHED
 
-        /* ---------------------------------------- */
+      /* ---------------------------------------- */
 
-        // Step 7: check diff (major/minor) and upsert/patch accordingly
-        logger.info({
-          path: 'src/tj/batch/normalization.ts',
-          operations: ['normalization', 'normalizationJob-TJ'],
-          message: `Check diff with previous version of decision ${decisionWithRules.sourceName} ${decisionWithRules.sourceId} (if any)...`
-        })
+      // Step 7: check diff (major/minor) and upsert/patch accordingly
+      logger.info({
+        path: 'src/tj/batch/normalization.ts',
+        operations: ['normalization', 'normalizationJob-TJ'],
+        message: `Check diff with previous version of decision ${decisionWithRules.sourceName} ${decisionWithRules.sourceId} (if any)...`
+      })
 
-        const previousVersion = await dbSderApiGateway.getDecisionBySourceId(
-          decisionWithRules.sourceId
-        )
-        if (previousVersion !== null) {
-          const diff = computeDiff(previousVersion, decisionWithRules)
-          if (diff.major && diff.major.length > 0) {
-            // Update decision with major changes:
-            const annotatedDecision = await annotateDecision(decisionWithRules)
-            await dbSderApiGateway.saveDecision(annotatedDecision)
-            logger.info({
-              path: 'src/tj/batch/normalization.ts',
-              operations: ['normalization', 'normalizationJob-TJ'],
-              message: `Decision updated in database with major changes: ${JSON.stringify(
-                diff.major
-              )}`
-            })
-          } else if (diff.minor && diff.minor.length > 0) {
-            // Patch decision with minor changes:
-            delete decisionWithRules.__v
-            delete decisionWithRules.sourceId
-            delete decisionWithRules.sourceName
-            delete decisionWithRules.public
-            delete decisionWithRules.debatPublic
-            delete decisionWithRules.occultation
-            delete decisionWithRules.originalText
-            if (
-              decisionWithRules.labelStatus === LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE ||
-              decisionWithRules.labelStatus === LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
-            ) {
-              decisionWithRules.publishStatus = PublishStatus.BLOCKED
-              logger.warn({
-                path: 'src/tj/batch/normalization.ts',
-                operations: ['normalization', 'normalizationJob-TJ'],
-                message: `Decision has a bad updated date: ${decisionWithRules.dateDecision}`
-              })
-            } else if (
-              decisionWithRules.labelStatus === LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC
-            ) {
-              decisionWithRules.publishStatus = PublishStatus.BLOCKED
-              logger.warn({
-                path: 'src/tj/batch/normalization.ts',
-                operations: ['normalization', 'normalizationJob-TJ'],
-                message: `Decision has a codeDecision in blocked codeDecision list: ${decisionWithRules.endCaseCode}`
-              })
-            } else if (decisionWithRules.labelStatus === LabelStatus.IGNORED_CARACTERE_INCONNU) {
-              decisionWithRules.publishStatus = PublishStatus.BLOCKED
-              logger.warn({
-                path: 'src/tj/batch/normalization.ts',
-                operations: ['normalization', 'normalizationJob-TJ'],
-                message: `Decision contains unknown characters`
-              })
-            } else {
-              if (previousVersion.labelStatus === LabelStatus.EXPORTED) {
-                decisionWithRules.labelStatus = LabelStatus.DONE
-              } else {
-                decisionWithRules.labelStatus = previousVersion.labelStatus
-              }
-              if (
-                previousVersion.publishStatus === PublishStatus.SUCCESS ||
-                previousVersion.publishStatus === PublishStatus.UNPUBLISHED ||
-                previousVersion.publishStatus === PublishStatus.FAILURE_PREPARING ||
-                previousVersion.publishStatus === PublishStatus.FAILURE_INDEXING
-              ) {
-                decisionWithRules.publishStatus = PublishStatus.TOBEPUBLISHED
-              } else {
-                decisionWithRules.publishStatus = previousVersion.publishStatus
-              }
-            }
-            await dbSderApiGateway.patchDecision(previousVersion._id, decisionWithRules)
-            logger.info({
-              path: 'src/tj/batch/normalization.ts',
-              operations: ['normalization', 'normalizationJob-TJ'],
-              message: `Decision patched in database with minor changes: ${JSON.stringify(
-                diff.minor
-              )}`
-            })
-          } else {
-            logger.warn({
-              path: 'src/tj/batch/normalization.ts',
-              operations: ['normalization', 'normalizationJob-TJ'],
-              message: 'Decision has no change'
-            })
-          }
-        } else {
-          // Insert new decision:
+      const previousVersion = await dbSderApiGateway.getDecisionBySourceId(
+        decisionWithRules.sourceId
+      )
+      if (previousVersion !== null) {
+        const diff = computeDiff(previousVersion, decisionWithRules)
+        if (diff.major && diff.major.length > 0) {
+          // Update decision with major changes:
           const annotatedDecision = await annotateDecision(decisionWithRules)
           await dbSderApiGateway.saveDecision(annotatedDecision)
           logger.info({
             path: 'src/tj/batch/normalization.ts',
             operations: ['normalization', 'normalizationJob-TJ'],
-            message: `Decision saved in database`
+            message: `Decision updated in database with major changes: ${JSON.stringify(
+              diff.major
+            )}`
+          })
+        } else if (diff.minor && diff.minor.length > 0) {
+          // Patch decision with minor changes:
+          delete decisionWithRules.__v
+          delete decisionWithRules.sourceId
+          delete decisionWithRules.sourceName
+          delete decisionWithRules.public
+          delete decisionWithRules.debatPublic
+          delete decisionWithRules.occultation
+          delete decisionWithRules.originalText
+          if (
+            decisionWithRules.labelStatus === LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE ||
+            decisionWithRules.labelStatus === LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
+          ) {
+            decisionWithRules.publishStatus = PublishStatus.BLOCKED
+            logger.warn({
+              path: 'src/tj/batch/normalization.ts',
+              operations: ['normalization', 'normalizationJob-TJ'],
+              message: `Decision has a bad updated date: ${decisionWithRules.dateDecision}`
+            })
+          } else if (
+            decisionWithRules.labelStatus === LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC
+          ) {
+            decisionWithRules.publishStatus = PublishStatus.BLOCKED
+            logger.warn({
+              path: 'src/tj/batch/normalization.ts',
+              operations: ['normalization', 'normalizationJob-TJ'],
+              message: `Decision has a codeDecision in blocked codeDecision list: ${decisionWithRules.endCaseCode}`
+            })
+          } else if (decisionWithRules.labelStatus === LabelStatus.IGNORED_CARACTERE_INCONNU) {
+            decisionWithRules.publishStatus = PublishStatus.BLOCKED
+            logger.warn({
+              path: 'src/tj/batch/normalization.ts',
+              operations: ['normalization', 'normalizationJob-TJ'],
+              message: `Decision contains unknown characters`
+            })
+          } else {
+            if (previousVersion.labelStatus === LabelStatus.EXPORTED) {
+              decisionWithRules.labelStatus = LabelStatus.DONE
+            } else {
+              decisionWithRules.labelStatus = previousVersion.labelStatus
+            }
+            if (
+              previousVersion.publishStatus === PublishStatus.SUCCESS ||
+              previousVersion.publishStatus === PublishStatus.UNPUBLISHED ||
+              previousVersion.publishStatus === PublishStatus.FAILURE_PREPARING ||
+              previousVersion.publishStatus === PublishStatus.FAILURE_INDEXING
+            ) {
+              decisionWithRules.publishStatus = PublishStatus.TOBEPUBLISHED
+            } else {
+              decisionWithRules.publishStatus = previousVersion.publishStatus
+            }
+          }
+          await dbSderApiGateway.patchDecision(previousVersion._id, decisionWithRules)
+          logger.info({
+            path: 'src/tj/batch/normalization.ts',
+            operations: ['normalization', 'normalizationJob-TJ'],
+            message: `Decision patched in database with minor changes: ${JSON.stringify(
+              diff.minor
+            )}`
+          })
+        } else {
+          logger.warn({
+            path: 'src/tj/batch/normalization.ts',
+            operations: ['normalization', 'normalizationJob-TJ'],
+            message: 'Decision has no change'
           })
         }
-
-        // Step 8: Save decision in normalized bucket
-        await s3Repository.saveDecisionNormalisee(
-          JSON.stringify(decisionFromS3Clone),
-          decisionFilename
-        )
-
+      } else {
+        // Insert new decision:
+        const annotatedDecision = await annotateDecision(decisionWithRules)
+        await dbSderApiGateway.saveDecision(annotatedDecision)
         logger.info({
           path: 'src/tj/batch/normalization.ts',
           operations: ['normalization', 'normalizationJob-TJ'],
-          message: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
+          message: `Decision saved in database`
         })
-
-        // Step 9: Delete decision in raw bucket
-        await s3Repository.deleteDecision(decisionFilename, bucketNameIntegre)
-
-        logger.info({
-          path: 'src/tj/batch/normalization.ts',
-          operations: ['normalization', 'normalizationJob-TJ'],
-          message: 'Successful normalization of ' + decisionFilename
-        })
-
-        listConvertedDecision.push({
-          metadonnees: decisionWithRules,
-          decisionNormalisee: cleanedDecision
-        })
-      } catch (error) {
-        logger.error({
-          path: 'src/tj/batch/normalization.ts',
-          operations: ['normalization', 'normalizationJob-TJ'],
-          message: 'Failed to normalize the decision ' + decisionFilename + '.',
-          stack: error.stack
-        })
-        continue
       }
+
+      // Step 8: Save decision in normalized bucket
+      await s3Repository.saveDecisionNormalisee(
+        JSON.stringify(decisionFromS3Clone),
+        decisionFilename
+      )
+
+      logger.info({
+        path: 'src/tj/batch/normalization.ts',
+        operations: ['normalization', 'normalizationJob-TJ'],
+        message: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
+      })
+
+      // Step 9: Delete decision in raw bucket
+      await s3Repository.deleteDecision(decisionFilename, bucketNameIntegre)
+
+      logger.info({
+        path: 'src/tj/batch/normalization.ts',
+        operations: ['normalization', 'normalizationJob-TJ'],
+        message: 'Successful normalization of ' + decisionFilename
+      })
+
+      listConvertedDecision.push({
+        metadonnees: decisionWithRules,
+        decisionNormalisee: cleanedDecision
+      })
+    } catch (error) {
+      logger.error({
+        path: 'src/tj/batch/normalization.ts',
+        operations: ['normalization', 'normalizationJob-TJ'],
+        message: 'Failed to normalize the decision ' + decisionFilename + '.',
+        stack: error.stack
+      })
+      continue
     }
-    const lastTreatedDecisionFileName = decisionList[decisionList.length - 1]
-    decisionList = await fetchDecisionListFromS3(s3Repository, lastTreatedDecisionFileName)
   }
 
   if (listConvertedDecision.length == 0) {

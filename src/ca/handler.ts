@@ -71,7 +71,8 @@ export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
 }
 
 export async function normalizeRawCaFiles(
-  defaultFilter?: Parameters<typeof findFileInformations<RawCa>>[1]
+  defaultFilter?: Parameters<typeof findFileInformations<RawCa>>[1],
+  limit?: number
 ) {
   logger.info({
     path: 'src/ca/handler.ts',
@@ -79,12 +80,16 @@ export async function normalizeRawCaFiles(
     message: `Starting CA normalization`
   })
   const _rawCaToNormalize = defaultFilter ?? rawCaToNormalize
-  const rawCaCursor = await findFileInformations<RawCa>(COLLECTION_JURICA_RAW, _rawCaToNormalize)
+  const rawCaCursor = await findFileInformations<RawCa>(
+    COLLECTION_JURICA_RAW,
+    _rawCaToNormalize,
+    limit
+  )
   const rawCaLength = await countFileInformations<RawCa>(COLLECTION_JURICA_RAW, _rawCaToNormalize)
   logger.info({
     path: 'src/ca/handler.ts',
     operations: ['normalization', 'normalizeRawCaFiles'],
-    message: `Find ${rawCaLength} raw decisions to normalize`
+    message: `Find ${rawCaLength} raw decisions to normalize. Limit is set to ${limit}`
   })
 
   const results: NormalizationResult<RawCa>[] = await mapCursorSync(rawCaCursor, async (rawCa) => {

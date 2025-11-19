@@ -11,7 +11,8 @@ import { S3_BUCKET_NAME_PORTALIS } from '../../../library/env'
 import { updateRawFileStatus, NormalizationResult } from '../../../services/eventSourcing'
 
 export async function normalizeRawCphFiles(
-  defaultFilter?: Parameters<typeof findFileInformations<RawCph>>[1]
+  defaultFilter?: Parameters<typeof findFileInformations<RawCph>>[1],
+  limit?: number
 ) {
   logger.info({
     path: 'src/service/cph/handler.ts',
@@ -21,7 +22,8 @@ export async function normalizeRawCphFiles(
   const _rawCphToNormalize = defaultFilter ?? rawCphToNormalize
   const rawCphCursor = await findFileInformations<RawCph>(
     S3_BUCKET_NAME_PORTALIS,
-    _rawCphToNormalize
+    _rawCphToNormalize,
+    limit
   )
   const rawCphLength = await countFileInformations<RawCph>(
     S3_BUCKET_NAME_PORTALIS,
@@ -30,7 +32,7 @@ export async function normalizeRawCphFiles(
   logger.info({
     path: 'src/service/cph/handler.ts',
     operations: ['normalization', 'normalizeRawCphFiles'],
-    message: `Find ${rawCphLength} raw decisions to normalize`
+    message: `Find ${rawCphLength} raw decisions to normalize batch. Limit is set to ${limit}`
   })
 
   const results: NormalizationResult<RawCph>[] = await mapCursorSync(
