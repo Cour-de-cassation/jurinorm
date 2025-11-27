@@ -54,7 +54,6 @@ const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TJ
 
 export async function normalizeTj(rawTj: RawTj): Promise<unknown> {
   try {
-    console.log(rawTj)
     const jobId = uuidv4()
     normalizationFormatLogs.correlationId = jobId
 
