@@ -32,7 +32,6 @@ export async function postNer(parameters: NerParameters): Promise<NerResponse> {
     additionalTerms: parameters.additionalTerms
   }
   try {
-    if (parameters.sourceName === "jurinet") console.log(data)
     const response = await axios.post<NerResponse>(route, data)
     return response.data
   } catch (err) {
