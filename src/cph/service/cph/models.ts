@@ -69,6 +69,8 @@ const schemaCphMetadatas = zod.object({
     srj_code_evt: zod.string()
   }),
   juridiction: zod.object({
+    libelle_court: zod.string(),
+    libelle_long: zod.string(),
     code_srj: zod.string()
   })
 })
@@ -101,7 +103,7 @@ export function mapCphDecision(
     : SuiviOccultation.AUCUNE
 
   return {
-    sourceId: 0, // publicationRules.identifiantDecision, TODO: will be a string
+    sourceId: publicationRules.identifiantDecision,
     sourceName: 'portalis-cph',
     originalText: content,
     labelStatus: LabelStatus.TOBETREATED,
@@ -122,9 +124,9 @@ export function mapCphDecision(
     //   metadatas.decision.codes_decision
     //     .code_decision[0] as CphMetadatas["decision"]["codes_decision"]["code_decision"][number]
     // ).libelle, // TODO: which value ? - low
-    jurisdictionCode: '', // TODO: which value ? - high
-    jurisdictionId: '', // TODO: which value ? - high
-    jurisdictionName: '', // TODO: which value ? - high
+    jurisdictionCode: metadatas.juridiction.libelle_court,
+    jurisdictionId: metadatas.juridiction.code_srj,
+    jurisdictionName: metadatas.juridiction.libelle_long,
     selection: publicationRules.interetParticulier,
     sommaire: publicationRules.sommaireInteretParticulier,
     blocOccultation: occultationStrategy.blocOccultationCA,
