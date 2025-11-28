@@ -21,6 +21,7 @@ import { computeRulesDecisionTj } from './services/rulesTj'
 import { fetchZoning } from './repositories/gateways/zoning'
 import { RawTj } from './models'
 import { getFileByName } from '../../../library/bucket'
+import { NormalizationResult } from 'src/services/eventSourcing'
 
 export const rawTjToNormalize = {
   // Ne contient pas normalized:
@@ -52,7 +53,7 @@ interface Diff {
 const dbSderApiGateway = new DbSderApiGateway()
 const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TJ
 
-export async function normalizeTj(rawTj: RawTj): Promise<unknown> {
+export async function normalizeTj(rawTj: RawTj): Promise<NormalizationResult<RawTj>> {
   try {
     const jobId = uuidv4()
     normalizationFormatLogs.correlationId = jobId
@@ -236,12 +237,7 @@ export async function normalizeTj(rawTj: RawTj): Promise<unknown> {
       message: 'Successful normalization of ' + rawTj.path
     })
   } catch (error) {
-    logger.error({
-      path: 'src/tj/batch/normalization.ts',
-      operations: ['normalization', 'normalizationJob-TJ'],
-      message: 'Failed to normalize the decision ' + rawTj.path + '.',
-      stack: error.stack
-    })
+    throw error
   }
 }
 

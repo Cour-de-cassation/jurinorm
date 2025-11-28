@@ -56,7 +56,7 @@ export async function normalizeRawTjFiles(
       logger.error({
         path: 'src/tj/batch/normalization/handler.ts',
         operations: ['normalization', 'normalizeRawTjFiles'],
-        message: `${rawTj._id} failed to normalize`,
+        message: `failed to normalize ${rawTj._id} raw file`,
         stack: error.stack
       })
 
