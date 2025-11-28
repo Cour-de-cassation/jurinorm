@@ -8,7 +8,7 @@ import { parseXml } from '../../library/formats/xml'
 import { logger } from '../../../library/logger'
 import { CphMetadatas, mapCphDecision, parseCphMetadatas, RawCph } from './models'
 import { annotateDecision } from '../../../library/nlp/annotation'
-import { S3_BUCKET_NAME_PORTALIS } from 'src/library/env'
+import { S3_BUCKET_NAME_PORTALIS } from '../../../library/env'
 
 function searchXml(attachments: { name: string; data: Buffer }[]): unknown {
   const attachment = attachments.reduce<CphMetadatas | undefined>((acc, attachment, index) => {

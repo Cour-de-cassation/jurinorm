@@ -21,7 +21,7 @@ import { computeRulesDecisionTj } from './services/rulesTj'
 import { fetchZoning } from './repositories/gateways/zoning'
 import { RawTj } from './models'
 import { getFileByName } from '../../../library/bucket'
-import { NormalizationResult } from 'src/services/eventSourcing'
+import { NormalizationResult } from '../../../services/eventSourcing'
 
 export const rawTjToNormalize = {
   // Ne contient pas normalized:
