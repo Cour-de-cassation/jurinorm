@@ -21,7 +21,6 @@ import { computeRulesDecisionTj } from './services/rulesTj'
 import { fetchZoning } from './repositories/gateways/zoning'
 import { RawTj } from './models'
 import { getFileByName } from '../../../library/bucket'
-import { NormalizationResult } from '../../../services/eventSourcing'
 
 export const rawTjToNormalize = {
   // Ne contient pas normalized:
@@ -53,7 +52,7 @@ interface Diff {
 const dbSderApiGateway = new DbSderApiGateway()
 const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TJ
 
-export async function normalizeTj(rawTj: RawTj): Promise<NormalizationResult<RawTj>> {
+export async function normalizeTj(rawTj: RawTj): Promise<unknown> {
   try {
     const jobId = uuidv4()
     normalizationFormatLogs.correlationId = jobId

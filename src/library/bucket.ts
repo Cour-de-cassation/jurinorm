@@ -35,7 +35,9 @@ export async function getFileByName(bucketName: string, fileName: string): Promi
     new GetObjectCommand({ Bucket: bucketName, Key: fileName })
   )
   if (!fileFromS3.Body)
-    throw new UnexpectedError(`File: ${name} seems empty or its body cannot be read.`)
+    throw new UnexpectedError(
+      `File: ${fileName} seems empty or its body cannot be read in bucket ${bucketName}.`
+    )
   const byteArray = await fileFromS3.Body.transformToByteArray()
   return Buffer.from(byteArray.buffer)
 }
