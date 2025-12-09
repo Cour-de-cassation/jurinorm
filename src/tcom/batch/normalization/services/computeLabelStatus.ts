@@ -60,34 +60,23 @@ export async function computeLabelStatus(
     return LabelStatus.IGNORED_DEBAT_NON_PUBLIC
   }
 
-  try {
-    const decisionZoning: UnIdentifiedDecisionTcom['zoning'] =
-      await zoningApiService.getDecisionZoning(decisionDto)
-    decisionDto.originalTextZoning = decisionZoning
-    if (decisionZoning.is_public === 0) {
-      logger.error({
-        ...formatLogs,
-        msg: `Decision is not public *according to Zoning*. Changing LabelStatus to ${LabelStatus.IGNORED_DECISION_NON_PUBLIQUE_PAR_ZONAGE}.`,
-        idJuridiction: decisionDto.jurisdictionId,
-        libelleJuridiction: decisionDto.jurisdictionName
-      })
-      return LabelStatus.IGNORED_DECISION_NON_PUBLIQUE_PAR_ZONAGE
-    }
-    if (decisionZoning.is_public === 2) {
-      logger.error({
-        ...formatLogs,
-        msg: `Decision debates are not public *according to Zoning*. Changing LabelStatus to ${LabelStatus.IGNORED_DECISION_PARTIELLEMENT_PUBLIQUE_PAR_ZONAGE}.`,
-        idJuridiction: decisionDto.jurisdictionId,
-        libelleJuridiction: decisionDto.jurisdictionName
-      })
-      return LabelStatus.IGNORED_DECISION_PARTIELLEMENT_PUBLIQUE_PAR_ZONAGE
-    }
-  } catch (error) {
+  if (decisionDto.originalTextZoning.is_public === 0) {
     logger.error({
       ...formatLogs,
-      msg: `Error while calling zoning.`,
-      data: error
+      msg: `Decision is not public *according to Zoning*. Changing LabelStatus to ${LabelStatus.IGNORED_DECISION_NON_PUBLIQUE_PAR_ZONAGE}.`,
+      idJuridiction: decisionDto.jurisdictionId,
+      libelleJuridiction: decisionDto.jurisdictionName
     })
+    return LabelStatus.IGNORED_DECISION_NON_PUBLIQUE_PAR_ZONAGE
+  }
+  if (decisionDto.originalTextZoning.is_public === 2) {
+    logger.error({
+      ...formatLogs,
+      msg: `Decision debates are not public *according to Zoning*. Changing LabelStatus to ${LabelStatus.IGNORED_DECISION_PARTIELLEMENT_PUBLIQUE_PAR_ZONAGE}.`,
+      idJuridiction: decisionDto.jurisdictionId,
+      libelleJuridiction: decisionDto.jurisdictionName
+    })
+    return LabelStatus.IGNORED_DECISION_PARTIELLEMENT_PUBLIQUE_PAR_ZONAGE
   }
 
   /*
