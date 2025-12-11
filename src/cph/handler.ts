@@ -1,14 +1,14 @@
-import { toUnexpectedError } from '../../../library/error'
+import { toUnexpectedError } from '../services/error'
 import { RawCph } from './models'
 import {
   countFileInformations,
   findFileInformations,
   mapCursorSync
-} from '../../../library/DbRawFile'
+} from '../connectors/DbRawFile'
 import { normalizeCph, rawCphToNormalize } from './normalization'
-import { logger } from '../../../library/logger'
-import { S3_BUCKET_NAME_PORTALIS } from '../../../library/env'
-import { updateRawFileStatus, NormalizationResult } from '../../../services/eventSourcing'
+import { logger } from '../connectors/logger'
+import { S3_BUCKET_NAME_PORTALIS } from '../connectors/env'
+import { updateRawFileStatus, NormalizationResult } from '../services/eventSourcing'
 
 export async function normalizeRawCphFiles(
   defaultFilter?: Parameters<typeof findFileInformations<RawCph>>[1],

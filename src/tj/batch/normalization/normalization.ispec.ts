@@ -16,7 +16,7 @@ import { DbSderApiGateway } from './repositories/gateways/dbsderApi.gateway'
 import { InfrastructureExpection } from '../../shared/infrastructure/exceptions/infrastructure.exception'
 import { LabelStatus } from 'dbsder-api-types'
 import { ObjectId } from 'mongodb'
-import * as annotation from '../../../library/nlp/annotation'
+import * as annotation from '../../../services/nlp/annotation'
 
 jest.mock('./repositories/gateways/zoning', () => ({
   fetchZoning: jest.fn()

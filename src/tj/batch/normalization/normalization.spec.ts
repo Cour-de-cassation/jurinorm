@@ -7,7 +7,7 @@ import * as transformDecisionIntegreFromWPDToText from './services/transformDeci
 import { MockUtils } from '../../shared/infrastructure/utils/mock.utils'
 import { CollectDto } from '../../shared/infrastructure/dto/collect.dto'
 import { DecisionS3Repository } from '../../shared/infrastructure/repositories/decisionS3.repository'
-import * as annotation from '../../../library/nlp/annotation'
+import * as annotation from '../../../services/nlp/annotation'
 
 jest.mock('./repositories/gateways/zoning', () => ({
   fetchZoning: jest.fn()

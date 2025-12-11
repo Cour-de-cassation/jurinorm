@@ -1,4 +1,4 @@
-import { logger } from '../../library/logger'
+import { logger } from '../../connectors/logger'
 import { CollectDto } from '../shared/infrastructure/dto/collect.dto'
 import { DecisionS3Repository } from '../shared/infrastructure/repositories/decisionS3.repository'
 

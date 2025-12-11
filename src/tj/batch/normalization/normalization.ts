@@ -6,7 +6,7 @@ import {
   hasNoBreak
 } from './services/removeOrReplaceUnnecessaryCharacters'
 import { ConvertedDecisionWithMetadonneesDto } from '../../shared/infrastructure/dto/convertedDecisionWithMetadonnees.dto'
-import { logger } from '../../../library/logger'
+import { logger } from '../../../connectors/logger'
 import { fetchDecisionListFromS3 } from './services/fetchDecisionListFromS3'
 import { DecisionS3Repository } from '../../shared/infrastructure/repositories/decisionS3.repository'
 import { mapDecisionNormaliseeToDecisionDto } from './infrastructure/decision.dto'
@@ -17,12 +17,14 @@ import { DbSderApiGateway } from './repositories/gateways/dbsderApi.gateway'
 import { normalizationFormatLogs } from '../../shared/infrastructure/utils/log'
 import { computeOccultation } from './services/computeOccultation'
 
-import { LabelStatus, PublishStatus, UnIdentifiedDecisionTj } from 'dbsder-api-types'
+import { DecisionTj, LabelStatus, PublishStatus, UnIdentifiedDecisionTj } from 'dbsder-api-types'
 
 import { strict as assert } from 'assert'
-import { annotateDecision } from '../../../library/nlp/annotation'
+import { annotateDecision } from '../../../services/nlp/annotation'
 import { computeRulesDecisionTj } from './services/rulesTj'
 import { fetchZoning } from './repositories/gateways/zoning'
+import { findDecisions } from '../../../connectors/DbSder'
+import { saveDecisionInAffaire } from '../../../services/affaire'
 
 interface Diff {
   major: Array<string>
@@ -103,9 +105,6 @@ export async function normalizationJob(
         decision.metadonnees.debatPublic
       )
 
-      /* Normalisation part that was done on dbsder-api */
-      /* ---------------------------------------- */
-
       const originalTextZoning = await fetchZoning({
         arret_id: decisionToSave.sourceId,
         source: 'tj',
@@ -130,93 +129,89 @@ export async function normalizationJob(
         message: `Check diff with previous version of decision ${decisionWithRules.sourceName} ${decisionWithRules.sourceId} (if any)...`
       })
 
-      const previousVersion = await dbSderApiGateway.getDecisionBySourceId(
-        decisionWithRules.sourceId
-      )
-      if (previousVersion !== null) {
-        const diff = computeDiff(previousVersion, decisionWithRules)
-        if (diff.major && diff.major.length > 0) {
-          // Update decision with major changes:
-          const annotatedDecision = await annotateDecision(decisionWithRules)
-          await dbSderApiGateway.saveDecision(annotatedDecision)
-          logger.info({
-            path: 'src/tj/batch/normalization.ts',
-            operations: ['normalization', 'normalizationJob-TJ'],
-            message: `Decision updated in database with major changes: ${JSON.stringify(
-              diff.major
-            )}`
-          })
-        } else if (diff.minor && diff.minor.length > 0) {
-          // Patch decision with minor changes:
-          delete decisionWithRules.__v
-          delete decisionWithRules.sourceId
-          delete decisionWithRules.sourceName
-          delete decisionWithRules.public
-          delete decisionWithRules.debatPublic
-          delete decisionWithRules.occultation
-          delete decisionWithRules.originalText
-          if (
-            decisionWithRules.labelStatus === LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE ||
-            decisionWithRules.labelStatus === LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
-          ) {
-            decisionWithRules.publishStatus = PublishStatus.BLOCKED
-            logger.warn({
-              path: 'src/tj/batch/normalization.ts',
-              operations: ['normalization', 'normalizationJob-TJ'],
-              message: `Decision has a bad updated date: ${decisionWithRules.dateDecision}`
-            })
-          } else if (
-            decisionWithRules.labelStatus === LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC
-          ) {
-            decisionWithRules.publishStatus = PublishStatus.BLOCKED
-            logger.warn({
-              path: 'src/tj/batch/normalization.ts',
-              operations: ['normalization', 'normalizationJob-TJ'],
-              message: `Decision has a codeDecision in blocked codeDecision list: ${decisionWithRules.endCaseCode}`
-            })
-          } else if (decisionWithRules.labelStatus === LabelStatus.IGNORED_CARACTERE_INCONNU) {
-            decisionWithRules.publishStatus = PublishStatus.BLOCKED
-            logger.warn({
-              path: 'src/tj/batch/normalization.ts',
-              operations: ['normalization', 'normalizationJob-TJ'],
-              message: `Decision contains unknown characters`
-            })
-          } else {
-            if (previousVersion.labelStatus === LabelStatus.EXPORTED) {
-              decisionWithRules.labelStatus = LabelStatus.DONE
-            } else {
-              decisionWithRules.labelStatus = previousVersion.labelStatus
-            }
-            if (
-              previousVersion.publishStatus === PublishStatus.SUCCESS ||
-              previousVersion.publishStatus === PublishStatus.UNPUBLISHED ||
-              previousVersion.publishStatus === PublishStatus.FAILURE_PREPARING ||
-              previousVersion.publishStatus === PublishStatus.FAILURE_INDEXING
-            ) {
-              decisionWithRules.publishStatus = PublishStatus.TOBEPUBLISHED
-            } else {
-              decisionWithRules.publishStatus = previousVersion.publishStatus
-            }
-          }
-          await dbSderApiGateway.patchDecision(previousVersion._id, decisionWithRules)
-          logger.info({
-            path: 'src/tj/batch/normalization.ts',
-            operations: ['normalization', 'normalizationJob-TJ'],
-            message: `Decision patched in database with minor changes: ${JSON.stringify(
-              diff.minor
-            )}`
-          })
-        } else {
+      const [previousVersion] = (await findDecisions<DecisionTj>({
+        sourceName: "juritj", sourceId: decisionWithRules.sourceId
+      })).decisions
+      const diff = previousVersion ? computeDiff(previousVersion, decisionWithRules) : null
+
+      if (
+        diff?.major?.length === 0 &&
+        diff?.minor?.length > 0 &&
+        previousVersion.labelStatus !== LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
+      ) {
+        // Patch decision with minor changes:
+        delete decisionWithRules.__v
+        delete decisionWithRules.sourceId
+        delete decisionWithRules.sourceName
+        delete decisionWithRules.public
+        delete decisionWithRules.debatPublic
+        delete decisionWithRules.occultation
+        delete decisionWithRules.originalText
+        if (
+          decisionWithRules.labelStatus === LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE ||
+          decisionWithRules.labelStatus === LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
+        ) {
+          decisionWithRules.publishStatus = PublishStatus.BLOCKED
           logger.warn({
             path: 'src/tj/batch/normalization.ts',
             operations: ['normalization', 'normalizationJob-TJ'],
-            message: 'Decision has no change'
+            message: `Decision has a bad updated date: ${decisionWithRules.dateDecision}`
           })
+        } else if (
+          decisionWithRules.labelStatus === LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC
+        ) {
+          decisionWithRules.publishStatus = PublishStatus.BLOCKED
+          logger.warn({
+            path: 'src/tj/batch/normalization.ts',
+            operations: ['normalization', 'normalizationJob-TJ'],
+            message: `Decision has a codeDecision in blocked codeDecision list: ${decisionWithRules.endCaseCode}`
+          })
+        } else if (decisionWithRules.labelStatus === LabelStatus.IGNORED_CARACTERE_INCONNU) {
+          decisionWithRules.publishStatus = PublishStatus.BLOCKED
+          logger.warn({
+            path: 'src/tj/batch/normalization.ts',
+            operations: ['normalization', 'normalizationJob-TJ'],
+            message: `Decision contains unknown characters`
+          })
+        } else {
+          if (previousVersion.labelStatus === LabelStatus.EXPORTED) {
+            decisionWithRules.labelStatus = LabelStatus.DONE
+          } else {
+            decisionWithRules.labelStatus = previousVersion.labelStatus
+          }
+          if (
+            previousVersion.publishStatus === PublishStatus.SUCCESS ||
+            previousVersion.publishStatus === PublishStatus.UNPUBLISHED ||
+            previousVersion.publishStatus === PublishStatus.FAILURE_PREPARING ||
+            previousVersion.publishStatus === PublishStatus.FAILURE_INDEXING
+          ) {
+            decisionWithRules.publishStatus = PublishStatus.TOBEPUBLISHED
+          } else {
+            decisionWithRules.publishStatus = previousVersion.publishStatus
+          }
         }
+        await dbSderApiGateway.patchDecision(previousVersion._id, decisionWithRules)
+        logger.info({
+          path: 'src/tj/batch/normalization.ts',
+          operations: ['normalization', 'normalizationJob-TJ'],
+          message: `Decision patched in database with minor changes: ${JSON.stringify(
+            diff.minor
+          )}`
+        })
+      } else if (
+        diff?.major?.length === 0 &&
+        diff?.minor?.length === 0 &&
+        previousVersion.labelStatus !== LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
+      ) {
+        logger.warn({
+          path: 'src/tj/batch/normalization.ts',
+          operations: ['normalization', 'normalizationJob-TJ'],
+          message: 'Decision has no change'
+        })
       } else {
         // Insert new decision:
         const annotatedDecision = await annotateDecision(decisionWithRules)
-        await dbSderApiGateway.saveDecision(annotatedDecision)
+        await saveDecisionInAffaire(annotatedDecision)
         logger.info({
           path: 'src/tj/batch/normalization.ts',
           operations: ['normalization', 'normalizationJob-TJ'],

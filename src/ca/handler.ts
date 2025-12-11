@@ -1,12 +1,12 @@
-import { toUnexpectedError } from '../library/error'
+import { toUnexpectedError } from '../services/error'
 import { RawCa } from './models'
-import { countFileInformations, findFileInformations, mapCursorSync } from '../library/DbRawFile'
-import { logger } from '../library/logger'
-import { COLLECTION_JURICA_RAW } from '../library/env'
+import { countFileInformations, findFileInformations, mapCursorSync } from '../connectors/DbRawFile'
+import { logger } from '../connectors/logger'
+import { COLLECTION_JURICA_RAW } from '../connectors/env'
 import { updateRawFileStatus, NormalizationResult } from '../services/eventSourcing'
-import { sendToSder } from '../library/DbSder'
-import { annotateDecision } from '../library/nlp/annotation'
+import { annotateDecision } from '../services/nlp/annotation'
 import { LabelStatus } from 'dbsder-api-types'
+import { saveDecisionInAffaire } from '../services/affaire'
 
 export const rawCaToNormalize = {
   // Ne contient ni normalized ni deleted:
@@ -62,12 +62,15 @@ export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
     le cas d'une réception d'une mise a jour de décision qui ne nécessite
     pas un retraitement dans label il ne faut pas réannoter la décision.
   */
-  if (caDecision?.labelStatus === LabelStatus.TOBETREATED) {
+  if (
+    caDecision?.labelStatus === LabelStatus.TOBETREATED || 
+    caDecision?.labelStatus === LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
+  ) {
     const annotatedDecision = await annotateDecision(caDecision)
-    return sendToSder(annotatedDecision)
+    return saveDecisionInAffaire(annotatedDecision)
   }
 
-  return sendToSder(caDecision)
+  return saveDecisionInAffaire(caDecision)
 }
 
 export async function normalizeRawCaFiles(
