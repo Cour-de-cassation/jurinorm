@@ -33,7 +33,7 @@ export async function createDecision(
   }
 }
 
-export async function patchDecision(id: Decision['_id'], decisionFields: Partial<Decision>) {
+export async function patchDecision(id: Decision['_id'], decisionFields: Partial<Decision>): Promise<{ _id: string }> {
   const route = `${DBSDER_API_URL}/decisions/${id}`
   try {
     const response = await axios.patch<{ _id: string }>(route, decisionFields, {
@@ -65,7 +65,7 @@ export async function getCodeNac(codenac: string): Promise<CodeNac | null> {
   }
 }
 
-export async function createAffaire(affaire: UnIdentifiedAffaire) {
+export async function createAffaire(affaire: UnIdentifiedAffaire): Promise<Affaire> {
   const route = `${DBSDER_API_URL}/affaires`
   try {
     const response = await axios.post<Affaire>(route, affaire, {
@@ -82,10 +82,29 @@ export async function createAffaire(affaire: UnIdentifiedAffaire) {
   }
 }
 
+export async function findAffaire(decisionId: Affaire["decisionIds"][number]): Promise<Affaire | null> {
+  const route = `${DBSDER_API_URL}/affaires`
+  try {
+    const response = await axios.get<Affaire>(route, {
+      headers: { 'x-api-key': DBSDER_API_KEY },
+      params: { decisionId }
+    })
+    return response.data
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response) {
+      if (err.response.status === 404) return null
+      throw new UnexpectedError(
+        `Call GET - ${route} response with code ${err.response.status}: ${err.response.data.message}`
+      )
+    }
+    throw err
+  }
+}
+
 export async function findDecisions<T extends Decision>(params: Partial<T>, searchAfter?: string) {
   const route = process.env.DBSDER_API_URL + '/decisions'
   type Response = {
-    decisions: (Omit<T, "_id"> & { _id: string})[]
+    decisions: (Omit<T, "_id"> & { _id: string })[]
     totalDecisions: number
     nextCursor?: string
   }
