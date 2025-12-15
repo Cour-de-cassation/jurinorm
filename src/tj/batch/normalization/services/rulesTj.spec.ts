@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb'
 import { DbSderApiGateway } from '../repositories/gateways/dbsderApi.gateway'
 import * as rulesTj from './rulesTj'
 import { CodeNac, DecisionTj, LabelStatus } from 'dbsder-api-types'
-import { BlocOccultation, Category, SuiviOccultation } from 'dbsder-api-types/dist/types/common'
+import { BlocOccultation, Category, SuiviOccultation } from 'dbsder-api-types'
 
 const findCodeNac = jest.spyOn(DbSderApiGateway.prototype, 'getCodeNac')
 
