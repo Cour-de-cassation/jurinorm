@@ -10,7 +10,7 @@ import {
 import { NerParameters, NerResponse, postNer } from './ner'
 import { isCurrentZoning, parseCurrentZoning } from 'dbsder-api-types/dist/typeGuards/common.zod'
 import { NotSupported, toNotSupported } from '../error'
-import { ZoneRange } from 'dbsder-api-types/dist/types/common'
+import { ZoneRange } from 'dbsder-api-types'
 import { logger } from '../logger'
 
 export type AnnotationResult = {
