@@ -33,7 +33,10 @@ export async function createDecision(
   }
 }
 
-export async function patchDecision(id: Decision['_id'], decisionFields: Partial<Decision>): Promise<{ _id: string }> {
+export async function patchDecision(
+  id: Decision['_id'],
+  decisionFields: Partial<Decision>
+): Promise<{ _id: string }> {
   const route = `${DBSDER_API_URL}/decisions/${id}`
   try {
     const response = await axios.patch<{ _id: string }>(route, decisionFields, {
@@ -82,7 +85,9 @@ export async function createAffaire(affaire: UnIdentifiedAffaire): Promise<Affai
   }
 }
 
-export async function findAffaire(decisionId: Affaire["decisionIds"][number]): Promise<Affaire | null> {
+export async function findAffaire(
+  decisionId: Affaire['decisionIds'][number]
+): Promise<Affaire | null> {
   const route = `${DBSDER_API_URL}/affaires`
   try {
     const response = await axios.get<Affaire>(route, {
@@ -104,7 +109,7 @@ export async function findAffaire(decisionId: Affaire["decisionIds"][number]): P
 export async function findDecisions<T extends Decision>(params: Partial<T>, searchAfter?: string) {
   const route = process.env.DBSDER_API_URL + '/decisions'
   type Response = {
-    decisions: (Omit<T, "_id"> & { _id: string })[]
+    decisions: (Omit<T, '_id'> & { _id: string })[]
     totalDecisions: number
     nextCursor?: string
   }
@@ -137,10 +142,7 @@ export async function listDecisions(filters: Partial<Decision>) {
 
       if (!!response.nextCursor) {
         console.log(`listDecisions nextCursor:${response.nextCursor}`)
-        response = await findDecisions(
-          filters,
-          response.nextCursor
-        )
+        response = await findDecisions(filters, response.nextCursor)
         index = 1
         return response.decisions[0]
       }

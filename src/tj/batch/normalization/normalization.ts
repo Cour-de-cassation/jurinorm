@@ -129,9 +129,12 @@ export async function normalizationJob(
         message: `Check diff with previous version of decision ${decisionWithRules.sourceName} ${decisionWithRules.sourceId} (if any)...`
       })
 
-      const [previousVersion] = (await findDecisions<DecisionTj>({
-        sourceName: "juritj", sourceId: decisionWithRules.sourceId
-      })).decisions
+      const [previousVersion] = (
+        await findDecisions<DecisionTj>({
+          sourceName: 'juritj',
+          sourceId: decisionWithRules.sourceId
+        })
+      ).decisions
       const diff = previousVersion ? computeDiff(previousVersion, decisionWithRules) : null
 
       if (
@@ -157,9 +160,7 @@ export async function normalizationJob(
             operations: ['normalization', 'normalizationJob-TJ'],
             message: `Decision has a bad updated date: ${decisionWithRules.dateDecision}`
           })
-        } else if (
-          decisionWithRules.labelStatus === LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC
-        ) {
+        } else if (decisionWithRules.labelStatus === LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC) {
           decisionWithRules.publishStatus = PublishStatus.BLOCKED
           logger.warn({
             path: 'src/tj/batch/normalization.ts',
@@ -194,9 +195,7 @@ export async function normalizationJob(
         logger.info({
           path: 'src/tj/batch/normalization.ts',
           operations: ['normalization', 'normalizationJob-TJ'],
-          message: `Decision patched in database with minor changes: ${JSON.stringify(
-            diff.minor
-          )}`
+          message: `Decision patched in database with minor changes: ${JSON.stringify(diff.minor)}`
         })
       } else if (
         diff?.major?.length === 0 &&

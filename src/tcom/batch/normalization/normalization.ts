@@ -221,9 +221,7 @@ export async function normalizationJob(
         logger.info({
           operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
           path: 'src/tcom/batch/normalization/normalization.ts',
-          message: `Decision patched in database with minor changes: ${JSON.stringify(
-            diff.minor
-          )}`
+          message: `Decision patched in database with minor changes: ${JSON.stringify(diff.minor)}`
         })
       } else if (
         diff?.major?.length === 0 &&

@@ -63,7 +63,7 @@ export async function normalizeCc(rawCc: RawCc): Promise<NormalizationResult<Raw
     pas un retraitement dans label il ne faut pas réannoter la décision.
   */
   if (
-    ccDecision?.labelStatus === LabelStatus.TOBETREATED || 
+    ccDecision?.labelStatus === LabelStatus.TOBETREATED ||
     ccDecision?.labelStatus === LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
   ) {
     const annotatedDecision = await annotateDecision(ccDecision)

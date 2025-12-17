@@ -63,7 +63,7 @@ export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
     pas un retraitement dans label il ne faut pas réannoter la décision.
   */
   if (
-    caDecision?.labelStatus === LabelStatus.TOBETREATED || 
+    caDecision?.labelStatus === LabelStatus.TOBETREATED ||
     caDecision?.labelStatus === LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
   ) {
     const annotatedDecision = await annotateDecision(caDecision)

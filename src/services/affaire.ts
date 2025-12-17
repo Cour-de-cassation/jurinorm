@@ -12,22 +12,22 @@ export async function saveDecisionInAffaire(
 ): Promise<unknown> {
   const { labelStatus, ...tmpDecision } = decision
 
-    const { _id } = await createDecision({
-        labelStatus: LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION,
-        ...tmpDecision
-    })
-    const decisionId = parseId(_id)
+  const { _id } = await createDecision({
+    labelStatus: LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION,
+    ...tmpDecision
+  })
+  const decisionId = parseId(_id)
 
-    const existingAffaire = await findAffaire(decisionId)
-    if (!existingAffaire) {
-        await createAffaire({
-            decisionIds: [decisionId],
-            documentAssocieIds: [],
-            replacementTerms: []
-        })
-    }
-
-    return patchDecision(decisionId, {
-        labelStatus,
+  const existingAffaire = await findAffaire(decisionId)
+  if (!existingAffaire) {
+    await createAffaire({
+      decisionIds: [decisionId],
+      documentAssocieIds: [],
+      replacementTerms: []
     })
+  }
+
+  return patchDecision(decisionId, {
+    labelStatus
+  })
 }
