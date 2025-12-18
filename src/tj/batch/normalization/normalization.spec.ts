@@ -10,7 +10,7 @@ import { DecisionS3Repository } from '../../shared/infrastructure/repositories/d
 import * as annotation from '../../../services/nlp/annotation'
 import * as affaire from '../../../services/affaire'
 import * as dbsder from '../../../connectors/DbSder'
- 
+
 jest.mock('./repositories/gateways/zoning', () => ({
   fetchZoning: jest.fn()
 }))
@@ -91,15 +91,13 @@ describe('Normalization', () => {
 
     jest
       .spyOn(annotation, 'annotateDecision')
-      .mockImplementation((decision: any) => Promise.resolve(decision));
+      .mockImplementation((decision: any) => Promise.resolve(decision))
 
-    jest
-      .spyOn(affaire, 'saveDecisionInAffaire')
-      .mockImplementation((decision: any) => Promise.resolve(null));
+    jest.spyOn(affaire, 'saveDecisionInAffaire').mockImplementation(() => Promise.resolve(null))
 
     jest
       .spyOn(dbsder, 'findDecisions')
-      .mockImplementation((partialDecision: any) => Promise.resolve({ decisions: [], totalDecisions: 0 }));
+      .mockImplementation(() => Promise.resolve({ decisions: [], totalDecisions: 0 }))
   })
 
   beforeAll(() => {

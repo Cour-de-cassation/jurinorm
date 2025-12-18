@@ -90,13 +90,11 @@ describe('Normalization', () => {
       })
     )
 
-    jest
-      .spyOn(affaire, 'saveDecisionInAffaire')
-      .mockImplementation((decision: any) => Promise.resolve(null));
+    jest.spyOn(affaire, 'saveDecisionInAffaire').mockImplementation(() => Promise.resolve(null))
 
     jest
       .spyOn(dbsder, 'findDecisions')
-      .mockImplementation((partialDecision: any) => Promise.resolve({ decisions: [], totalDecisions: 0 }));
+      .mockImplementation(() => Promise.resolve({ decisions: [], totalDecisions: 0 }))
   })
 
   beforeAll(() => {
@@ -300,9 +298,7 @@ describe('Normalization', () => {
         )
       })
 
-      jest
-      .spyOn(affaire, 'saveDecisionInAffaire')
-      .mockRejectedValueOnce(new Error());
+      jest.spyOn(affaire, 'saveDecisionInAffaire').mockRejectedValueOnce(new Error())
 
       // WHEN
       const result = await normalizationJob()
