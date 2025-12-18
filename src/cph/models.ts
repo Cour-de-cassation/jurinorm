@@ -1,5 +1,5 @@
 import zod from 'zod'
-import { toNotSupported } from '../../../library/error'
+import { toNotSupported } from '../services/error'
 import {
   UnIdentifiedDecisionCph,
   LabelStatus,
@@ -7,7 +7,7 @@ import {
   SuiviOccultation,
   CodeNac
 } from 'dbsder-api-types'
-import { RawFile } from '../../../services/eventSourcing'
+import { RawFile } from '../services/eventSourcing'
 
 export type FileCph = {
   mimetype: string

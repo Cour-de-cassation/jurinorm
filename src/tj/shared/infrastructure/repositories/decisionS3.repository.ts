@@ -9,7 +9,7 @@ import {
 } from '@aws-sdk/client-s3'
 import { CollectDto } from '../dto/collect.dto'
 import { BucketError } from '../../domain/errors/bucket.error'
-import { logger } from '../../../../library/logger'
+import { logger } from '../../../../connectors/logger'
 export class DecisionS3Repository {
   private s3Client: S3Client
 

@@ -2,7 +2,7 @@ import { Readable } from 'stream'
 import * as readWordperfectDocument from './transformWPDtoText'
 import { transformDecisionIntegreFromWPDToText } from './transformDecisionIntegreContent'
 
-jest.mock('../../../../library/logger', () => ({
+jest.mock('../../../../connectors/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),

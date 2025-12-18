@@ -1,6 +1,6 @@
 import { DecisionS3Repository } from '../../../shared/infrastructure/repositories/decisionS3.repository'
 import { InfrastructureExpection } from '../../../shared/infrastructure/exceptions/infrastructure.exception'
-import { logger } from '../../../../library/logger'
+import { logger } from '../../../../connectors/logger'
 
 export async function fetchDecisionListFromS3(
   repository: DecisionS3Repository,

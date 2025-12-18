@@ -7,13 +7,15 @@ import * as transformDecisionIntegreFromWPDToText from './services/transformDeci
 import { MockUtils } from '../../shared/infrastructure/utils/mock.utils'
 import { CollectDto } from '../../shared/infrastructure/dto/collect.dto'
 import { DecisionS3Repository } from '../../shared/infrastructure/repositories/decisionS3.repository'
-import * as annotation from '../../../library/nlp/annotation'
+import * as annotation from '../../../services/nlp/annotation'
+import * as affaire from '../../../services/affaire'
+import * as dbsder from '../../../connectors/DbSder'
 
 jest.mock('./repositories/gateways/zoning', () => ({
   fetchZoning: jest.fn()
 }))
 
-jest.mock('../../../library/logger', () => ({
+jest.mock('../../../connectors/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),
@@ -90,6 +92,12 @@ describe('Normalization', () => {
     jest
       .spyOn(annotation, 'annotateDecision')
       .mockImplementation((decision: any) => Promise.resolve(decision))
+
+    jest.spyOn(affaire, 'saveDecisionInAffaire').mockImplementation(() => Promise.resolve(null))
+
+    jest
+      .spyOn(dbsder, 'findDecisions')
+      .mockImplementation(() => Promise.resolve({ decisions: [], totalDecisions: 0 }))
   })
 
   beforeAll(() => {

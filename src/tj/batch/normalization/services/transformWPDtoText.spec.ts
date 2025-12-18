@@ -1,6 +1,6 @@
 import { getConversionCommandPath } from './transformWPDtoText'
 
-jest.mock('../../../../library/logger', () => ({
+jest.mock('../../../../connectors/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),

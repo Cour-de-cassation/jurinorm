@@ -7,7 +7,7 @@ import {
   ListObjectsV2Command,
   DeleteObjectCommand
 } from '@aws-sdk/client-s3'
-import { logger } from '../../../../library/logger'
+import { logger } from '../../../../connectors/logger'
 import { BucketError } from '../../domain/errors/bucket.error'
 import { DecisionRepository } from './decision.repository'
 import { CollectDto } from '../dto/collect.dto'
