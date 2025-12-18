@@ -17,12 +17,14 @@ import { InfrastructureExpection } from '../../shared/infrastructure/exceptions/
 import { LabelStatus } from 'dbsder-api-types'
 import { ObjectId } from 'mongodb'
 import * as annotation from '../../../services/nlp/annotation'
+import * as affaire from '../../../services/affaire'
+import * as dbsder from '../../../connectors/DbSder'
 
 jest.mock('./repositories/gateways/zoning', () => ({
   fetchZoning: jest.fn()
 }))
 
-jest.mock('../../../library/logger', () => ({
+jest.mock('../../../connectors/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),
@@ -87,6 +89,14 @@ describe('Normalization', () => {
         }
       })
     )
+
+    jest
+      .spyOn(affaire, 'saveDecisionInAffaire')
+      .mockImplementation((decision: any) => Promise.resolve(null));
+
+    jest
+      .spyOn(dbsder, 'findDecisions')
+      .mockImplementation((partialDecision: any) => Promise.resolve({ decisions: [], totalDecisions: 0 }));
   })
 
   beforeAll(() => {
@@ -290,7 +300,9 @@ describe('Normalization', () => {
         )
       })
 
-      jest.spyOn(DbSderApiGateway.prototype, 'saveDecision').mockRejectedValueOnce(new Error())
+      jest
+      .spyOn(affaire, 'saveDecisionInAffaire')
+      .mockRejectedValueOnce(new Error());
 
       // WHEN
       const result = await normalizationJob()

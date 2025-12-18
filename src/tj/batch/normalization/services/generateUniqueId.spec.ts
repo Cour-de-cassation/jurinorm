@@ -1,7 +1,7 @@
 import { generateUniqueId } from './generateUniqueId'
 import { MockUtils } from '../../../shared/infrastructure/utils/mock.utils'
 
-jest.mock('../../../../library/logger', () => ({
+jest.mock('../../../../connectors/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),
