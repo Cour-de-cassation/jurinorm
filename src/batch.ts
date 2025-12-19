@@ -13,6 +13,9 @@ const CRON_EVERY_HOUR = '0 * * * *'
 const MAX_DECISION_PER_BATCH = 10
 const filters = undefined
 
+// TEMPORAIRE : la taille du batch des TJ est augmentée en attente de la mise en place de l'event sourcing.
+const MAX_DECISION_PER_BATCH_TJ = 400
+
 async function startNormalization() {
   CronJob.from({
     cronTime: NORMALIZATION_BATCH_SCHEDULE ?? CRON_EVERY_HOUR,
@@ -23,7 +26,7 @@ async function startNormalization() {
       })
       await normalizeRawCcFiles()
       await normalizeRawCaFiles(filters, MAX_DECISION_PER_BATCH)
-      await normalizeRawTjFiles(MAX_DECISION_PER_BATCH)
+      await normalizeRawTjFiles(MAX_DECISION_PER_BATCH_TJ)
       await normalizeRawTcomFiles(MAX_DECISION_PER_BATCH)
       if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV))
         await normalizeRawCphFiles(filters, MAX_DECISION_PER_BATCH)
