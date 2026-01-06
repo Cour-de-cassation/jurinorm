@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios'
-import { toNotSupported, UnexpectedError } from '../../../../../library/error'
+import { toNotSupported, UnexpectedError } from '../../../../../services/error'
 
 export type ZoningParameters = {
   arret_id: number

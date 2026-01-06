@@ -1,7 +1,7 @@
 import { existsSync, statSync } from 'fs'
 import { promisify } from 'util'
 import { exec } from 'child_process'
-import { logger } from '../../../../library/logger'
+import { logger } from '../../../../connectors/logger'
 
 const execPromise = promisify(exec)
 const CONVERSION_COMMAND = 'wpd2text'

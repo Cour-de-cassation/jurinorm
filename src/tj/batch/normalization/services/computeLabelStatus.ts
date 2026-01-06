@@ -1,7 +1,7 @@
 import { UnIdentifiedDecisionTj, LabelStatus } from 'dbsder-api-types'
 import { codeDecisionListNotTransmissibleToCC } from '../infrastructure/codeDecisionList'
 import { authorizedCharacters } from '../infrastructure/authorizedCharactersList'
-import { logger } from '../../../../library/logger'
+import { logger } from '../../../../connectors/logger'
 
 const dateMiseEnService = getMiseEnServiceDate()
 const authorizedCharactersdSet = new Set(authorizedCharacters)
