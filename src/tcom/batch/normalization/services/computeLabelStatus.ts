@@ -56,16 +56,6 @@ export async function computeLabelStatus(
     return LabelStatus.IGNORED_MOTIFS_SECRET_AFFAIRE
   }
 
-  if (decisionDto.debatPublic === false) {
-    logger.error({
-      ...formatLogs,
-      msg: `Decision debates are not public. Changing LabelStatus to ${LabelStatus.IGNORED_DEBAT_NON_PUBLIC}.`,
-      idJuridiction: decisionDto.jurisdictionId,
-      libelleJuridiction: decisionDto.jurisdictionName
-    })
-    return LabelStatus.IGNORED_DEBAT_NON_PUBLIC
-  }
-
   return decisionDto.labelStatus
 }
 
