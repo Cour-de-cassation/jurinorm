@@ -46,6 +46,16 @@ export async function computeLabelStatus(
     return LabelStatus.IGNORED_DECISION_NON_PUBLIQUE
   }
 
+  if (decisionDto.motifsSecretAffaires === true) {
+    logger.error({
+      ...formatLogs,
+      msg: `Decision contains secret des affaires. Changing LabelStatus to ${LabelStatus.IGNORED_MOTIFS_SECRET_AFFAIRE}.`,
+      idJuridiction: decisionDto.jurisdictionId,
+      libelleJuridiction: decisionDto.jurisdictionName
+    })
+    return LabelStatus.IGNORED_MOTIFS_SECRET_AFFAIRE
+  }
+
   if (decisionDto.debatPublic === false) {
     logger.error({
       ...formatLogs,
