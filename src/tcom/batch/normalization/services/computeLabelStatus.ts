@@ -1,18 +1,14 @@
 import { UnIdentifiedDecisionTcom, LabelStatus } from 'dbsder-api-types'
 import { LogsFormat } from '../../../shared/infrastructure/utils/logsFormat.utils'
-// import { authorizedJurisdictions } from '../infrastructure/authorizedJurisdictionsList'
-import { ZoningApiService } from './zoningApi.service'
 import { logger, normalizationFormatLogs } from '../logger'
 
 const dateMiseEnService = getMiseEnServiceDate()
-// const authorizedJurisdictionsSet = new Set(authorizedJurisdictions)
 
 export async function computeLabelStatus(
   decisionDto: UnIdentifiedDecisionTcom
 ): Promise<LabelStatus> {
   const dateCreation = new Date(decisionDto.dateCreation)
   const dateDecision = new Date(decisionDto.dateDecision)
-  const zoningApiService: ZoningApiService = new ZoningApiService()
 
   const formatLogs: LogsFormat = {
     ...normalizationFormatLogs,
@@ -60,48 +56,6 @@ export async function computeLabelStatus(
     return LabelStatus.IGNORED_DEBAT_NON_PUBLIC
   }
 
-  try {
-    const decisionZoning: UnIdentifiedDecisionTcom['zoning'] =
-      await zoningApiService.getDecisionZoning(decisionDto)
-    decisionDto.originalTextZoning = decisionZoning
-    if (decisionZoning.is_public === 0) {
-      logger.error({
-        ...formatLogs,
-        msg: `Decision is not public *according to Zoning*. Changing LabelStatus to ${LabelStatus.IGNORED_DECISION_NON_PUBLIQUE_PAR_ZONAGE}.`,
-        idJuridiction: decisionDto.jurisdictionId,
-        libelleJuridiction: decisionDto.jurisdictionName
-      })
-      return LabelStatus.IGNORED_DECISION_NON_PUBLIQUE_PAR_ZONAGE
-    }
-    if (decisionZoning.is_public === 2) {
-      logger.error({
-        ...formatLogs,
-        msg: `Decision debates are not public *according to Zoning*. Changing LabelStatus to ${LabelStatus.IGNORED_DECISION_PARTIELLEMENT_PUBLIQUE_PAR_ZONAGE}.`,
-        idJuridiction: decisionDto.jurisdictionId,
-        libelleJuridiction: decisionDto.jurisdictionName
-      })
-      return LabelStatus.IGNORED_DECISION_PARTIELLEMENT_PUBLIQUE_PAR_ZONAGE
-    }
-  } catch (error) {
-    logger.error({
-      ...formatLogs,
-      msg: `Error while calling zoning.`,
-      data: error
-    })
-  }
-
-  /*
-  if (isDecisionJurisdictionNotInWhiteList(decisionDto.jurisdictionId)) {
-    logger.error({
-      ...formatLogs,
-      msg: `Jurisdiction ${decisionDto.jurisdictionId} in testing phase. Changing LabelStatus to ${LabelStatus.IGNORED_JURIDICTION_EN_PHASE_DE_TEST}.`,
-      idJuridiction: decisionDto.jurisdictionId,
-      libelleJuridiction: decisionDto.jurisdictionName
-    })
-    return LabelStatus.IGNORED_JURIDICTION_EN_PHASE_DE_TEST
-  }
-  */
-
   return decisionDto.labelStatus
 }
 
@@ -112,12 +66,6 @@ function isDecisionInTheFuture(dateCreation: Date, dateDecision: Date): boolean 
 function isDecisionOlderThanMiseEnService(dateDecision: Date): boolean {
   return dateDecision < dateMiseEnService
 }
-
-/*
-function isDecisionJurisdictionNotInWhiteList(jurisdictionId: string): boolean {
-  return !authorizedJurisdictionsSet.has(jurisdictionId)
-}
-*/
 
 function getMiseEnServiceDate(): Date {
   if (!isNaN(new Date(process.env.COMMISSIONING_DATE_TCOM).getTime())) {
