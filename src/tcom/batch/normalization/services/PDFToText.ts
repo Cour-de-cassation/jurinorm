@@ -288,6 +288,8 @@ export function HTMLToPlainText(input: string): string {
   plainText = plainText.replace(/\n\s*\*\s+(\d+)\.\s+/gim, '\n$1. ')
   plainText = plainText.replace(/\n\s*(\d+)\s*\n+\s*([eè][mr]e\s+chambre)/gim, '\n$1$2')
   plainText = plainText.replace(/\n\s*\*\s+/gm, '\n * ')
+  plainText = plainText.replace(/(\w)Juge\s?:/gm, '$1\nJuge :')
+  plainText = plainText.replace(/\s:(\w)/gm, ' : $1')
 
   // 11. Move isolated non-alphanumeric characters to the end of the previous line:
   plainText = plainText.replace(/\n+(\W\W?)\n/gm, '$1\n')
