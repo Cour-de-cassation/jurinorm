@@ -13,9 +13,6 @@ const CRON_EVERY_HOUR = '0 * * * *'
 const MAX_DECISION_PER_BATCH = 10
 const filters = undefined
 
-// TEMPORAIRE : la taille du batch des TJ est augmentée en attente de la mise en place de l'event sourcing.
-const MAX_DECISION_PER_BATCH_TJ = 400
-
 async function startNormalization() {
   CronJob.from({
     cronTime: NORMALIZATION_BATCH_SCHEDULE ?? CRON_EVERY_HOUR,
