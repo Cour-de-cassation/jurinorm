@@ -1,5 +1,5 @@
 import { CodeNac } from 'dbsder-api-types'
-import { getFileByName } from '../../library/bucket'
+import { getFileByName } from '../../../library/bucket'
 import { getCodeNac, sendToSder } from '../../../library/DbSder'
 import { NotFound, UnexpectedError } from '../../../library/error'
 import { htmlToPlainText } from '../../library/formats/html'
@@ -8,6 +8,7 @@ import { parseXml } from '../../library/formats/xml'
 import { logger } from '../../../library/logger'
 import { CphMetadatas, mapCphDecision, parseCphMetadatas, RawCph } from './models'
 import { annotateDecision } from '../../../library/nlp/annotation'
+import { S3_BUCKET_NAME_PORTALIS } from '../../../library/env'
 
 function searchXml(attachments: { name: string; data: Buffer }[]): unknown {
   const attachment = attachments.reduce<CphMetadatas | undefined>((acc, attachment, index) => {
@@ -74,7 +75,7 @@ async function getOccultationStrategy(
 }
 
 export async function normalizeCph(rawCph: RawCph): Promise<unknown> {
-  const cphFile = await getFileByName(rawCph.path)
+  const cphFile = await getFileByName(S3_BUCKET_NAME_PORTALIS, rawCph.path)
   const cphMetadatas = await getCphMetadatas(cphFile)
   const cphPseudoCustomRules = rawCph.metadatas
   const occultationStrategy = await getOccultationStrategy(
