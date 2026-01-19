@@ -7,6 +7,8 @@ export type Created = {
   date: Date
 }
 
+type ArtificiallyCreated = { type: 'created'; date: null }
+
 export type Normalized = {
   type: 'normalized'
   date: Date
@@ -28,7 +30,7 @@ export type Event = Created | Normalized | Blocked | Deleted
 export type RawFile<T> = {
   _id: Id
   path: string
-  events: [Created, ...Event[]]
+  events: [Created | ArtificiallyCreated, ...Event[]]
   metadatas: T
 }
 
