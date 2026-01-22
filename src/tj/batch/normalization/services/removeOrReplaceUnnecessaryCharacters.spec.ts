@@ -82,4 +82,56 @@ describe('Remove unnecessary characters from decision', () => {
     // THEN
     expect(normalizedString).toEqual(trueString)
   })
+
+  it('fixes well-written corrupted guillemets', () => {
+    // GIVEN
+    const rawString = 'A string with a ཋ well-written corrupted quote   with tibetain characters.'
+    const trueString = 'A string with a « well-written corrupted quote » with tibetain characters.'
+
+    // WHEN
+    const normalizedString = removeOrReplaceUnnecessaryCharacters(rawString)
+
+    // THEN
+    expect(normalizedString).toEqual(trueString)
+  })
+
+  it('fixes another (not so) well-written corrupted guillemets', () => {
+    // GIVEN
+    const rawString =
+      'A string with a (not so)ཋwell-written corrupted quote   with tibetain characters.'
+    const trueString =
+      'A string with a (not so)«well-written corrupted quote » with tibetain characters.'
+
+    // WHEN
+    const normalizedString = removeOrReplaceUnnecessaryCharacters(rawString)
+
+    // THEN
+    expect(normalizedString).toEqual(trueString)
+  })
+
+  it('ignores poorly written corrupted guillemets', () => {
+    // GIVEN
+    const rawString = 'A string with a ཋ poorly written corrupted quote with tibetain characters.'
+    const trueString = 'A string with a poorly written corrupted quote with tibetain characters.'
+
+    // WHEN
+    const normalizedString = removeOrReplaceUnnecessaryCharacters(rawString)
+
+    // THEN
+    expect(normalizedString).toEqual(trueString)
+  })
+
+  it('ignores another poorly written corrupted guillemets', () => {
+    // GIVEN
+    const rawString =
+      'A string with anotherཋpoorly written corrupted quote with tibetain characters.'
+    const trueString =
+      'A string with another poorly written corrupted quote with tibetain characters.'
+
+    // WHEN
+    const normalizedString = removeOrReplaceUnnecessaryCharacters(rawString)
+
+    // THEN
+    expect(normalizedString).toEqual(trueString)
+  })
 })
