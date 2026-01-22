@@ -7,6 +7,7 @@ import { updateRawFileStatus, NormalizationResult } from '../services/eventSourc
 import { sendToSder } from '../library/DbSder'
 import { annotateDecision } from '../library/nlp/annotation'
 import { LabelStatus } from 'dbsder-api-types'
+import { computeInteretParticulier } from '../library/metadata/interetParticulier'
 
 export const rawCaToNormalize = {
   // Ne contient ni normalized ni deleted:
@@ -31,7 +32,13 @@ export const rawCaToNormalize = {
 }
 
 export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
-  const caDecision = rawCa.metadatas
+  const decisionMetadata = rawCa.metadatas
+
+  const { interetParticulier, raisonInteretParticulier } = computeInteretParticulier(
+    decisionMetadata.selection,
+    decisionMetadata.sommaire,
+  );
+  const caDecision = { ...decisionMetadata, interetParticulier, raisonInteretParticulier };
 
   /*
     Ce code est temporaire. Il est nécessaire car la normalisation des décisions
