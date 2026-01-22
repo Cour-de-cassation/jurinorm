@@ -83,10 +83,22 @@ describe('Remove unnecessary characters from decision', () => {
     expect(normalizedString).toEqual(trueString)
   })
 
-  it('fixes corrupted guillemets', () => {
+  it('fixes well-written corrupted guillemets', () => {
     // GIVEN
-    const rawString = 'A string with a ཋ corrupted quote   with tibetain characters.'
-    const trueString = 'A string with a « corrupted quote » with tibetain characters.'
+    const rawString = 'A string with a ཋ well-written corrupted quote   with tibetain characters.'
+    const trueString = 'A string with a « well-written corrupted quote » with tibetain characters.'
+
+    // WHEN
+    const normalizedString = removeOrReplaceUnnecessaryCharacters(rawString)
+
+    // THEN
+    expect(normalizedString).toEqual(trueString)
+  })
+
+  it('ignores poorly written corrupted guillemets', () => {
+    // GIVEN
+    const rawString = 'A string with a ཋ poorly written corrupted quote with tibetain characters.'
+    const trueString = 'A string with a poorly written corrupted quote with tibetain characters.'
 
     // WHEN
     const normalizedString = removeOrReplaceUnnecessaryCharacters(rawString)
