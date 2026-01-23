@@ -4,7 +4,8 @@ import {
   DecisionAssocieeDto,
   MetadonneesDto
 } from '../../../shared/infrastructure/dto/metadonnees.dto'
-import { computeInteretParticulier } from '../../../../../src/library/metadata/interetParticulier';
+import { computeInteretParticulier } from '../../../../library/metadata/interetParticulier'
+
 
 export function mapDecisionNormaliseeToDecisionDto(
   generatedId: string,

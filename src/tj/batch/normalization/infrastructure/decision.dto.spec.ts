@@ -1,9 +1,17 @@
-import { LabelStatus, UnIdentifiedDecisionTj, SuiviOccultation } from 'dbsder-api-types'
+import { LabelStatus, UnIdentifiedDecisionTj, SuiviOccultation, RaisonInteretParticulier } from 'dbsder-api-types'
 import { mapDecisionNormaliseeToDecisionDto } from './decision.dto'
 import { MockUtils } from '../../../shared/infrastructure/utils/mock.utils'
+import { computeInteretParticulier } from '../../../../library/metadata/interetParticulier'
+
+jest.mock('../../../../library/metadata/interetParticulier', () => ({
+  computeInteretParticulier: jest.fn(),
+}))
 
 describe('mapDecisionNormaliseeToDecisionDto', () => {
   const mockUtils = new MockUtils()
+  const generatedId = 'TJ75011A01-1234520221121'
+  const decisionContent = mockUtils.decisionContentNormalized
+  const filename = 'test.json'
 
   beforeAll(() => {
     jest.useFakeTimers()
@@ -14,11 +22,16 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
     jest.useRealTimers()
   })
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (computeInteretParticulier as jest.Mock).mockReturnValue({
+      interetParticulier: false,
+      raisonInteretParticulier: undefined,
+    });
+  })
+
   it('returns an object mapping decision from S3 to DBSDER API decision type', async () => {
     // GIVEN
-    const generatedId = 'TJ75011A01-1234520221121'
-    const decisionContent = mockUtils.decisionContentNormalized
-    const filename = 'test.json'
     const mockDecision = mockUtils.mandatoryMetadonneesDtoMock
 
     const expectedDecisionDto: UnIdentifiedDecisionTj = {
@@ -38,6 +51,8 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
       pourvoiLocal: false,
       recommandationOccultation: SuiviOccultation.SUBSTITUANT,
       selection: false,
+      interetParticulier: false,
+      raisonInteretParticulier: undefined,
       NACCode: '11F',
       appeals: [],
       blocOccultation: 0,
@@ -77,9 +92,6 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
 
   it('maps idDecision to idDecisionWinci for both decision and decisionAssociee', async () => {
     // GIVEN
-    const generatedId = 'TJ75011A01-1234520221121'
-    const decisionContent = mockUtils.decisionContentNormalized
-    const filename = 'test.json'
     const mockDecision = {
       ...mockUtils.mandatoryMetadonneesDtoMock,
       idDecision: 'TJ00000',
@@ -106,6 +118,8 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
       pourvoiLocal: false,
       recommandationOccultation: SuiviOccultation.SUBSTITUANT,
       selection: false,
+      interetParticulier: false,
+      raisonInteretParticulier: undefined,
       NACCode: '11F',
       appeals: [],
       blocOccultation: 0,
@@ -146,5 +160,28 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
 
     // THEN
     expect(mappedDecision).toMatchObject(expectedDecisionDto)
+  })
+
+  it("merges metadatas with interetParticulier when true", async () => {
+   (computeInteretParticulier as jest.Mock).mockReturnValue({
+      interetParticulier: true,
+      raisonInteretParticulier: RaisonInteretParticulier.S4_SUJET_INTERET_PUBLIC_MAJEUR,
+    });
+
+    const mockDecision = {
+      ...mockUtils.mandatoryMetadonneesDtoMock,
+      selection: true,
+      sommaire: 'S4 - ...',
+    }
+
+    const mappedDecision = mapDecisionNormaliseeToDecisionDto(
+      generatedId,
+      decisionContent,
+      mockDecision,
+      filename,
+    )
+
+    expect(mappedDecision).toHaveProperty('interetParticulier', true)
+    expect(mappedDecision).toHaveProperty('raisonInteretParticulier', RaisonInteretParticulier.S4_SUJET_INTERET_PUBLIC_MAJEUR)
   })
 })

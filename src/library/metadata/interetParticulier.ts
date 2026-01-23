@@ -1,19 +1,19 @@
-import { RaisonInteretParticulier } from "dbsder-api-types";
+import { RaisonInteretParticulier } from 'dbsder-api-types';
 import { logger } from '../logger';
 
 export function computeInteretParticulier(
   selection: boolean | undefined,
   sommaire: string | undefined
 ): {
-  interetParticulier: boolean
-  raisonInteretParticulier: RaisonInteretParticulier | undefined
+  interetParticulier: boolean;
+  raisonInteretParticulier: RaisonInteretParticulier | undefined;
 } {
   const trimmedSommaire = sommaire?.trim() ?? '';
   if (!selection || trimmedSommaire.length < 2) {
     return {
       interetParticulier: false,
       raisonInteretParticulier: undefined,
-    }
+    };
   }
 
   const code = trimmedSommaire.slice(0, 2);
@@ -21,8 +21,8 @@ export function computeInteretParticulier(
 
   return {
     interetParticulier: Boolean(raisonInteretParticulier),
-    raisonInteretParticulier: raisonInteretParticulier ?? undefined,
-  }
+    raisonInteretParticulier,
+  };
 }
 
 const CODE_TO_RAISON: Record<string, RaisonInteretParticulier> = buildRaisonMap();
@@ -40,10 +40,10 @@ function getRaisonInteretParticulierByCode(code: string): RaisonInteretParticuli
 
   if (!raison) {
     logger.warn({
-      path: 'src/library/metadata/interetParticulier.ts',
+      path: __filename,
       operations: ['normalization', 'getRaisonInteretParticulierByCode'],
       message: `Invalid RaisonInteretParticulier code: "${code}".`,
-    })
+    });
   }
 
   return raison;
