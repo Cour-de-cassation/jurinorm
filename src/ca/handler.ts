@@ -36,9 +36,9 @@ export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
 
   const { interetParticulier, raisonInteretParticulier } = computeInteretParticulier(
     decisionMetadata.selection,
-    decisionMetadata.sommaire,
-  );
-  const caDecision = { ...decisionMetadata, interetParticulier, raisonInteretParticulier };
+    decisionMetadata.sommaire
+  )
+  const caDecision = { ...decisionMetadata, interetParticulier, raisonInteretParticulier }
 
   /*
     Ce code est temporaire. Il est nécessaire car la normalisation des décisions

@@ -6,7 +6,6 @@ import {
 } from '../../../shared/infrastructure/dto/metadonnees.dto'
 import { computeInteretParticulier } from '../../../../library/metadata/interetParticulier'
 
-
 export function mapDecisionNormaliseeToDecisionDto(
   generatedId: string,
   decisionContent: string,
@@ -15,8 +14,8 @@ export function mapDecisionNormaliseeToDecisionDto(
 ): UnIdentifiedDecisionTj {
   const { interetParticulier, raisonInteretParticulier } = computeInteretParticulier(
     metadonnees.selection,
-    metadonnees.sommaire,
-  );
+    metadonnees.sommaire
+  )
 
   return {
     __v: 0,

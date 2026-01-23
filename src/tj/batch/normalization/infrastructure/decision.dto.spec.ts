@@ -1,10 +1,15 @@
-import { LabelStatus, UnIdentifiedDecisionTj, SuiviOccultation, RaisonInteretParticulier } from 'dbsder-api-types'
+import {
+  LabelStatus,
+  UnIdentifiedDecisionTj,
+  SuiviOccultation,
+  RaisonInteretParticulier
+} from 'dbsder-api-types'
 import { mapDecisionNormaliseeToDecisionDto } from './decision.dto'
 import { MockUtils } from '../../../shared/infrastructure/utils/mock.utils'
 import { computeInteretParticulier } from '../../../../library/metadata/interetParticulier'
 
 jest.mock('../../../../library/metadata/interetParticulier', () => ({
-  computeInteretParticulier: jest.fn(),
+  computeInteretParticulier: jest.fn()
 }))
 
 describe('mapDecisionNormaliseeToDecisionDto', () => {
@@ -23,11 +28,11 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (computeInteretParticulier as jest.Mock).mockReturnValue({
+    jest.clearAllMocks()
+    ;(computeInteretParticulier as jest.Mock).mockReturnValue({
       interetParticulier: false,
-      raisonInteretParticulier: undefined,
-    });
+      raisonInteretParticulier: undefined
+    })
   })
 
   it('returns an object mapping decision from S3 to DBSDER API decision type', async () => {
@@ -162,26 +167,29 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
     expect(mappedDecision).toMatchObject(expectedDecisionDto)
   })
 
-  it("merges metadatas with interetParticulier when true", async () => {
-   (computeInteretParticulier as jest.Mock).mockReturnValue({
+  it('merges metadatas with interetParticulier when true', async () => {
+    ;(computeInteretParticulier as jest.Mock).mockReturnValue({
       interetParticulier: true,
-      raisonInteretParticulier: RaisonInteretParticulier.S4_SUJET_INTERET_PUBLIC_MAJEUR,
-    });
+      raisonInteretParticulier: RaisonInteretParticulier.S4_SUJET_INTERET_PUBLIC_MAJEUR
+    })
 
     const mockDecision = {
       ...mockUtils.mandatoryMetadonneesDtoMock,
       selection: true,
-      sommaire: 'S4 - ...',
+      sommaire: 'S4 - ...'
     }
 
     const mappedDecision = mapDecisionNormaliseeToDecisionDto(
       generatedId,
       decisionContent,
       mockDecision,
-      filename,
+      filename
     )
 
     expect(mappedDecision).toHaveProperty('interetParticulier', true)
-    expect(mappedDecision).toHaveProperty('raisonInteretParticulier', RaisonInteretParticulier.S4_SUJET_INTERET_PUBLIC_MAJEUR)
+    expect(mappedDecision).toHaveProperty(
+      'raisonInteretParticulier',
+      RaisonInteretParticulier.S4_SUJET_INTERET_PUBLIC_MAJEUR
+    )
   })
 })
