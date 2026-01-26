@@ -51,7 +51,7 @@ describe('computeInteretParticulier', () => {
 
   it('returns true with correct raison when sommaire has valid code in uppercase', () => {
     // WHEN
-    const result = computeInteretParticulier(true, 'S4 - Sujet d\'intérêt public majeur')
+    const result = computeInteretParticulier(true, "S4 - Sujet d'intérêt public majeur")
 
     // THEN
     expect(result.interetParticulier).toBe(true)
@@ -118,9 +118,9 @@ describe('extractCodeFromSommaire', () => {
     expect(code).toBe('F3')
   })
 
-    it('extracts valid code with description', () => {
+  it('extracts valid code with description', () => {
     // WHEN
-    const code = extractCodeFromSommaire('S4 - Sujet d\'intérêt public majeur')
+    const code = extractCodeFromSommaire("S4 - Sujet d'intérêt public majeur")
 
     // THEN
     expect(code).toBe('S4')
