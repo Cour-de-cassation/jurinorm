@@ -118,6 +118,8 @@ export class MockUtils {
     filenameSource: this.allAttributesMetadonneesDtoMock.filenameSource,
     public: this.allAttributesMetadonneesDtoMock.decisionPublique,
     selection: false,
+    raisonInteretParticulier: undefined,
+    interetParticulier: false,
     endCaseCode: this.allAttributesMetadonneesDtoMock.codeDecision,
     decisionAssociee: this.decisionAssocieeTJDtoMock,
     indicateurQPC: true,
