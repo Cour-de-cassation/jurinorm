@@ -167,7 +167,7 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
     expect(mappedDecision).toMatchObject(expectedDecisionDto)
   })
 
-  it('merges metadatas with interetParticulier when true', async () => {
+  it('merges metadata with interetParticulier when true', async () => {
     ;(computeInteretParticulier as jest.Mock).mockReturnValue({
       interetParticulier: true,
       raisonInteretParticulier: RaisonInteretParticulier.S4_SUJET_INTERET_PUBLIC_MAJEUR

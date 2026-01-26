@@ -8,21 +8,41 @@ export function computeInteretParticulier(
   interetParticulier: boolean
   raisonInteretParticulier: RaisonInteretParticulier | undefined
 } {
-  const trimmedSommaire = sommaire?.trim() ?? ''
-  if (!selection || trimmedSommaire.length < 2) {
+  if (!selection) {
     return {
       interetParticulier: false,
       raisonInteretParticulier: undefined
     }
   }
 
-  const code = trimmedSommaire.slice(0, 2)
+  const code = extractCodeFromSommaire(sommaire)
+  if (!code) {
+    return {
+      interetParticulier: false,
+      raisonInteretParticulier: undefined
+    }
+  }
+
   const raisonInteretParticulier = getRaisonInteretParticulierByCode(code)
 
   return {
     interetParticulier: Boolean(raisonInteretParticulier),
     raisonInteretParticulier
   }
+}
+
+export function extractCodeFromSommaire(sommaire: string | undefined): string | null {
+  const trimmedSommaire = sommaire?.trim() ?? ''
+  if (trimmedSommaire.length < 2) {
+    return null
+  }
+
+  const code = trimmedSommaire.split(' ')[0]
+  if (!/^[A-Za-z][0-9]$/.test(code)) {
+    return null
+  }
+
+  return code
 }
 
 const CODE_TO_RAISON: Record<string, RaisonInteretParticulier> = buildRaisonMap()

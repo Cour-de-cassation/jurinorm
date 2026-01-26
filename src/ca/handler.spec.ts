@@ -28,7 +28,7 @@ describe('normalizeCa – caDecision content', () => {
     jest.clearAllMocks()
   })
 
-  it('merges metadatas with interetParticulier when true', async () => {
+  it('merges metadata with interetParticulier when true', async () => {
     ;(computeInteretParticulier as jest.Mock).mockReturnValue({
       interetParticulier: true,
       raisonInteretParticulier: RaisonInteretParticulier.S4_SUJET_INTERET_PUBLIC_MAJEUR
@@ -45,7 +45,7 @@ describe('normalizeCa – caDecision content', () => {
     )
   })
 
-  it('merges metadatas with interetParticulier when false', async () => {
+  it('merges metadata with interetParticulier when false', async () => {
     ;(computeInteretParticulier as jest.Mock).mockReturnValue({
       interetParticulier: false,
       raisonInteretParticulier: undefined
