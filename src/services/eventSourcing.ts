@@ -1,4 +1,4 @@
-import { isMissingValue, toUnexpectedError, UnexpectedError } from './error'
+import { toUnexpectedError, UnexpectedError } from './error'
 import { Id, updateFileInformation } from '../connectors/DbRawFile'
 import { logger } from '../connectors/logger'
 
@@ -55,38 +55,34 @@ export type NormalizationResult<T extends RawFile<unknown>> =
   | NormalizationSucess<T>
   | NormalizationDeleted<T>
 
-async function updateEventRawFile<T>(
-  collection: string,
-  file: RawFile<T>,
-  event: Exclude<Event, Created>
-) {
-  try {
-    const updated = await updateFileInformation<typeof file>(collection, file._id, {
-      events: [...file.events, event]
-    })
-    if (!updated) throw new UnexpectedError(`file with id ${file._id} is missing but normalized`)
-    return updated
-  } catch (err) {
-    if (isMissingValue(err)) throw err
-    throw err instanceof Error ? toUnexpectedError(err) : new UnexpectedError()
+function mapNormalizationResultIntoEvent<T extends RawFile<unknown>>(
+  normalizationResult: NormalizationResult<T>
+): Exclude<Event, Created> {
+  const date = new Date()
+  switch (normalizationResult.status) {
+    case 'error':
+      return { type: 'blocked', date, reason: `${normalizationResult.error}` }
+    case 'success':
+      return { type: 'normalized', date }
+    case 'deleted':
+      return { type: 'deleted', date }
+    default:
+      const x: never = normalizationResult
+      throw new UnexpectedError("normalization result is unknown")
   }
 }
 
-export async function updateRawFileStatus<T extends RawFile<unknown>>(
+export async function updateRawFileStatus<T>(
   collection: string,
-  result: NormalizationResult<T>
+  result: NormalizationResult<RawFile<T>>
 ): Promise<unknown> {
-  const date = new Date()
   try {
-    if (result.status === 'success')
-      return updateEventRawFile(collection, result.rawFile, { type: 'normalized', date })
-    if (result.status === 'deleted')
-      return updateEventRawFile(collection, result.rawFile, { type: 'deleted', date })
-    return updateEventRawFile(collection, result.rawFile, {
-      type: 'blocked',
-      date,
-      reason: `${result.error}`
+    const rawFile = result.rawFile
+    const updated = await updateFileInformation<typeof rawFile>(collection, rawFile._id, {
+      events: [...rawFile.events, mapNormalizationResultIntoEvent(result)]
     })
+    if (!updated) throw new UnexpectedError(`file with id ${rawFile._id} is missing but normalized`)
+    return updated
   } catch (err) {
     const error = toUnexpectedError(err)
     logger.error({
