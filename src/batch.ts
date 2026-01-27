@@ -2,7 +2,7 @@ import { CronJob } from 'cron'
 import { logger } from './connectors/logger'
 import { ENV, NORMALIZATION_BATCH_SCHEDULE } from './connectors/env'
 
-import { normalizeRawCphFiles } from './cph/handler'
+import { normalizeRawPortalisFiles } from './services/portalis'
 import { normalizationJob as normalizeRawTcomFiles } from './tcom/batch/normalization/normalization'
 import { normalizeRawTjFiles } from './tj/batch/normalization/handler'
 import { normalizeRawCcFiles } from './cc/handler'
@@ -26,7 +26,7 @@ async function startNormalization() {
       await normalizeRawTjFiles(filters, MAX_DECISION_PER_BATCH)
       await normalizeRawTcomFiles(MAX_DECISION_PER_BATCH)
       if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV))
-        await normalizeRawCphFiles(filters, MAX_DECISION_PER_BATCH)
+        await normalizeRawPortalisFiles(filters, MAX_DECISION_PER_BATCH)
     },
     waitForCompletion: true, // onTick cannot be retry if an instance of it is running
     timeZone: 'Europe/Paris',

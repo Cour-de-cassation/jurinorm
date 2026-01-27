@@ -55,8 +55,8 @@ export type NormalizationResult<T extends RawFile<unknown>> =
   | NormalizationSucess<T>
   | NormalizationDeleted<T>
 
-function mapNormalizationResultIntoEvent<T extends RawFile<unknown>>(
-  normalizationResult: NormalizationResult<T>
+function mapNormalizationResultIntoEvent(
+  normalizationResult: NormalizationResult<RawFile<unknown>>
 ): Exclude<Event, Created> {
   const date = new Date()
   switch (normalizationResult.status) {
@@ -72,9 +72,9 @@ function mapNormalizationResultIntoEvent<T extends RawFile<unknown>>(
   }
 }
 
-export async function updateRawFileStatus<T>(
+export async function updateRawFileStatus(
   collection: string,
-  result: NormalizationResult<RawFile<T>>
+  result: NormalizationResult<RawFile<unknown>>
 ): Promise<unknown> {
   try {
     const rawFile = result.rawFile
