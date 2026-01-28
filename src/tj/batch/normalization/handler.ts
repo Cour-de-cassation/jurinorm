@@ -1,10 +1,10 @@
-import { toUnexpectedError } from '../../../library/error'
+import { toUnexpectedError } from '../../../services/error'
 import {
   countFileInformations,
   findFileInformations,
   mapCursorSync
-} from '../../../library/DbRawFile'
-import { logger } from '../../../library/logger'
+} from '../../../connectors/DbRawFile'
+import { logger } from '../../../connectors/logger'
 import { updateRawFileStatus, NormalizationResult } from '../../../services/eventSourcing'
 import { RawTj } from './models'
 import { normalizeTj, rawTjToNormalize } from './normalization'

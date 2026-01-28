@@ -11,7 +11,7 @@ import {
   PDFStream,
   decodePDFRawStream
 } from 'pdf-lib'
-import { NLP_PSEUDONYMISATION_API_URL } from '../../../library/env'
+import { NLP_PSEUDONYMISATION_API_URL } from '../../../connectors/env'
 
 const ROUTE_URL = `${NLP_PSEUDONYMISATION_API_URL}/pdf-to-text`
 

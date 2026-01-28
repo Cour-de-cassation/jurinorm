@@ -1,8 +1,8 @@
 import { CronJob } from 'cron'
-import { logger } from './library/logger'
-import { ENV, NORMALIZATION_BATCH_SCHEDULE } from './library/env'
+import { logger } from './connectors/logger'
+import { ENV, NORMALIZATION_BATCH_SCHEDULE } from './connectors/env'
 
-import { normalizeRawCphFiles } from './cph/service/cph/handler'
+import { normalizeRawCphFiles } from './cph/handler'
 import { normalizationJob as normalizeRawTcomFiles } from './tcom/batch/normalization/normalization'
 import { normalizeRawTjFiles } from './tj/batch/normalization/handler'
 import { normalizeRawCcFiles } from './cc/handler'

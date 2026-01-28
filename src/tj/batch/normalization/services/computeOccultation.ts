@@ -1,5 +1,5 @@
 import { UnIdentifiedDecisionTj, SuiviOccultation } from 'dbsder-api-types'
-import { logger } from '../../../../library/logger'
+import { logger } from '../../../../connectors/logger'
 
 export function computeOccultation(
   recommandationOccultation: string,
