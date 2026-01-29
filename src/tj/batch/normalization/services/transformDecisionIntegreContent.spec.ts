@@ -1,8 +1,7 @@
-import { Readable } from 'stream'
 import * as readWordperfectDocument from './transformWPDtoText'
 import { transformDecisionIntegreFromWPDToText } from './transformDecisionIntegreContent'
 
-jest.mock('../../../../library/logger', () => ({
+jest.mock('../../../../connectors/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),
@@ -25,19 +24,6 @@ describe('transform decision integre content from WPD to text', () => {
   const mockBuffer = Buffer.from(responseMock)
   const fileName = 'someFileName.wpd'
 
-  const decisionIntegre: Express.Multer.File = {
-    fieldname: 'decisionIntegre',
-    originalname: fileName,
-    encoding: '7bit',
-    mimetype: 'application/vnd.wordperfect',
-    size: 4,
-    stream: new Readable(),
-    destination: '',
-    filename: fileName,
-    path: '',
-    buffer: mockBuffer
-  }
-
   beforeEach(() => {
     jest.resetAllMocks()
   })
@@ -49,7 +35,7 @@ describe('transform decision integre content from WPD to text', () => {
       .mockImplementationOnce(() => Promise.resolve(responseMock))
 
     // WHEN
-    const decisionIntegreTest = await transformDecisionIntegreFromWPDToText(decisionIntegre)
+    const decisionIntegreTest = await transformDecisionIntegreFromWPDToText(mockBuffer, fileName)
     // THEN
     expect(decisionIntegreTest).toBe(responseMock)
   })
@@ -61,7 +47,7 @@ describe('transform decision integre content from WPD to text', () => {
     })
 
     // WHEN
-    expect(transformDecisionIntegreFromWPDToText(decisionIntegre))
+    expect(transformDecisionIntegreFromWPDToText(mockBuffer, fileName))
       // THEN
       .rejects.toThrow(Error)
   })

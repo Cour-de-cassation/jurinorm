@@ -1,10 +1,10 @@
 import { CronJob } from 'cron'
-import { logger } from './library/logger'
-import { ENV, NORMALIZATION_BATCH_SCHEDULE } from './library/env'
+import { logger } from './connectors/logger'
+import { ENV, NORMALIZATION_BATCH_SCHEDULE } from './connectors/env'
 
-import { normalizeRawCphFiles } from './cph/service/cph/handler'
+import { normalizeRawCphFiles } from './cph/handler'
 import { normalizationJob as normalizeRawTcomFiles } from './tcom/batch/normalization/normalization'
-import { normalizationJob as normalizeRawTjFiles } from './tj/batch/normalization/normalization'
+import { normalizeRawTjFiles } from './tj/batch/normalization/handler'
 import { normalizeRawCcFiles } from './cc/handler'
 import { normalizeRawCaFiles } from './ca/handler'
 
@@ -12,9 +12,6 @@ const CRON_EVERY_HOUR = '0 * * * *'
 
 const MAX_DECISION_PER_BATCH = 10
 const filters = undefined
-
-// TEMPORAIRE : la taille du batch des TJ est augmentée en attente de la mise en place de l'event sourcing.
-const MAX_DECISION_PER_BATCH_TJ = 400
 
 async function startNormalization() {
   CronJob.from({
@@ -26,7 +23,7 @@ async function startNormalization() {
       })
       await normalizeRawCcFiles()
       await normalizeRawCaFiles(filters, MAX_DECISION_PER_BATCH)
-      await normalizeRawTjFiles(MAX_DECISION_PER_BATCH_TJ)
+      await normalizeRawTjFiles(filters, MAX_DECISION_PER_BATCH)
       await normalizeRawTcomFiles(MAX_DECISION_PER_BATCH)
       if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV))
         await normalizeRawCphFiles(filters, MAX_DECISION_PER_BATCH)

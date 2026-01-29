@@ -19,10 +19,11 @@ import {
 import { PostponeException } from './infrastructure/nlp.exception'
 import { incrementErrorCount, resetErrorCount } from './errorCounter/errorCounter'
 import { LabelStatus, PublishStatus, UnIdentifiedDecisionTcom } from 'dbsder-api-types'
-import { logger } from '../../../library/logger'
+import { logger } from '../../../connectors/logger'
 
 import { strict as assert } from 'assert'
-import { annotateDecision } from '../../../library/nlp/annotation'
+import { annotateDecision } from '../../../services/nlp/annotation'
+import { saveDecisionInAffaire } from '../../../services/affaire'
 
 const dbSderApiGateway = new DbSderApiGateway()
 const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TCOM
@@ -174,76 +175,69 @@ export async function normalizationJob(
 
       // Step 7: check diff (major/minor) and upsert/patch accordingly
       const previousVersion = await dbSderApiGateway.getDecisionBySourceId(decisionToSave.sourceId)
-      if (previousVersion !== null) {
-        const diff = computeDiff(previousVersion, decisionToSave)
-        if (diff.major && diff.major.length > 0) {
-          // Update decision with major changes:
-          const annotatedDecision = await annotateDecision(decisionToSave)
-          await dbSderApiGateway.saveDecision(annotatedDecision)
-          logger.info({
-            operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-            path: 'src/tcom/batch/normalization/normalization.ts',
-            message: `Decision updated in database with major changes: ${JSON.stringify(
-              diff.major
-            )}`
-          })
-        } else if (diff.minor && diff.minor.length > 0) {
-          // Patch decision with minor changes:
-          delete decisionToSave.__v
-          delete decisionToSave.sourceId
-          delete decisionToSave.sourceName
-          delete decisionToSave.public
-          delete decisionToSave.debatPublic
-          delete decisionToSave.occultation
-          delete decisionToSave.originalText
-          if (
-            decisionToSave.labelStatus === LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE ||
-            decisionToSave.labelStatus === LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
-          ) {
-            decisionToSave.publishStatus = PublishStatus.BLOCKED
-            // Bad new date? Throw a warning... @TODO ODDJDashboard
-            logger.warn({
-              operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-              path: 'src/tcom/batch/normalization/normalization.ts',
-              message: `Decision has a bad updated date: ${decisionToSave.dateDecision}`
-            })
-          } else {
-            if (previousVersion.labelStatus === LabelStatus.EXPORTED) {
-              decisionToSave.labelStatus = LabelStatus.DONE
-            } else {
-              decisionToSave.labelStatus = previousVersion.labelStatus
-            }
-            if (
-              previousVersion.publishStatus === PublishStatus.SUCCESS ||
-              previousVersion.publishStatus === PublishStatus.UNPUBLISHED ||
-              previousVersion.publishStatus === PublishStatus.FAILURE_PREPARING ||
-              previousVersion.publishStatus === PublishStatus.FAILURE_INDEXING
-            ) {
-              decisionToSave.publishStatus = PublishStatus.TOBEPUBLISHED
-            } else {
-              decisionToSave.publishStatus = previousVersion.publishStatus
-            }
-          }
-          await dbSderApiGateway.patchDecision(previousVersion._id, decisionToSave)
-          logger.info({
-            operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-            path: 'src/tcom/batch/normalization/normalization.ts',
-            message: `Decision patched in database with minor changes: ${JSON.stringify(
-              diff.minor
-            )}`
-          })
-        } else {
-          // No change? Throw a warning and do nothing... @TODO ODDJDashboard
+      const diff = previousVersion ? computeDiff(previousVersion, decisionToSave) : null
+      if (
+        diff?.major?.length === 0 &&
+        diff?.minor?.length > 0 &&
+        previousVersion.labelStatus !== LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
+      ) {
+        // Patch decision with minor changes:
+        delete decisionToSave.__v
+        delete decisionToSave.sourceId
+        delete decisionToSave.sourceName
+        delete decisionToSave.public
+        delete decisionToSave.debatPublic
+        delete decisionToSave.occultation
+        delete decisionToSave.originalText
+        if (
+          decisionToSave.labelStatus === LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE ||
+          decisionToSave.labelStatus === LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
+        ) {
+          decisionToSave.publishStatus = PublishStatus.BLOCKED
+          // Bad new date? Throw a warning... @TODO ODDJDashboard
           logger.warn({
             operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
             path: 'src/tcom/batch/normalization/normalization.ts',
-            message: 'Decision has no change'
+            message: `Decision has a bad updated date: ${decisionToSave.dateDecision}`
           })
+        } else {
+          if (previousVersion.labelStatus === LabelStatus.EXPORTED) {
+            decisionToSave.labelStatus = LabelStatus.DONE
+          } else {
+            decisionToSave.labelStatus = previousVersion.labelStatus
+          }
+          if (
+            previousVersion.publishStatus === PublishStatus.SUCCESS ||
+            previousVersion.publishStatus === PublishStatus.UNPUBLISHED ||
+            previousVersion.publishStatus === PublishStatus.FAILURE_PREPARING ||
+            previousVersion.publishStatus === PublishStatus.FAILURE_INDEXING
+          ) {
+            decisionToSave.publishStatus = PublishStatus.TOBEPUBLISHED
+          } else {
+            decisionToSave.publishStatus = previousVersion.publishStatus
+          }
         }
+        await dbSderApiGateway.patchDecision(previousVersion._id, decisionToSave)
+        logger.info({
+          operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
+          path: 'src/tcom/batch/normalization/normalization.ts',
+          message: `Decision patched in database with minor changes: ${JSON.stringify(diff.minor)}`
+        })
+      } else if (
+        diff?.major?.length === 0 &&
+        diff?.minor?.length === 0 &&
+        previousVersion.labelStatus !== LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
+      ) {
+        // No change? Throw a warning and do nothing... @TODO ODDJDashboard
+        logger.warn({
+          operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
+          path: 'src/tcom/batch/normalization/normalization.ts',
+          message: 'Decision has no change'
+        })
       } else {
         // Insert new decision:
         const annotatedDecision = await annotateDecision(decisionToSave)
-        await dbSderApiGateway.saveDecision(annotatedDecision)
+        await saveDecisionInAffaire(annotatedDecision)
         logger.info({
           operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
           path: 'src/tcom/batch/normalization/normalization.ts',

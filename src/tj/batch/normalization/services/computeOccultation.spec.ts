@@ -1,7 +1,7 @@
 import { UnIdentifiedDecisionTj, SuiviOccultation } from 'dbsder-api-types'
 import { computeOccultation } from './computeOccultation'
 
-jest.mock('../../../../library/logger', () => ({
+jest.mock('../../../../connectors/logger', () => ({
   logger: {
     error: jest.fn(),
     info: jest.fn(),

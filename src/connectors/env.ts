@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv'
-import { MissingValue } from './error'
+import { MissingValue } from '../services/error'
 import { resolve } from 'path'
 
 if (!process.env.ENV) dotenv.config({ path: resolve(__dirname, '..', '..', '.env') })
