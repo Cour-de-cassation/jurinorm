@@ -1,11 +1,13 @@
-import { isMissingValue, toUnexpectedError, UnexpectedError } from '../library/error'
-import { Id, updateFileInformation } from '../library/DbRawFile'
-import { logger } from '../library/logger'
+import { isMissingValue, toUnexpectedError, UnexpectedError } from './error'
+import { Id, updateFileInformation } from '../connectors/DbRawFile'
+import { logger } from '../connectors/logger'
 
 export type Created = {
   type: 'created'
   date: Date
 }
+
+type ArtificiallyCreated = { type: 'created'; date: null }
 
 export type Normalized = {
   type: 'normalized'
@@ -28,7 +30,7 @@ export type Event = Created | Normalized | Blocked | Deleted
 export type RawFile<T> = {
   _id: Id
   path: string
-  events: [Created, ...Event[]]
+  events: [Created | ArtificiallyCreated, ...Event[]]
   metadatas: T
 }
 

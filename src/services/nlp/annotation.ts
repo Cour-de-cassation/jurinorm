@@ -5,13 +5,13 @@ import {
   hasSourceNameTj,
   LabelTreatments,
   UnIdentifiedDecision,
-  UnIdentifiedDecisionDila
+  UnIdentifiedDecisionDila,
+  ZoneRange
 } from 'dbsder-api-types'
 import { NerParameters, NerResponse, postNer } from './ner'
 import { isCurrentZoning, parseCurrentZoning } from 'dbsder-api-types/dist/typeGuards/common.zod'
 import { NotSupported, toNotSupported } from '../error'
-import { ZoneRange } from 'dbsder-api-types'
-import { logger } from '../logger'
+import { logger } from '../../connectors/logger'
 
 export type AnnotationResult = {
   treatments: LabelTreatments

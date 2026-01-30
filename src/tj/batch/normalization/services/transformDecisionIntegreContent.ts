@@ -2,18 +2,19 @@ import { existsSync, unlinkSync, writeFileSync } from 'fs'
 import { readWordperfectDocument } from './transformWPDtoText'
 
 export async function transformDecisionIntegreFromWPDToText(
-  decisionIntegre: Express.Multer.File
+  decisionIntegre: Buffer,
+  filename: string
 ): Promise<string> {
-  writeFileSync(decisionIntegre.originalname, Buffer.from(decisionIntegre.buffer), {
+  writeFileSync(filename, Buffer.from(decisionIntegre.buffer), {
     encoding: 'binary'
   })
   try {
-    const decisionIntegreContent = await readWordperfectDocument(decisionIntegre.originalname)
+    const decisionIntegreContent = await readWordperfectDocument(filename)
     return decisionIntegreContent
   } catch (error) {
-    throw new Error('Could not get decision ' + decisionIntegre.originalname + ' content.')
+    throw new Error('Could not get decision ' + filename + ' content.')
   } finally {
-    deleteTemporaryDecisionIntegre(decisionIntegre.originalname)
+    deleteTemporaryDecisionIntegre(filename)
   }
 }
 

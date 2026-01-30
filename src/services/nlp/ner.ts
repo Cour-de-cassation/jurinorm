@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { Category, UnIdentifiedDecision, Entity, Check, NLPVersion } from 'dbsder-api-types'
 import { UnexpectedError } from '../error'
+import { NLP_PSEUDONYMISATION_API_URL } from '../../connectors/env'
 
 export type NerResponse = {
   entities: Entity[]
@@ -22,7 +23,7 @@ export type NerParameters = {
 }
 
 export async function postNer(parameters: NerParameters): Promise<NerResponse> {
-  const route = `${process.env.NLP_PSEUDONYMISATION_API_URL}/ner`
+  const route = `${NLP_PSEUDONYMISATION_API_URL}/ner`
   const data = {
     sourceId: parameters.sourceId,
     sourceName: parameters.sourceName,

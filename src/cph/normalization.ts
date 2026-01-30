@@ -1,13 +1,15 @@
 import { CodeNac } from 'dbsder-api-types'
-import { getFileByName } from '../../library/bucket'
-import { getCodeNac, sendToSder } from '../../../library/DbSder'
-import { NotFound, UnexpectedError } from '../../../library/error'
-import { htmlToPlainText } from '../../library/formats/html'
-import { extractAttachments, pdfToHtml } from '../../library/formats/pdf'
-import { parseXml } from '../../library/formats/xml'
-import { logger } from '../../../library/logger'
+import { getFileByName } from '../connectors/bucket'
+import { getCodeNac } from '../connectors/DbSder'
+import { NotFound, UnexpectedError } from '../services/error'
+import { htmlToPlainText } from './library/formats/html'
+import { extractAttachments, pdfToHtml } from './library/formats/pdf'
+import { parseXml } from './library/formats/xml'
+import { logger } from '../connectors/logger'
 import { CphMetadatas, mapCphDecision, parseCphMetadatas, RawCph } from './models'
-import { annotateDecision } from '../../../library/nlp/annotation'
+import { annotateDecision } from '../services/nlp/annotation'
+import { saveDecisionInAffaire } from '../services/affaire'
+import { S3_BUCKET_NAME_PORTALIS } from '../connectors/env'
 
 function searchXml(attachments: { name: string; data: Buffer }[]): unknown {
   const attachment = attachments.reduce<CphMetadatas | undefined>((acc, attachment, index) => {
@@ -74,7 +76,7 @@ async function getOccultationStrategy(
 }
 
 export async function normalizeCph(rawCph: RawCph): Promise<unknown> {
-  const cphFile = await getFileByName(rawCph.path)
+  const cphFile = await getFileByName(S3_BUCKET_NAME_PORTALIS, rawCph.path)
   const cphMetadatas = await getCphMetadatas(cphFile)
   const cphPseudoCustomRules = rawCph.metadatas
   const occultationStrategy = await getOccultationStrategy(
@@ -92,7 +94,7 @@ export async function normalizeCph(rawCph: RawCph): Promise<unknown> {
 
   const annotatedDecision = await annotateDecision(cphDecision)
 
-  return sendToSder(annotatedDecision)
+  return saveDecisionInAffaire(annotatedDecision)
 }
 
 export const rawCphToNormalize = {
