@@ -4,7 +4,7 @@ import {
   DecisionAssocieeDto,
   MetadonneesDto
 } from '../../../shared/infrastructure/dto/metadonnees.dto'
-import { computeInteretParticulier } from '../../../../library/metadata/interetParticulier'
+import { computeRaisonInteretParticulier } from '../../../../library/metadata/raisonInteretParticulier'
 
 export function mapDecisionNormaliseeToDecisionDto(
   generatedId: string,
@@ -12,7 +12,7 @@ export function mapDecisionNormaliseeToDecisionDto(
   metadonnees: MetadonneesDto,
   filename: string
 ): UnIdentifiedDecisionTj {
-  const { interetParticulier, raisonInteretParticulier } = computeInteretParticulier(
+  const raisonInteretParticulier = computeRaisonInteretParticulier(
     metadonnees.selection,
     metadonnees.sommaire
   )
@@ -36,7 +36,6 @@ export function mapDecisionNormaliseeToDecisionDto(
     recommandationOccultation: metadonnees.recommandationOccultation,
     selection: metadonnees.selection,
     sommaire: metadonnees.sommaire,
-    interetParticulier,
     raisonInteretParticulier,
     NACCode: metadonnees.codeNAC,
     appeals: metadonnees.numeroMesureInstruction ?? [],

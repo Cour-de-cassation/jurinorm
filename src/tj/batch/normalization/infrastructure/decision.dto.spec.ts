@@ -6,10 +6,10 @@ import {
 } from 'dbsder-api-types'
 import { mapDecisionNormaliseeToDecisionDto } from './decision.dto'
 import { MockUtils } from '../../../shared/infrastructure/utils/mock.utils'
-import { computeInteretParticulier } from '../../../../library/metadata/interetParticulier'
+import { computeRaisonInteretParticulier } from '../../../../library/metadata/raisonInteretParticulier'
 
-jest.mock('../../../../library/metadata/interetParticulier', () => ({
-  computeInteretParticulier: jest.fn()
+jest.mock('../../../../library/metadata/raisonInteretParticulier', () => ({
+  computeRaisonInteretParticulier: jest.fn()
 }))
 
 describe('mapDecisionNormaliseeToDecisionDto', () => {
@@ -29,10 +29,7 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    ;(computeInteretParticulier as jest.Mock).mockReturnValue({
-      interetParticulier: false,
-      raisonInteretParticulier: undefined
-    })
+    ;(computeRaisonInteretParticulier as jest.Mock).mockReturnValue(null)
   })
 
   it('returns an object mapping decision from S3 to DBSDER API decision type', async () => {
@@ -56,8 +53,7 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
       pourvoiLocal: false,
       recommandationOccultation: SuiviOccultation.SUBSTITUANT,
       selection: false,
-      interetParticulier: false,
-      raisonInteretParticulier: undefined,
+      raisonInteretParticulier: null,
       NACCode: '11F',
       appeals: [],
       blocOccultation: 0,
@@ -123,8 +119,7 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
       pourvoiLocal: false,
       recommandationOccultation: SuiviOccultation.SUBSTITUANT,
       selection: false,
-      interetParticulier: false,
-      raisonInteretParticulier: undefined,
+      raisonInteretParticulier: null,
       NACCode: '11F',
       appeals: [],
       blocOccultation: 0,
@@ -168,10 +163,9 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
   })
 
   it('merges metadata with interetParticulier when true', async () => {
-    ;(computeInteretParticulier as jest.Mock).mockReturnValue({
-      interetParticulier: true,
-      raisonInteretParticulier: RaisonInteretParticulier.S4_SUJET_INTERET_PUBLIC_MAJEUR
-    })
+    ;(computeRaisonInteretParticulier as jest.Mock).mockReturnValue(
+      RaisonInteretParticulier.S4_SUJET_INTERET_PUBLIC_MAJEUR
+    )
 
     const mockDecision = {
       ...mockUtils.mandatoryMetadonneesDtoMock,
@@ -186,7 +180,6 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
       filename
     )
 
-    expect(mappedDecision).toHaveProperty('interetParticulier', true)
     expect(mappedDecision).toHaveProperty(
       'raisonInteretParticulier',
       RaisonInteretParticulier.S4_SUJET_INTERET_PUBLIC_MAJEUR

@@ -1,18 +1,18 @@
 import { normalizeCa } from './handler'
-import { sendToSder } from '../library/DbSder'
-import { computeInteretParticulier } from '../library/metadata/interetParticulier'
+import { computeRaisonInteretParticulier } from '../library/metadata/raisonInteretParticulier'
+import { saveDecisionInAffaire } from '../services/affaire'
 import { RaisonInteretParticulier } from 'dbsder-api-types'
 
-jest.mock('../library/DbSder', () => ({
-  sendToSder: jest.fn()
+jest.mock('../library/metadata/raisonInteretParticulier', () => ({
+  computeRaisonInteretParticulier: jest.fn()
 }))
-jest.mock('../library/metadata/interetParticulier', () => ({
-  computeInteretParticulier: jest.fn()
-}))
-jest.mock('../library/DbRawFile', () => ({
+jest.mock('../connectors/DbRawFile', () => ({
   findFileInformations: jest
     .fn()
     .mockResolvedValue({ toArray: async () => [], next: async () => null })
+}))
+jest.mock('../services/affaire', () => ({
+  saveDecisionInAffaire: jest.fn().mockResolvedValue({})
 }))
 
 describe('normalizeCa – caDecision content', () => {
@@ -28,35 +28,28 @@ describe('normalizeCa – caDecision content', () => {
     jest.clearAllMocks()
   })
 
-  it('merges metadata with interetParticulier when true', async () => {
-    ;(computeInteretParticulier as jest.Mock).mockReturnValue({
-      interetParticulier: true,
-      raisonInteretParticulier: RaisonInteretParticulier.S4_SUJET_INTERET_PUBLIC_MAJEUR
-    })
+  it('merges metadata with raisonInteretParticulier when true', async () => {
+    ;(computeRaisonInteretParticulier as jest.Mock).mockReturnValue(
+      RaisonInteretParticulier.S4_SUJET_INTERET_PUBLIC_MAJEUR
+    )
 
     await normalizeCa(rawCa)
 
-    expect(computeInteretParticulier).toHaveBeenCalledWith(true, 'S4 - ...')
-    expect(sendToSder).toHaveBeenCalledWith(
+    expect(saveDecisionInAffaire).toHaveBeenCalledWith(
       expect.objectContaining({
-        interetParticulier: true,
         raisonInteretParticulier: RaisonInteretParticulier.S4_SUJET_INTERET_PUBLIC_MAJEUR
       })
     )
   })
 
-  it('merges metadata with interetParticulier when false', async () => {
-    ;(computeInteretParticulier as jest.Mock).mockReturnValue({
-      interetParticulier: false,
-      raisonInteretParticulier: undefined
-    })
+  it('merges metadata with raisonInteretParticulier when false', async () => {
+    ;(computeRaisonInteretParticulier as jest.Mock).mockReturnValue(null)
 
     await normalizeCa(rawCa)
 
-    expect(sendToSder).toHaveBeenCalledWith(
+    expect(saveDecisionInAffaire).toHaveBeenCalledWith(
       expect.objectContaining({
-        interetParticulier: false,
-        raisonInteretParticulier: undefined
+        raisonInteretParticulier: null
       })
     )
   })
