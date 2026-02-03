@@ -42,7 +42,9 @@ export function mapDecisionNormaliseeToDecisionDto(
     codeProcedure: metadonnees.idProcedure ?? '',
     libelleMatiere: metadonnees.libelleMatiere ?? '',
     selection: metadonnees.interetParticulier === true,
-    composition: metadonnees.composition ?? []
+    composition: metadonnees.composition ?? [],
+    motifsDebatsChambreConseil: metadonnees.occultationsComplementaires.motifsDebatsChambreConseil,
+    motifsSecretAffaires: metadonnees.occultationsComplementaires.motifsSecretAffaires
   }
 }
 
