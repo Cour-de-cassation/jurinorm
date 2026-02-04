@@ -7,7 +7,7 @@ import {
 describe('computeRaisonInteretParticulier', () => {
   it('returns false when selection is false', () => {
     // WHEN
-    const raisonInteretParticulier = computeRaisonInteretParticulier(false, 'S4 - Valid code')
+    const raisonInteretParticulier = computeRaisonInteretParticulier(false, 'S4 - sommaire avec un code valide')
 
     // THEN
     expect(raisonInteretParticulier).toBeNull()
@@ -32,6 +32,14 @@ describe('computeRaisonInteretParticulier', () => {
   it('returns false when selection is true and sommaire has invalid code with correct pattern', () => {
     // WHEN
     const raisonInteretParticulier = computeRaisonInteretParticulier(true, 'Z9')
+
+    // THEN
+    expect(raisonInteretParticulier).toBeNull()
+  })
+
+  it.only('returns null when sommaire contains C0 (reserved for Cour de cassation)', () => {
+    // WHEN
+    const raisonInteretParticulier = computeRaisonInteretParticulier(true, 'C0 - sommaire avec le code interdit')
 
     // THEN
     expect(raisonInteretParticulier).toBeNull()
@@ -104,7 +112,7 @@ describe('extractCodeFromSommaire', () => {
 
   it('accepts lowercase code and returns it as is', () => {
     // WHEN
-    const code = extractCodeFromSommaire('s4 - lowercase code')
+    const code = extractCodeFromSommaire('s4 - code en minuscule')
 
     // THEN
     expect(code).toBe('s4')
@@ -112,7 +120,7 @@ describe('extractCodeFromSommaire', () => {
 
   it('handles leading and trailing whitespaces', () => {
     // WHEN
-    const code = extractCodeFromSommaire('  F3  - test  ')
+    const code = extractCodeFromSommaire('  F3  - sommaire avec des espaces  ')
 
     // THEN
     expect(code).toBe('F3')

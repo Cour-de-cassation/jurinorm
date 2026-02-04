@@ -17,10 +17,19 @@ export function computeRaisonInteretParticulier(
   return getRaisonInteretParticulierByCode(code)
 }
 
+const CODE_RESERVED_COUR_CASSATION = 'C0'
 export function extractCodeFromSommaire(sommaire: string | undefined): string | null {
   const code = sommaire?.trim().split(' ')[0] ?? ''
 
-  return /^[A-Za-z][0-9]$/.test(code) ? code : null
+  if (!/^[A-Za-z][0-9]$/.test(code)) {
+    return null
+  }
+
+  if (code.toUpperCase() === CODE_RESERVED_COUR_CASSATION) {
+    return null
+  }
+
+  return code
 }
 
 const CODE_TO_RAISON: Record<string, RaisonInteretParticulier> = buildRaisonMap()
