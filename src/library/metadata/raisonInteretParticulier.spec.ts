@@ -7,7 +7,10 @@ import {
 describe('computeRaisonInteretParticulier', () => {
   it('returns false when selection is false', () => {
     // WHEN
-    const raisonInteretParticulier = computeRaisonInteretParticulier(false, 'S4 - sommaire avec un code valide')
+    const raisonInteretParticulier = computeRaisonInteretParticulier(
+      false,
+      'S4 - sommaire avec un code valide'
+    )
 
     // THEN
     expect(raisonInteretParticulier).toBeNull()
@@ -39,7 +42,10 @@ describe('computeRaisonInteretParticulier', () => {
 
   it.only('returns null when sommaire contains C0 (reserved for Cour de cassation)', () => {
     // WHEN
-    const raisonInteretParticulier = computeRaisonInteretParticulier(true, 'C0 - sommaire avec le code interdit')
+    const raisonInteretParticulier = computeRaisonInteretParticulier(
+      true,
+      'C0 - sommaire avec le code interdit'
+    )
 
     // THEN
     expect(raisonInteretParticulier).toBeNull()
