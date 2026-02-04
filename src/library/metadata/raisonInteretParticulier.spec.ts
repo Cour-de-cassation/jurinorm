@@ -5,7 +5,7 @@ import {
 } from './raisonInteretParticulier'
 
 describe('computeRaisonInteretParticulier', () => {
-  it('returns false when selection is false', () => {
+  it('returns null when selection is false', () => {
     // WHEN
     const raisonInteretParticulier = computeRaisonInteretParticulier(
       false,
@@ -40,7 +40,7 @@ describe('computeRaisonInteretParticulier', () => {
     expect(raisonInteretParticulier).toBeNull()
   })
 
-  it.only('returns null when sommaire contains C0 (reserved for Cour de cassation)', () => {
+  it('returns null when sommaire contains C0 (reserved for Cour de cassation)', () => {
     // WHEN
     const raisonInteretParticulier = computeRaisonInteretParticulier(
       true,
