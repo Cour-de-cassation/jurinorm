@@ -19,7 +19,7 @@ import { strict as assert } from 'assert'
 import { annotateDecision } from '../../../services/nlp/annotation'
 import { computeRulesDecisionTj } from './services/rulesTj'
 import { fetchZoning } from './repositories/gateways/zoning'
-import { findDecisions } from '../../../connectors/DbSder'
+import { findAffaire, findDecisions } from '../../../connectors/DbSder'
 import { saveDecisionInAffaire } from '../../../services/affaire'
 import { RawTj } from './models'
 import { getFileByName } from '../../../connectors/bucket'
@@ -142,7 +142,7 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
         sourceId: decisionWithRules.sourceId
       })
     ).decisions
-    const diff = previousVersion ? computeDiff(previousVersion, decisionWithRules) : null
+    const diff = await (previousVersion ? computeDiff(previousVersion, decisionWithRules) : null)
 
     if (
       diff?.major?.length === 0 &&
@@ -241,13 +241,23 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
   }
 }
 
-function computeDiff(
-  oldDecision: UnIdentifiedDecisionTj,
+async function computeDiff(
+  oldDecision: UnIdentifiedDecisionTj & { _id: string },
   newDecision: UnIdentifiedDecisionTj
-): Diff {
+): Promise<Diff> {
   const diff: Diff = {
     major: [],
     minor: []
+  }
+
+  const affaire = await findAffaire(oldDecision._id)
+  if (!affaire || affaire.replacementTerms.length <= 0) {
+    diff.major.push('affaire')
+    logger.info({
+      path: 'src/tj/batch/normalization.ts',
+      operations: ['normalization', 'normalizationJob-TJ'],
+      message: `major change to public: decisionId ${oldDecision._id} had no replacementTerms`
+    })
   }
 
   // Major changes...

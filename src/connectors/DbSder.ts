@@ -86,7 +86,7 @@ export async function createAffaire(affaire: UnIdentifiedAffaire): Promise<Affai
 }
 
 export async function findAffaire(
-  decisionId: Affaire['decisionIds'][number]
+  decisionId: string
 ): Promise<Affaire | null> {
   const route = `${DBSDER_API_URL}/affaires`
   try {
