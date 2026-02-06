@@ -24,6 +24,7 @@ import { logger } from '../../../connectors/logger'
 import { strict as assert } from 'assert'
 import { annotateDecision } from '../../../services/nlp/annotation'
 import { saveDecisionInAffaire } from '../../../services/affaire'
+import { findAffaire } from '../../../connectors/DbSder'
 
 const dbSderApiGateway = new DbSderApiGateway()
 const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TCOM
@@ -175,7 +176,7 @@ export async function normalizationJob(
 
       // Step 7: check diff (major/minor) and upsert/patch accordingly
       const previousVersion = await dbSderApiGateway.getDecisionBySourceId(decisionToSave.sourceId)
-      const diff = previousVersion ? computeDiff(previousVersion, decisionToSave) : null
+      const diff = await (previousVersion ? computeDiff(previousVersion, decisionToSave) : null)
       if (
         diff?.major?.length === 0 &&
         diff?.minor?.length > 0 &&
@@ -327,14 +328,24 @@ export async function normalizationJob(
   return listConvertedDecision
 }
 
-function computeDiff(
-  oldDecision: UnIdentifiedDecisionTcom,
+async function computeDiff(
+  oldDecision: UnIdentifiedDecisionTcom & { _id: string },
   newDecision: UnIdentifiedDecisionTcom
-): Diff {
+): Promise<Diff> {
   const diff: Diff = {
     major: [],
     minor: []
   }
+
+  const affaire = await findAffaire(oldDecision._id)
+    if (!affaire || affaire.replacementTerms.length <= 0) {
+      diff.major.push('affaire')
+      logger.info({
+        path: 'src/tj/batch/normalization.ts',
+        operations: ['normalization', 'normalizationJob-TJ'],
+        message: `major change to public: decisionId ${oldDecision._id} had no replacementTerms`
+      })
+    }
 
   // Major changes...
   // Note: we skip zoning diff, because the zoning should only change if the originalText changes (which is a major change anyway). If the zoning changes with the same given originalText, then the change comes from us, not from the sender
