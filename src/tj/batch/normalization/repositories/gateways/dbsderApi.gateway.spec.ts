@@ -8,7 +8,6 @@ import {
 import axios from 'axios'
 import { DbSderApiGateway } from './dbsderApi.gateway'
 import { MockUtils } from '@tj/shared/infrastructure/utils/mock.utils'
-// import { patchDecision } from '@connectors/DbSder'
 
 jest.mock('@connectors/logger', () => ({
   logger: {
