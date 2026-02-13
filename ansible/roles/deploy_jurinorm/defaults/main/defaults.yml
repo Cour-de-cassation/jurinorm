@@ -2,3 +2,30 @@
 jurinorm_namespace: jurinorm
 
 batch_app_id: batch
+
+# Script CronJobs - All suspended by default, triggered manually
+script_cronjobs:
+  - name: cc-normalize
+    description: "Normalize CC files"
+    script: "dist/cc/scripts/startNormalization.js"
+  - name: cc-allstock
+    description: "Normalize all CC stock files"
+    script: "dist/cc/scripts/startNormalizationOnAllStock.js"
+  - name: cc-yesterday
+    description: "Normalize CC files from yesterday"
+    script: "dist/cc/scripts/startNormalizationOnYesterday.js"
+  - name: ca-normalize
+    description: "Normalize CA files"
+    script: "dist/ca/scripts/startNormalization.js"
+  - name: ca-allstock
+    description: "Normalize all CA stock files"
+    script: "dist/ca/scripts/startNormalizationOnAllStock.js"
+  - name: ca-yesterday
+    description: "Normalize CA files from yesterday"
+    script: "dist/ca/scripts/startNormalizationOnYesterday.js"
+  - name: cph-normalize
+    description: "Normalize CPH files"
+    script: "dist/cph/scripts/startNormalization.js"
+  - name: cph-allstock
+    description: "Normalize all CPH stock files"
+    script: "dist/cph/scripts/startNormalizationOnAllStock.js"
