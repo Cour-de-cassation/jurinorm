@@ -11,3 +11,5 @@
 - name: Deploy deployment
   import_tasks: deployment/deployment.yml
 
+- name: Deploy script CronJobs
+  import_tasks: deployment/script-cronjobs.yml

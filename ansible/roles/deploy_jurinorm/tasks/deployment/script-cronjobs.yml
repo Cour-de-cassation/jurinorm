@@ -1,5 +1,5 @@
 ---
-- name: Create CronJob batch
+- name: Create suspended CronJobs for manual script execution
   k8s:
     apply: true
     state: present
@@ -8,31 +8,37 @@
       apiVersion: batch/v1
       kind: CronJob
       metadata:
-        name: "{{ batch_app_id }}-cronjob"
+        name: "{{ batch_app_id }}-{{ item.name }}-cronjob"
         namespace: "{{ jurinorm_namespace }}"
         labels:
-          app: "{{ batch_app_id }}"
+          app: "{{ batch_app_id }}-scripts"
+          script: "{{ item.name }}"
+        annotations:
+          description: "{{ item.description }}"
       spec:
-        schedule: "{{ normalization_batch_schedule }}"
-        suspend: "{{ env == 'DEV' }}"
+        schedule: "0 0 * * *"  
+        suspend: true  # Always suspended, triggered manually only
         timeZone: Europe/Paris
         successfulJobsHistoryLimit: 3
         failedJobsHistoryLimit: 10
         concurrencyPolicy: Forbid
         jobTemplate:
           spec:
+            backoffLimit: 2
             template:
               metadata:
                 labels:
-                  app: "{{ batch_app_id }}"
+                  app: "{{ batch_app_id }}-scripts"
+                  script: "{{ item.name }}"
               spec:
                 restartPolicy: OnFailure
                 containers:
-                  - name: "{{ batch_app_id }}"
+                  - name: "{{ batch_app_id }}-{{ item.name }}"
                     image: "{{ batch_image }}"
+                    command: ["node", "{{ item.script }}"]
                     envFrom:
                       - configMapRef:
                           name: "batch-config"
                       - secretRef:
                           name: "batch-secret"
-...
+  loop: "{{ script_cronjobs }}"
