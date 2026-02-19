@@ -7,6 +7,7 @@ import { updateRawFileStatus, NormalizationResult } from '../services/eventSourc
 import { annotateDecision } from '../services/nlp/annotation'
 import { LabelStatus } from 'dbsder-api-types'
 import { saveDecisionInAffaire } from '../services/affaire'
+import { computeRaisonInteretParticulier } from '../library/metadata/raisonInteretParticulier'
 
 export const rawCaToNormalize = {
   // Ne contient ni normalized ni deleted:
@@ -31,8 +32,13 @@ export const rawCaToNormalize = {
 }
 
 export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
-  const caDecision = rawCa.metadatas
+  const decisionMetadata = rawCa.metadatas
 
+  const raisonInteretParticulier = computeRaisonInteretParticulier(
+    decisionMetadata.selection,
+    decisionMetadata.sommaire
+  )
+  const caDecision = { ...decisionMetadata, raisonInteretParticulier }
   /*
     Ce code est temporaire. Il est nécessaire car la normalisation des décisions
     CA est encore réalisée dans openjustice-sder. Une fois que toute la normalisation
