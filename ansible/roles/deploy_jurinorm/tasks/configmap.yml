@@ -34,5 +34,4 @@
         COLLECTION_JURICA_RAW: "{{ collection_jurica_raw }}"
         COLLECTION_JURINET_RAW: "{{ collection_jurinet_raw }}"
         ENV: "{{ env }}"
-        no_proxy: "{{ no_proxy }}"
 ...

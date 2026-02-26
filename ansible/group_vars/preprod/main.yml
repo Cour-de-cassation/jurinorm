@@ -11,5 +11,3 @@ dbsder_other_api_key: "{{ vault_dbsder_other_api_key }}"
 dbsder_powerful_api_key: "{{ vault_dbsder_powerful_api_key }}"
 av_pdf_path: "{{ vault_av_pdf_path }}"
 file_db_url: "{{ vault_file_db_url }}"
-
-no_proxy: ""
