@@ -53,7 +53,7 @@ export class DecisionS3Repository {
       await this.s3Client.send(new PutObjectCommand(reqParams))
     } catch (error) {
       logger.error({
-        path: 'src/tj/shared/infrasturcture/repositories/decisionS3.repository.ts',
+        path: 'src/tj/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['other', 'saveDecision'],
         message: error.message,
         stack: error.stack
@@ -72,7 +72,7 @@ export class DecisionS3Repository {
       await this.s3Client.send(new DeleteObjectCommand(reqParams))
     } catch (error) {
       logger.error({
-        path: 'src/tj/shared/infrasturcture/repositories/decisionS3.repository.ts',
+        path: 'src/tj/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['other', 'deleteDecision'],
         message: error.message,
         stack: error.stack
@@ -93,7 +93,7 @@ export class DecisionS3Repository {
       return JSON.parse(stringifiedDecision)
     } catch (error) {
       logger.error({
-        path: 'src/tj/shared/infrasturcture/repositories/decisionS3.repository.ts',
+        path: 'src/tj/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['other', 'getDecisionByFilename'],
         message: error.message,
         stack: error.stack
@@ -114,7 +114,7 @@ export class DecisionS3Repository {
       return JSON.parse(stringifiedDecision)
     } catch (error) {
       logger.error({
-        path: 'src/tj/shared/infrasturcture/repositories/decisionS3.repository.ts',
+        path: 'src/tj/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['other', 'getNormalizedDecisionByFilename'],
         message: error.message,
         stack: error.stack
@@ -136,7 +136,7 @@ export class DecisionS3Repository {
       return decisionListFromS3.Contents ? decisionListFromS3.Contents : []
     } catch (error) {
       logger.error({
-        path: 'src/tj/shared/infrasturcture/repositories/decisionS3.repository.ts',
+        path: 'src/tj/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['other', 'getDecisionList'],
         message: error.message,
         stack: error.stack

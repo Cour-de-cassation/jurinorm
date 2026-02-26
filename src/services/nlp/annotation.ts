@@ -81,41 +81,42 @@ export async function annotateDecision<
         const motivation = decision.originalTextZoning.zones.motivations
         const exposeDuLitige = decision.originalTextZoning.zones['expose du litige']
 
-        if ((motivation || exposeDuLitige) && motivation.length <= 1) {
-          const motifsAnnotations: Entity[] = []
-
-          if (motivation) {
-            const annotation = extractZoneEntity(motivation[0], decision.originalText, 'motivation')
-            if (annotation) {
-              motifsAnnotations.push(annotation)
-            }
-          }
-
-          if (exposeDuLitige) {
-            const annotation = extractZoneEntity(
-              exposeDuLitige,
-              decision.originalText,
-              'exposeDuLitige'
-            )
-            if (annotation) {
-              motifsAnnotations.push(annotation)
-            }
-          }
-
-          annotatedDecision.labelTreatments = [
-            ...annotatedDecision.labelTreatments,
-            {
-              order: 2,
-              source: 'supplementaryAnnotations',
-              annotations: removeOverlappingEntities([...nerResult.entities, ...motifsAnnotations]),
-              treatmentDate: new Date().toISOString()
-            }
-          ]
-        } else {
-          throw new Error(
-            'Cannot annotate motifs with multiple motivations/expose du litige zones or without zones'
-          )
+        if (!exposeDuLitige && !motivation) {
+          throw new Error('Cannot annotate motifs without motivations and expose du litige zones.')
         }
+
+        if (motivation && motivation.length > 1) {
+          throw new Error('Cannot annotate motif with multiple motivation zones.')
+        }
+
+        const motifsAnnotations: Entity[] = []
+        if (motivation && motivation.length > 0) {
+          const annotation = extractZoneEntity(motivation[0], decision.originalText, 'motivation')
+          if (annotation) {
+            motifsAnnotations.push(annotation)
+          }
+        }
+
+        if (exposeDuLitige) {
+          const annotation = extractZoneEntity(
+            exposeDuLitige,
+            decision.originalText,
+            'exposeDuLitige'
+          )
+          if (annotation) {
+            motifsAnnotations.push(annotation)
+          }
+        }
+
+        annotatedDecision.labelTreatments = [
+          ...annotatedDecision.labelTreatments,
+          {
+            order: 2,
+            source: 'supplementaryAnnotations',
+            annotations: removeOverlappingEntities([...nerResult.entities, ...motifsAnnotations]),
+            treatmentDate: new Date().toISOString()
+          }
+        ]
       } else {
         throw new NotSupported('originalTextZoning', decision.originalTextZoning)
       }
