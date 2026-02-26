@@ -24,6 +24,7 @@ import { logger } from '../../../connectors/logger'
 import { strict as assert } from 'assert'
 import { annotateDecision } from '../../../services/nlp/annotation'
 import { saveDecisionInAffaire } from '../../../services/affaire'
+import { ZoningApiService } from './services/zoningApi.service'
 
 const dbSderApiGateway = new DbSderApiGateway()
 const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TCOM
@@ -44,6 +45,8 @@ export async function normalizationJob(
 
   const listConvertedDecision: ConvertedDecisionWithMetadonneesDto[] = []
   const s3Repository = new DecisionS3Repository()
+
+  const zoningApiService: ZoningApiService = new ZoningApiService()
 
   const decisionList = (await fetchDecisionListFromS3(s3Repository, limit)).filter((name) =>
     name.endsWith('.json')
@@ -160,6 +163,17 @@ export async function normalizationJob(
         decision.metadonnees,
         decisionFilename
       )
+
+      try {
+        decisionToSave.originalTextZoning = await zoningApiService.getDecisionZoning(decisionToSave)
+      } catch (error) {
+        logger.error({
+          operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
+          path: 'src/tcom/batch/normalization/normalization.ts',
+          message: `Error while calling zoning. Error : ${error}`
+        })
+      }
+
       decisionToSave.labelStatus = await computeLabelStatus(decisionToSave)
       decisionToSave.occultation = {
         additionalTerms: '',

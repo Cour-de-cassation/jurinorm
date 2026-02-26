@@ -75,7 +75,7 @@ export class MockUtils {
       professionnelMagistratGreffier: false,
       plaqueImmatriculation: true,
       coordonneeElectronique: true,
-      motifsDebatsChambreConseil: true,
+      motifsDebatsChambreConseil: false,
       personneMorale: true,
       conserverElement: '#dateCivile|automobile',
       chaineNumeroIdentifiante: false,
@@ -111,6 +111,8 @@ export class MockUtils {
     debatPublic: true,
     idDecisionTCOM: '0605_2001F00930_2012-12-05_19',
     selection: false,
-    filenameSource: 'path'
+    filenameSource: 'path',
+    motifsDebatsChambreConseil: false,
+    motifsSecretAffaires: false
   }
 }
