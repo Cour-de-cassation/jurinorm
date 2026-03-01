@@ -17,6 +17,15 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-    "strictFunctionTypes": true // see: https://github.com/m-radzikowski/aws-sdk-client-mock/issues/167
+    "strictFunctionTypes": true, // see: https://github.com/m-radzikowski/aws-sdk-client-mock/issues/167
+    "paths": {
+      "@ca/*": ["src/ca/*"],
+      "@cc/*": ["src/cc/*"],
+      "@connectors/*": ["src/connectors/*"],
+      "@cph/*": ["src/cph/*"],
+      "@services/*": ["src/services/*"],
+      "@tcom/*": ["src/tcom/*"],
+      "@tj/*": ["src/tj/*"]
+    }
   }
 }
