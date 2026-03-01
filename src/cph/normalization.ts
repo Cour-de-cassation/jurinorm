@@ -56,23 +56,23 @@ async function getCphContent(fileNamePdf: string, cphFile: Buffer): Promise<stri
 
 async function getOccultationStrategy(
   code: string
-): Promise<Required<Pick<CodeNac, 'blocOccultationCA' | 'categoriesToOmitCA'>>> {
+): Promise<Required<Pick<CodeNac, 'blocOccultation' | 'categoriesToOmit'>>> {
   const codeNac = await getCodeNac(code)
   if (!codeNac) throw new NotFound('codeNac', `codeNac ${code} not found`)
 
-  const { blocOccultationCA, categoriesToOmitCA } = codeNac
-  if (!blocOccultationCA)
+  const { blocOccultation, categoriesToOmit } = codeNac
+  if (!blocOccultation)
     throw new NotFound(
       'codeNac.blocOccultationCA',
       `codeNac ${code} has no "blocOccultationCA" property`
     )
-  if (!categoriesToOmitCA)
+  if (!categoriesToOmit)
     throw new NotFound(
       'codeNac.categoriesToOmitCA',
       `codeNac ${code} has no "categoriesToOmitCA" property`
     )
 
-  return { blocOccultationCA, categoriesToOmitCA }
+  return { blocOccultation, categoriesToOmit }
 }
 
 export async function normalizeCph(rawCph: RawCph): Promise<unknown> {
