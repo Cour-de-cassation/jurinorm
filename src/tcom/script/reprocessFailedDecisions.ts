@@ -23,7 +23,7 @@ async function main() {
       console.error(e)
     }
   }
-  console.log(`Reprocessed ${count} failed PDF`)
+  console.log(`Reprocessed ${count} failed decisions`)
 }
 
 async function listFailedDecisions(): Promise<Array<string>> {
@@ -41,7 +41,7 @@ async function listFailedDecisions(): Promise<Array<string>> {
   let marker = null
   while (done === false) {
     const reqParams = {
-      Bucket: process.env.S3_BUCKET_NAME_PDF2TEXT_FAILED,
+      Bucket: process.env.S3_BUCKET_NAME_DECISION_FAILED,
       Marker: undefined
     }
     if (marker !== null) {
@@ -79,25 +79,24 @@ async function reprocessFailedDecisionByKey(key: string): Promise<boolean> {
       secretAccessKey: process.env.S3_SECRET_KEY
     }
   })
-  const getPDFReqParams = {
-    Bucket: process.env.S3_BUCKET_NAME_PDF2TEXT_FAILED,
+  const getDecisionReqParams = {
+    Bucket: process.env.S3_BUCKET_NAME_DECISION_FAILED,
     Key: key
   }
-  const fileFromS3 = await s3Client.send(new GetObjectCommand(getPDFReqParams))
-  const fileContent = Buffer.from(await fileFromS3.Body?.transformToByteArray())
-  const copyPDFReqParams = {
-    Bucket: process.env.S3_BUCKET_NAME_PDF,
+  const fileFromS3 = await s3Client.send(new GetObjectCommand(getDecisionReqParams))
+  const fileContent = await fileFromS3.Body?.transformToString()
+  const copyDecisionReqParams = {
+    Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM,
     Key: `${key}`,
     Body: fileContent,
-    ContentType: 'application/pdf',
-    ACL: 'public-read',
+    ContentType: 'application/json',
     Metadata: {
       date: new Date().toISOString(),
-      originalPdfFileName: `${key}`
+      originalFilename: `${key}`
     }
   } as unknown as any
-  await s3Client.send(new PutObjectCommand(copyPDFReqParams))
-  await s3Client.send(new DeleteObjectCommand(getPDFReqParams))
+  await s3Client.send(new PutObjectCommand(copyDecisionReqParams))
+  await s3Client.send(new DeleteObjectCommand(getDecisionReqParams))
   return true
 }
 

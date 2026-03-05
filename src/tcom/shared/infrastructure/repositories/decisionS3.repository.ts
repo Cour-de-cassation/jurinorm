@@ -182,25 +182,39 @@ export class DecisionS3Repository implements DecisionRepository {
     }
   }
 
-  async archiveFailedPDF(file: Buffer, key: string): Promise<void> {
-    const params = {
-      Bucket: process.env.S3_BUCKET_NAME_PDF2TEXT_FAILED,
-      Key: `${key}`,
-      Body: file,
-      ContentType: 'application/pdf',
-      ACL: 'public-read',
-      Metadata: {
-        date: new Date().toISOString(),
-        originalPdfFileName: `${key}`
-      }
-    } as unknown as any
-
+  async archiveFailedDecision(filename: string): Promise<void> {
     try {
-      await this.s3Client.send(new PutObjectCommand(params))
+      const decision = await this.s3Client.send(
+        new GetObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM,
+          Key: filename
+        })
+      )
+      const body = await decision.Body?.transformToString()
+
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME_DECISION_FAILED,
+          Key: filename,
+          Body: body,
+          ContentType: 'application/json',
+          Metadata: {
+            date: new Date().toISOString(),
+            originalFilename: filename
+          }
+        })
+      )
+
+      await this.s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM,
+          Key: filename
+        })
+      )
     } catch (error) {
       logger.error({
         path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
-        operations: ['normalization', 'archiveFailedPDF'],
+        operations: ['normalization', 'archiveFailedDecision'],
         message: error.message,
         stack: error.stack
       })
