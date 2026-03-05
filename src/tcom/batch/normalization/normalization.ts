@@ -17,7 +17,6 @@ import {
   hasNoBreak
 } from './services/PDFToText'
 import { PostponeException } from './infrastructure/nlp.exception'
-import { incrementErrorCount, resetErrorCount } from './errorCounter/errorCounter'
 import { LabelStatus, PublishStatus, UnIdentifiedDecisionTcom } from 'dbsder-api-types'
 import { logger } from '../../../connectors/logger'
 
@@ -83,26 +82,11 @@ export async function normalizationJob(
           // 3. Store NLP data in -pdf-success bucket:
           await s3Repository.archiveSuccessPDF(NLPData, pdfFilename)
         } catch (error) {
-          const errorCount = incrementErrorCount(pdfFilename)
-          logger.info({
+          logger.error({
             operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
             path: 'src/tcom/batch/normalization/normalization.ts',
-            message: `NLPPDFToText error count ${errorCount} for decision ${pdfFilename}`
+            message: `NLPPDFToText failed for decision ${pdfFilename}: ${error.message}`
           })
-          if (errorCount >= 3 || error instanceof PostponeException === false) {
-            logger.info({
-              operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-              path: 'src/tcom/batch/normalization/normalization.ts',
-              message: `NLPPDFToText error limit reached, move decision ${pdfFilename} to pdf-failed bucket`
-            })
-            // *Move* failed PDF to pdf-failed bucket:
-            await s3Repository.archiveFailedPDF(pdfFile, pdfFilename)
-            await s3Repository.deleteDecision({
-              Bucket: process.env.S3_BUCKET_NAME_PDF,
-              Key: pdfFilename
-            })
-            resetErrorCount(pdfFilename)
-          }
           throw error
         }
 
@@ -293,14 +277,10 @@ export async function normalizationJob(
         logger.error({
           operations: ['normalization', `normalizationJob-TCOM`],
           path: 'src/tcom/batch/normalization/normalization.ts',
-          message: 'Decision has no PDF. Deleting decision in raw bucket',
+          message: 'Decision has no PDF. Archiving decision to failed bucket',
           stack: error.stack
         })
-        const reqParamsDelete = {
-          Bucket: bucketNameIntegre,
-          Key: decisionFilename
-        }
-        await s3Repository.deleteDecision(reqParamsDelete)
+        await s3Repository.archiveFailedDecision(decisionFilename)
         logger.error({
           operations: ['normalization', `normalizationJob-TCOM`],
           path: 'src/tcom/batch/normalization/normalization.ts',
@@ -313,10 +293,12 @@ export async function normalizationJob(
           message: error.message,
           stack: error.stack
         })
+        await s3Repository.archiveFailedDecision(decisionFilename)
         logger.error({
           operations: ['normalization', `normalizationJob-TCOM`],
           path: 'src/tcom/batch/normalization/normalization.ts',
-          message: 'Failed to normalize the decision ' + decisionFilename + '.'
+          message:
+            'Failed to normalize the decision ' + decisionFilename + '. Archived to failed bucket.'
         })
         // To avoid too many request errors (as in Label):
         if (error instanceof PostponeException) {
