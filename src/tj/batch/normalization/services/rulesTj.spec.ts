@@ -9,6 +9,8 @@ import {
   CategoriesToOmit,
   Category,
   CodeNac,
+  DebatsPublics,
+  DecisionsPubliques,
   DecisionTj,
   LabelStatus,
   SuiviOccultation
@@ -60,14 +62,14 @@ const fakeDecision: DecisionTj = {
 
 const codeNac: CodeNac = {
   _id: new ObjectId(),
-  decisionsPubliques: 'décisions publiques',
+  decisionsPubliques: DecisionsPubliques.DECISIONS_PUBLIQUES,
   codeNAC: '',
   libelleNAC: '',
   chapitre: { code: '', libelle: '' },
   sousChapitre: { code: '', libelle: '' },
   blocOccultation: 1,
   categoriesToOmit: { suivi: [], nonSuivi: [] },
-  debatsPublics: 'débats publics',
+  debatsPublics: DebatsPublics.DEBATS_PUBLICS,
   codeUsageNonConseille: false
 }
 
