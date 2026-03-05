@@ -34,30 +34,6 @@ describe('updateLabelStatus', () => {
   })
 
   describe('changes labelStatus if it has exceptions', () => {
-    /*
-    describe('returns ignored_juridictionEnPhaseDeTest', () => {
-      it('when jurisdiction is not in whitelist', async () => {
-        // GIVEN
-        const dateDecision = new Date(2025, 1, 12)
-        const dateCreation = new Date(2025, 1, 13)
-        const mockDecisionLabel = {
-          ...mockUtils.decisionMock,
-          jurisdictionId: '7501',
-          dateDecision: dateDecision.toISOString(),
-          dateCreation: dateCreation.toISOString(),
-          public: true
-        }
-        const expectedLabelStatus = LabelStatus.IGNORED_JURIDICTION_EN_PHASE_DE_TEST
-
-        // WHEN
-        mockDecisionLabel.labelStatus = await computeLabelStatus(mockDecisionLabel)
-
-        // THEN
-        expect(mockDecisionLabel.labelStatus).toEqual(expectedLabelStatus)
-      })
-    })
-    */
-
     describe('returns ignored_decisionDateIncoherente', () => {
       it('when dateDecision is in the future compared to dateCreation', async () => {
         // GIVEN
@@ -131,22 +107,18 @@ describe('updateLabelStatus', () => {
         // THEN
         expect(mockDecisionLabel.labelStatus).toEqual(expectedLabelStatus)
       })
-    })
 
-    /*
-    describe('when decision contains unknown characters', () => {
-      it('when originalText contains tibetan characters', () => {
+      it('Blocks when motifSecretAffaires is selected', async () => {
         // GIVEN
-        const dateDecision = new Date(2025, 7, 20)
-        const dateCreation = new Date(2025, 7, 20)
+        const dateDecision = new Date(2025, 1, 12)
+        const dateCreation = new Date(2025, 1, 13)
         const mockDecisionLabel = {
           ...mockUtils.decisionMock,
-          originalText:
-            'la somme de 66. 224, 25 €, après imputation de la créance des tiers payeurs et déduction faite des provisions à hauteur de 9. 000 སྒྱ, en réparation de son préjudice corporel, consécutif à l’accident survenu le',
           dateDecision: dateDecision.toISOString(),
-          dateCreation: dateCreation.toISOString()
+          dateCreation: dateCreation.toISOString(),
+          motifsSecretAffaires: true
         }
-        const expectedLabelStatus = LabelStatus.IGNORED_CARACTERE_INCONNU
+        const expectedLabelStatus = LabelStatus.IGNORED_MOTIFS_SECRET_AFFAIRE
 
         // WHEN
         mockDecisionLabel.labelStatus = await computeLabelStatus(mockDecisionLabel)
@@ -155,6 +127,5 @@ describe('updateLabelStatus', () => {
         expect(mockDecisionLabel.labelStatus).toEqual(expectedLabelStatus)
       })
     })
-    */
   })
 })
