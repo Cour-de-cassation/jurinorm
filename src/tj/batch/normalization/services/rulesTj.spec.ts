@@ -3,8 +3,18 @@ import { ObjectId } from 'mongodb'
 
 import { DbSderApiGateway } from '../repositories/gateways/dbsderApi.gateway'
 import * as rulesTj from './rulesTj'
-import { CodeNac, DecisionTj, LabelStatus } from 'dbsder-api-types'
-import { BlocOccultation, Category, SuiviOccultation } from 'dbsder-api-types'
+import { occultationRecommendationCodeNac } from './rulesTj'
+import {
+  BlocOccultation,
+  CategoriesToOmit,
+  Category,
+  CodeNac,
+  DebatsPublics,
+  DecisionsPubliques,
+  DecisionTj,
+  LabelStatus,
+  SuiviOccultation
+} from 'dbsder-api-types'
 
 const findCodeNac = jest.spyOn(DbSderApiGateway.prototype, 'getCodeNac')
 
@@ -52,18 +62,15 @@ const fakeDecision: DecisionTj = {
 
 const codeNac: CodeNac = {
   _id: new ObjectId(),
-  indicateurDecisionRenduePubliquement: true,
+  decisionsPubliques: DecisionsPubliques.DECISIONS_PUBLIQUES,
   codeNAC: '',
   libelleNAC: '',
-  niveau1NAC: { code: '', libelle: '' },
-  niveau2NAC: { code: '', libelle: '' },
-  indicateurAffaireSignalee: false,
-  isInJuricaDatabase: true,
-  blocOccultationTJ: 1,
-  categoriesToOmitCA: { aucune: [], complément: [], conforme: [], substituant: [] },
-  categoriesToOmitTJ: { aucune: [], complément: [], conforme: [], substituant: [] },
-  logs: [],
-  indicateurDebatsPublics: true
+  chapitre: { code: '', libelle: '' },
+  sousChapitre: { code: '', libelle: '' },
+  blocOccultation: 1,
+  categoriesToOmit: { suivi: [], nonSuivi: [] },
+  debatsPublics: DebatsPublics.DEBATS_PUBLICS,
+  codeUsageNonConseille: false
 }
 
 describe('service/decision/rulesTj', () => {
@@ -108,7 +115,7 @@ describe('service/decision/rulesTj', () => {
     })
 
     it('should be ignored if not public by code Nac', async () => {
-      findCodeNac.mockResolvedValue({ ...codeNac, indicateurDecisionRenduePubliquement: false })
+      findCodeNac.mockResolvedValue({ ...codeNac, decisionsPubliques: 'débats non publics' })
       const decision = fakeDecision
       const result = await rulesTj.computeRulesDecisionTj(decision, undefined)
 
@@ -116,7 +123,7 @@ describe('service/decision/rulesTj', () => {
     })
 
     it('should be ignored if codeNac occultations are undefined', async () => {
-      findCodeNac.mockResolvedValue({ ...codeNac, blocOccultationTJ: undefined })
+      findCodeNac.mockResolvedValue({ ...codeNac, blocOccultation: undefined })
       const decision = fakeDecision
       const result = await rulesTj.computeRulesDecisionTj(decision, undefined)
 
@@ -124,7 +131,7 @@ describe('service/decision/rulesTj', () => {
     })
 
     it('should be ignored if partially not public by nac', async () => {
-      findCodeNac.mockResolvedValue({ ...codeNac, indicateurDebatsPublics: false })
+      findCodeNac.mockResolvedValue({ ...codeNac, debatsPublics: 'débats non publics' })
       const decision = fakeDecision
       const result = await rulesTj.computeRulesDecisionTj(decision, undefined)
 
@@ -143,11 +150,9 @@ describe('service/decision/rulesTj', () => {
       const categoriesToOmit = [Category.ADRESSE]
       findCodeNac.mockResolvedValue({
         ...codeNac,
-        categoriesToOmitTJ: {
-          aucune: [],
-          complément: categoriesToOmit,
-          conforme: [],
-          substituant: []
+        categoriesToOmit: {
+          suivi: categoriesToOmit,
+          nonSuivi: []
         }
       })
       const decision = { ...fakeDecision, recommandationOccultation: SuiviOccultation.COMPLEMENT }
@@ -158,11 +163,32 @@ describe('service/decision/rulesTj', () => {
 
     it('should return decision with codeNac blocOccultation', async () => {
       const blocOccultation = 3
-      findCodeNac.mockResolvedValue({ ...codeNac, blocOccultationTJ: blocOccultation })
+      findCodeNac.mockResolvedValue({ ...codeNac, blocOccultation: blocOccultation })
       const decision = fakeDecision
       const result = await rulesTj.computeRulesDecisionTj(decision, undefined)
 
       expect(result.blocOccultation).toEqual(blocOccultation)
+    })
+  })
+  describe('occultationRecommendationCodeNac', () => {
+    describe('devrait retourner SUIVI', () => {
+      it.each([SuiviOccultation.COMPLEMENT, SuiviOccultation.CONFORME])(
+        'quand la recommandation est COMPLEMENT ou CONFORME',
+        (recommandation) => {
+          const result = occultationRecommendationCodeNac(recommandation)
+          expect(result).toBe(CategoriesToOmit.SUIVI)
+        }
+      )
+    })
+
+    describe('devrait retourner NON_SUIVI', () => {
+      it.each([SuiviOccultation.AUCUNE, SuiviOccultation.SUBSTITUANT])(
+        'quand la recommandation est AUCUNE ou SUBSTITUANT',
+        (recommandation) => {
+          const result = occultationRecommendationCodeNac(recommandation)
+          expect(result).toBe(CategoriesToOmit.NON_SUIVI)
+        }
+      )
     })
   })
 

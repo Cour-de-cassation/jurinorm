@@ -1,11 +1,12 @@
 import zod from 'zod'
 import { toNotSupported } from '../services/error'
 import {
-  UnIdentifiedDecisionCph,
+  CategoriesToOmit,
+  CodeNac,
   LabelStatus,
   PublishStatus,
   SuiviOccultation,
-  CodeNac
+  UnIdentifiedDecisionCph
 } from 'dbsder-api-types'
 import { RawFile } from '../services/eventSourcing'
 
@@ -13,6 +14,19 @@ export type FileCph = {
   mimetype: string
   size: number
   buffer: Buffer
+}
+
+export function occultationRecommendationCodeNac(
+  recommandationOccultation: SuiviOccultation
+): CategoriesToOmit {
+  if (
+    recommandationOccultation === SuiviOccultation.COMPLEMENT ||
+    recommandationOccultation === SuiviOccultation.CONFORME
+  ) {
+    return CategoriesToOmit.SUIVI
+  } else {
+    return CategoriesToOmit.NON_SUIVI
+  }
 }
 
 const schemaPublicationRules = zod.object({
@@ -94,7 +108,7 @@ export function mapCphDecision(
   metadatas: CphMetadatas,
   content: string,
   publicationRules: PublicationRules,
-  occultationStrategy: Required<Pick<CodeNac, 'blocOccultationCA' | 'categoriesToOmitCA'>>,
+  occultationStrategy: Required<Pick<CodeNac, 'blocOccultation' | 'categoriesToOmit'>>,
   filenameSource: string
 ): UnIdentifiedDecisionCph {
   const recommandationOccultation = publicationRules.recommandationOccultation
@@ -129,10 +143,13 @@ export function mapCphDecision(
     jurisdictionName: metadatas.juridiction.libelle_long,
     selection: publicationRules.interetParticulier,
     sommaire: publicationRules.sommaireInteretParticulier,
-    blocOccultation: occultationStrategy.blocOccultationCA,
+    blocOccultation: occultationStrategy.blocOccultation,
     occultation: {
       additionalTerms: computeAdditionalTerms(publicationRules.recommandationOccultation),
-      categoriesToOmit: occultationStrategy.categoriesToOmitCA[recommandationOccultation],
+      categoriesToOmit:
+        occultationStrategy.categoriesToOmit[
+          occultationRecommendationCodeNac(recommandationOccultation)
+        ],
       motivationOccultation: false
     },
     recommandationOccultation,
