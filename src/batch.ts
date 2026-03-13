@@ -22,11 +22,11 @@ async function startNormalization() {
         operations: ['normalization', 'startNormalization']
       })
       await normalizeRawCcFiles()
-      await normalizeRawCaFiles(filters, MAX_DECISION_PER_BATCH)
-      await normalizeRawTjFiles(filters, MAX_DECISION_PER_BATCH)
-      await normalizeRawTcomFiles(MAX_DECISION_PER_BATCH)
-      if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV))
-        await normalizeRawCphFiles(filters, MAX_DECISION_PER_BATCH)
+      // await normalizeRawCaFiles(filters, MAX_DECISION_PER_BATCH)
+      // await normalizeRawTjFiles(filters, MAX_DECISION_PER_BATCH)
+      // await normalizeRawTcomFiles(MAX_DECISION_PER_BATCH)
+      // if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV))
+      //   await normalizeRawCphFiles(filters, MAX_DECISION_PER_BATCH)
     },
     waitForCompletion: true, // onTick cannot be retry if an instance of it is running
     timeZone: 'Europe/Paris',
