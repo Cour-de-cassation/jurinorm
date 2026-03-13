@@ -25,24 +25,33 @@ import { RawTj } from './models'
 import { getFileByName } from '../../../connectors/bucket'
 
 export const rawTjToNormalize = {
-  // Ne contient pas normalized:
-  events: { $not: { $elemMatch: { type: 'normalized' } } },
-  // Les 3 derniers events ne sont pas "blocked":
   $expr: {
-    $not: {
-      $eq: [
-        3,
-        {
-          $size: {
-            $filter: {
-              input: { $slice: ['$events', -3] },
-              as: 'e',
-              cond: { $eq: ['$$e.type', 'blocked'] }
+    $or: [
+      // Cas 1: pas encore normalisé et pas bloqué 3 fois de suite
+      {
+        $and: [
+          { $not: [{ $in: ['normalized', '$events.type'] }] },
+          {
+            $not: {
+              $eq: [
+                3,
+                {
+                  $size: {
+                    $filter: {
+                      input: { $slice: ['$events', -3] },
+                      as: 'e',
+                      cond: { $eq: ['$$e.type', 'blocked'] }
+                    }
+                  }
+                }
+              ]
             }
           }
-        }
-      ]
-    }
+        ]
+      },
+      // Cas 2: le dernier event est "unblocked" (prend le dessus sur normalized et blocked)
+      { $eq: [{ $arrayElemAt: ['$events.type', -1] }, 'unblocked'] }
+    ]
   }
 }
 
