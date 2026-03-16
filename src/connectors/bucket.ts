@@ -1,7 +1,7 @@
 import { S3Client, S3ClientConfig, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
 
 import { UnexpectedError } from '../services/error'
-import { S3_ACCESS_KEY, S3_REGION, S3_SECRET_KEY, S3_URL } from './env'
+import { S3_ACCESS_KEY, S3_REGION, S3_SECRET_KEY, S3_URL } from '../config/env'
 
 const S3Options: S3ClientConfig = {
   endpoint: S3_URL,

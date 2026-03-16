@@ -1,6 +1,6 @@
 import { isMissingValue, toUnexpectedError, UnexpectedError } from './error'
-import { Id, updateFileInformation } from '../connectors/DbRawFile'
-import { logger } from '../connectors/logger'
+import { Id, updateFileInformation } from '../connectors/dbRawFile'
+import { logger } from '../config/logger'
 
 export type Created = {
   type: 'created'
