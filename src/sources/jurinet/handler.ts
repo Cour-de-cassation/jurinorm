@@ -1,4 +1,8 @@
-import { countFileInformations, findFileInformations, mapCursorSync } from '../../connectors/dbRawFile'
+import {
+  countFileInformations,
+  findFileInformations,
+  mapCursorSync
+} from '../../connectors/dbRawFile'
 import { toUnexpectedError } from '../../services/error'
 import { RawCc } from './models'
 import { logger } from '../../config/logger'

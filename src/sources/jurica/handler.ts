@@ -1,6 +1,10 @@
 import { toUnexpectedError } from '../../services/error'
 import { RawCa } from './models'
-import { countFileInformations, findFileInformations, mapCursorSync } from '../../connectors/dbRawFile'
+import {
+  countFileInformations,
+  findFileInformations,
+  mapCursorSync
+} from '../../connectors/dbRawFile'
 import { logger } from '../../config/logger'
 import { COLLECTION_JURICA_RAW } from '../../config/env'
 import { updateRawFileStatus, NormalizationResult } from '../../services/eventSourcing'

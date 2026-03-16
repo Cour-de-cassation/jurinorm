@@ -1,6 +1,10 @@
 import { toUnexpectedError } from '../../services/error'
 import { RawCph } from './models'
-import { countFileInformations, findFileInformations, mapCursorSync } from '../../connectors/dbRawFile'
+import {
+  countFileInformations,
+  findFileInformations,
+  mapCursorSync
+} from '../../connectors/dbRawFile'
 import { normalizeCph, rawCphToNormalize } from './normalization'
 import { logger } from '../../config/logger'
 import { S3_BUCKET_NAME_PORTALIS } from '../../config/env'
