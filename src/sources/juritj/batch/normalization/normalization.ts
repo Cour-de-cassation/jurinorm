@@ -26,31 +26,30 @@ import { getFileByName } from '../../../../connectors/bucket'
 
 export const rawTjToNormalize = {
   $expr: {
-    $or: [
-      // Cas 1: pas encore normalisé et pas bloqué 3 fois de suite
+    $and: [
+      // Le dernier event n'est pas "normalized":
       {
-        $and: [
-          { $not: [{ $in: ['normalized', '$events.type'] }] },
-          {
-            $not: {
-              $eq: [
-                3,
-                {
-                  $size: {
-                    $filter: {
-                      input: { $slice: ['$events', -3] },
-                      as: 'e',
-                      cond: { $eq: ['$$e.type', 'blocked'] }
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        ]
+        $not: {
+          $eq: [{ $arrayElemAt: ['$events.type', -1] }, 'normalized']
+        }
       },
-      // Cas 2: le dernier event est "unblocked" (prend le dessus sur normalized et blocked)
-      { $eq: [{ $arrayElemAt: ['$events.type', -1] }, 'unblocked'] }
+      // Les 3 derniers events ne sont pas "blocked":
+      {
+        $not: {
+          $eq: [
+            3,
+            {
+              $size: {
+                $filter: {
+                  input: { $slice: ['$events', -3] },
+                  as: 'e',
+                  cond: { $eq: ['$$e.type', 'blocked'] }
+                }
+              }
+            }
+          ]
+        }
+      }
     ]
   }
 }
@@ -233,12 +232,6 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
         message: `Decision saved in database`
       })
     }
-
-    logger.info({
-      path: 'src/tj/batch/normalization.ts',
-      operations: ['normalization', 'normalizationJob-TJ'],
-      message: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
-    })
 
     logger.info({
       path: 'src/tj/batch/normalization.ts',
