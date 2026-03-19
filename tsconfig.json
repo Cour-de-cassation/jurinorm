@@ -19,13 +19,14 @@
     "noFallthroughCasesInSwitch": false,
     "strictFunctionTypes": true, // see: https://github.com/m-radzikowski/aws-sdk-client-mock/issues/167
     "paths": {
-      "@ca/*": ["src/ca/*"],
-      "@cc/*": ["src/cc/*"],
+      "@ca/*": ["src/sources/jurica/*"],
+      "@cc/*": ["src/sources/jurinet/*"],
       "@connectors/*": ["src/connectors/*"],
-      "@cph/*": ["src/cph/*"],
+      "@cph/*": ["src/sources/portalis/*"],
       "@services/*": ["src/services/*"],
-      "@tcom/*": ["src/tcom/*"],
-      "@tj/*": ["src/tj/*"]
+      "@tcom/*": ["src/sources/juritcom/*"],
+      "@tj/*": ["src/sources/juritj/*"],
+      "@config/*": ["src/config/*"],
     }
   }
 }

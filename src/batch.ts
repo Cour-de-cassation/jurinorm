@@ -1,12 +1,12 @@
 import { CronJob } from 'cron'
-import { logger } from './connectors/logger'
-import { ENV, NORMALIZATION_BATCH_SCHEDULE } from './connectors/env'
+import { logger } from './config/logger'
+import { ENV, NORMALIZATION_BATCH_SCHEDULE } from './config/env'
 
-import { normalizeRawCphFiles } from './cph/handler'
-import { normalizationJob as normalizeRawTcomFiles } from './tcom/batch/normalization/normalization'
-import { normalizeRawTjFiles } from './tj/batch/normalization/handler'
-import { normalizeRawCcFiles } from './cc/handler'
-import { normalizeRawCaFiles } from './ca/handler'
+import { normalizeRawCphFiles } from './sources/portalis/handler'
+import { normalizationJob as normalizeRawTcomFiles } from './sources/juritcom/batch/normalization/normalization'
+import { normalizeRawTjFiles } from './sources/juritj/batch/normalization/handler'
+import { normalizeRawCcFiles } from './sources/jurinet/handler'
+import { normalizeRawCaFiles } from './sources/jurica/handler'
 
 const CRON_EVERY_HOUR = '0 * * * *'
 
