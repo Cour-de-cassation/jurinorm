@@ -5,7 +5,7 @@ import {
   findAffaire,
   patchDecision,
   UnIdentifiedDecisionSupported
-} from '../connectors/DbSder'
+} from '../connectors/dbSder'
 
 export async function saveDecisionInAffaire(
   decision: UnIdentifiedDecisionSupported
