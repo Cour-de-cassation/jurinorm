@@ -98,23 +98,31 @@ export async function normalizeCph(rawCph: RawCph): Promise<unknown> {
 }
 
 export const rawCphToNormalize = {
-  // Ne contient pas normalized:
-  events: { $not: { $elemMatch: { type: 'normalized' } } },
-  // Les 3 derniers events ne sont pas "blocked":
   $expr: {
-    $not: {
-      $eq: [
-        3,
-        {
-          $size: {
-            $filter: {
-              input: { $slice: ['$events', -3] },
-              as: 'e',
-              cond: { $eq: ['$$e.type', 'blocked'] }
-            }
-          }
+    $and: [
+      // Le dernier event n'est pas "normalized":
+      {
+        $not: {
+          $eq: [{ $arrayElemAt: ['$events.type', -1] }, 'normalized']
         }
-      ]
-    }
+      },
+      // Les 3 derniers events ne sont pas "blocked":
+      {
+        $not: {
+          $eq: [
+            3,
+            {
+              $size: {
+                $filter: {
+                  input: { $slice: ['$events', -3] },
+                  as: 'e',
+                  cond: { $eq: ['$$e.type', 'blocked'] }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
   }
 }

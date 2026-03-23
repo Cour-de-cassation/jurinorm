@@ -25,24 +25,32 @@ import { RawTj } from './models'
 import { getFileByName } from '../../../../connectors/bucket'
 
 export const rawTjToNormalize = {
-  // Ne contient pas normalized:
-  events: { $not: { $elemMatch: { type: 'normalized' } } },
-  // Les 3 derniers events ne sont pas "blocked":
   $expr: {
-    $not: {
-      $eq: [
-        3,
-        {
-          $size: {
-            $filter: {
-              input: { $slice: ['$events', -3] },
-              as: 'e',
-              cond: { $eq: ['$$e.type', 'blocked'] }
-            }
-          }
+    $and: [
+      // Le dernier event n'est pas "normalized":
+      {
+        $not: {
+          $eq: [{ $arrayElemAt: ['$events.type', -1] }, 'normalized']
         }
-      ]
-    }
+      },
+      // Les 3 derniers events ne sont pas "blocked":
+      {
+        $not: {
+          $eq: [
+            3,
+            {
+              $size: {
+                $filter: {
+                  input: { $slice: ['$events', -3] },
+                  as: 'e',
+                  cond: { $eq: ['$$e.type', 'blocked'] }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
   }
 }
 
@@ -142,7 +150,19 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
         sourceId: decisionWithRules.sourceId
       })
     ).decisions
-    const diff = previousVersion ? computeDiff(previousVersion, decisionWithRules) : null
+
+    const hasRecentUnblocked = rawTj.events.slice(-3).some((event) => event.type === 'unblocked')
+    if (hasRecentUnblocked) {
+      logger.info({
+        path: 'src/tj/batch/normalization.ts',
+        operations: ['normalization', 'normalizationJob-TJ'],
+        message: `Decision has a recent 'unblocked' event among the last 3 events: skipping diff, treating as major update`
+      })
+    }
+    const diff =
+      previousVersion && !hasRecentUnblocked
+        ? computeDiff(previousVersion, decisionWithRules)
+        : null
 
     if (
       diff?.major?.length === 0 &&
@@ -224,12 +244,6 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
         message: `Decision saved in database`
       })
     }
-
-    logger.info({
-      path: 'src/tj/batch/normalization.ts',
-      operations: ['normalization', 'normalizationJob-TJ'],
-      message: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
-    })
 
     logger.info({
       path: 'src/tj/batch/normalization.ts',
