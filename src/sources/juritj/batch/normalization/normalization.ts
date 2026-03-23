@@ -150,7 +150,19 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
         sourceId: decisionWithRules.sourceId
       })
     ).decisions
-    const diff = previousVersion ? computeDiff(previousVersion, decisionWithRules) : null
+
+    const hasRecentUnblocked = rawTj.events.slice(-3).some((event) => event.type === 'unblocked')
+    if (hasRecentUnblocked) {
+      logger.info({
+        path: 'src/tj/batch/normalization.ts',
+        operations: ['normalization', 'normalizationJob-TJ'],
+        message: `Decision has a recent 'unblocked' event among the last 3 events: skipping diff, treating as major update`
+      })
+    }
+    const diff =
+      previousVersion && !hasRecentUnblocked
+        ? computeDiff(previousVersion, decisionWithRules)
+        : null
 
     if (
       diff?.major?.length === 0 &&
