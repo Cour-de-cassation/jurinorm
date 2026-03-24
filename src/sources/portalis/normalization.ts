@@ -10,7 +10,6 @@ import { annotateDecision } from '../../services/rules/annotation'
 import { saveDecisionInAffaire } from '../../services/affaire'
 import { S3_BUCKET_NAME_PORTALIS } from '../../config/env'
 
-
 async function getPortalisContent(fileNamePdf: string, portalisFile: Buffer): Promise<string> {
   logger.info({
     path: 'src/service/sources/portalis/normalization.ts',
@@ -51,9 +50,9 @@ export async function normalizePortalis(rawPortalis: RawPortalis): Promise<unkno
   const portalisFile = await getFileByName(S3_BUCKET_NAME_PORTALIS, rawPortalis.path)
   const portalisMetadatas = rawPortalis.metadatas
 
-  if (!portalisMetadatas.metadatas.juridiction.libelle_court.startsWith("CPH"))
+  if (!portalisMetadatas.metadatas.juridiction.libelle_court.startsWith('CPH'))
     throw new NotSupported(
-      "portalisMetadatas.juridiction",
+      'portalisMetadatas.juridiction',
       portalisMetadatas.metadatas.juridiction.libelle_court
     )
 
