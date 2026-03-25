@@ -13,24 +13,34 @@ import { LabelStatus } from 'dbsder-api-types'
 import { saveDecisionInAffaire } from '../../services/affaire'
 
 export const rawCcToNormalize = {
-  // Ne contient ni normalized ni deleted:
-  events: { $not: { $elemMatch: { type: { $in: ['normalized', 'deleted'] } } } },
-  // Les 3 derniers events ne sont pas "blocked":
+  // Ne contient pas deleted:
+  events: { $not: { $elemMatch: { type: 'deleted' } } },
   $expr: {
-    $not: {
-      $eq: [
-        3,
-        {
-          $size: {
-            $filter: {
-              input: { $slice: ['$events', -3] },
-              as: 'e',
-              cond: { $eq: ['$$e.type', 'blocked'] }
-            }
-          }
+    $and: [
+      // Le dernier event n'est pas "normalized":
+      {
+        $not: {
+          $eq: [{ $arrayElemAt: ['$events.type', -1] }, 'normalized']
         }
-      ]
-    }
+      },
+      // Les 3 derniers events ne sont pas "blocked":
+      {
+        $not: {
+          $eq: [
+            3,
+            {
+              $size: {
+                $filter: {
+                  input: { $slice: ['$events', -3] },
+                  as: 'e',
+                  cond: { $eq: ['$$e.type', 'blocked'] }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
   }
 }
 

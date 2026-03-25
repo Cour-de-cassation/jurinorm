@@ -7,7 +7,8 @@ import { normalizeRawTjFiles } from './sources/juritj/batch/normalization/handle
 import { normalizeRawCcFiles } from './sources/jurinet/handler'
 import { normalizeRawCaFiles } from './sources/jurica/handler'
 
-const MAX_DECISION_PER_BATCH = 10
+const MAX_DECISION_PER_BATCH = 100
+const MAX_DECISION_PER_BATCH_TCOM = 10
 const filters = undefined
 
 async function startNormalization() {
@@ -18,7 +19,7 @@ async function startNormalization() {
   await normalizeRawCcFiles()
   await normalizeRawCaFiles(filters, MAX_DECISION_PER_BATCH)
   await normalizeRawTjFiles(filters, MAX_DECISION_PER_BATCH)
-  await normalizeRawTcomFiles(MAX_DECISION_PER_BATCH)
+  await normalizeRawTcomFiles(MAX_DECISION_PER_BATCH_TCOM)
   if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV))
     await normalizeRawCphFiles(filters, MAX_DECISION_PER_BATCH)
 }
