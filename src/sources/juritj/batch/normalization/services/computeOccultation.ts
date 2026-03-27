@@ -8,24 +8,24 @@ export function computeOccultation(
 ): UnIdentifiedDecisionTj['occultation'] {
   const additionalTerms =
     recommandationOccultation === SuiviOccultation.SUBSTITUANT ||
-    recommandationOccultation === SuiviOccultation.COMPLEMENT
+      recommandationOccultation === SuiviOccultation.COMPLEMENT
       ? occultationSupplementaire
       : ''
 
   logger.error({
-    path: 'src/tj/batch/normalization/services/computeOccultation.ts',
+    path: 'src/sources/juritj/batch/normalization/services/computeOccultation.ts',
     operations: ['normalization', 'computeOccultation-TJ'],
     message: `additionalTerms computed`
   })
 
   const motivationOccultation =
     recommandationOccultation === SuiviOccultation.AUCUNE ||
-    recommandationOccultation === SuiviOccultation.SUBSTITUANT
+      recommandationOccultation === SuiviOccultation.SUBSTITUANT
       ? false
       : !debatPublic
 
   logger.error({
-    path: 'src/tj/batch/normalization/services/computeOccultation.ts',
+    path: 'src/sources/juritj/batch/normalization/services/computeOccultation.ts',
     operations: ['normalization', 'computeOccultation-TJ'],
     message: `motivationOccultation computed ${motivationOccultation}`
   })

@@ -1,6 +1,5 @@
 import { UnIdentifiedDecisionTcom, Category } from 'dbsder-api-types'
-import { logger, normalizationFormatLogs } from '../logger'
-import { LogsFormat } from '../../../shared/infrastructure/utils/logsFormat.utils'
+import { logger, TechLog } from '../../../../../config/logger'
 import {
   OccultationComplementaireDto,
   MetadonneeDto
@@ -12,11 +11,13 @@ export function computeOccultation(
   const occultationsComplementaires: OccultationComplementaireDto =
     metadonnees.occultationsComplementaires
 
-  const formatLogs: LogsFormat = {
-    ...normalizationFormatLogs,
-    operationName: 'computeOccultation',
-    msg: 'Starting computeOccultation...'
+  const formatLogs: TechLog = {
+    operations: ['normalization', 'computeOccultation'],
+    path: 'src/sources/juritcom/batch/normalization/services/computeOccultation.ts',
+    message: 'Starting computeOccultation...'
+
   }
+  logger.info(formatLogs)
 
   const categoriesToOmitRaw = []
   const additionalTermsRaw = []
@@ -24,7 +25,7 @@ export function computeOccultation(
 
   logger.info({
     ...formatLogs,
-    msg: `motivationOccultation computed ${motivationOccultation}`
+    message: `motivationOccultation computed ${motivationOccultation}`
   })
 
   if (occultationsComplementaires.personneMorale !== true) {
@@ -80,7 +81,7 @@ export function computeOccultation(
 
   logger.info({
     ...formatLogs,
-    msg: `categoriesToOmit computed ${categoriesToOmit}`
+    message: `categoriesToOmit computed ${categoriesToOmit}`
   })
 
   if (occultationsComplementaires.conserverElement) {
@@ -107,7 +108,7 @@ export function computeOccultation(
 
   logger.info({
     ...formatLogs,
-    msg: `additionalTerms computed ${additionalTerms}`
+    message: `additionalTerms computed ${additionalTerms}`
   })
 
   return {

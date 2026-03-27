@@ -12,7 +12,7 @@ export async function readWordperfectDocument(filename: string) {
     try {
       if (!statSync(filename).isFile()) {
         logger.error({
-          path: 'src/tj/batch/normalization/services/transformWPDtoText',
+          path: 'src/sources/juritj/batch/normalization/services/transformWPDtoText.ts',
           operations: ['extraction', 'readWordperfectDocument'],
           message: `Path provided is not a file: ${filename}`
         })
@@ -24,7 +24,7 @@ export async function readWordperfectDocument(filename: string) {
       return stdout
     } catch (error) {
       logger.error({
-        path: 'src/tj/batch/normalization/services/transformWPDtoText',
+        path: 'src/sources/juritj/batch/normalization/services/transformWPDtoText.ts',
         operations: ['extraction', 'readWordperfectDocument'],
         message: error.message,
         stack: error.stack
@@ -33,7 +33,7 @@ export async function readWordperfectDocument(filename: string) {
     }
   } else {
     logger.error({
-      path: 'src/tj/batch/normalization/services/transformWPDtoText',
+      path: 'src/sources/juritj/batch/normalization/services/transformWPDtoText.ts',
       operations: ['extraction', 'readWordperfectDocument'],
       message: 'Unable to read Wordperfect document.'
     })
@@ -48,7 +48,7 @@ export async function getConversionCommandPath(commandName: string): Promise<str
     })
     .catch(() => {
       logger.error({
-        path: 'src/tj/batch/normalization/services/transformWPDtoText',
+        path: 'src/sources/juritj/batch/normalization/services/transformWPDtoText.ts',
         operations: ['extraction', 'getConversionCommandPath'],
         message: 'Unable to find the command to do the conversion... Skipping'
       })

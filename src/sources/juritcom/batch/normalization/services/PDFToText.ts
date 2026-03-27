@@ -1,7 +1,6 @@
 import { DecisionS3Repository } from '../../../shared/infrastructure/repositories/decisionS3.repository'
 import { InfrastructureException } from '../../../shared/infrastructure/exceptions/infrastructure.exception'
-import { logger, normalizationFormatLogs } from '../logger'
-import { LogsFormat } from '../../../shared/infrastructure/utils/logsFormat.utils'
+import { logger, TechLog } from '../../../../../config/logger'
 import * as FormData from 'form-data'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import { Marked } from 'marked'
@@ -17,6 +16,28 @@ export interface NLPPDFToTextDTO {
   versions?: object
 }
 
+const formatLogsPdfFromS3: TechLog = {
+  operations: ['normalization', 'fetchPDFFromS3'],
+  path: 'src/sources/juritcom/batch/normalization/services/PDFToText.ts',
+}
+
+const formatLogsNLP: TechLog = {
+  operations: ['normalization', 'fetchNLPDataFromPDF'],
+  path: 'src/sources/juritcom/batch/normalization/services/PDFToText.ts',
+}
+
+const formatLogsHTMLToText: TechLog = {
+  operations: ['normalization', 'HTMLToPlainText'],
+  path: 'src/sources/juritcom/batch/normalization/services/PDFToText.ts',
+}
+
+const formatLogsMarkdownToPlainText: TechLog = {
+  operations: ['normalization', 'MarkdownToPlainText'],
+  path: 'src/sources/juritcom/batch/normalization/services/PDFToText.ts',
+}
+
+
+
 export async function fetchPDFFromS3(
   s3Repository: DecisionS3Repository,
   pdfFilename: string
@@ -24,13 +45,10 @@ export async function fetchPDFFromS3(
   try {
     return await s3Repository.getPDFByFilename(pdfFilename)
   } catch (error) {
-    const formatLogs: LogsFormat = {
-      ...normalizationFormatLogs,
-      operationName: 'fetchPDFFromS3',
-      msg: error.message
-    }
+
     logger.error({
-      ...formatLogs
+      ...formatLogsPdfFromS3,
+      message: error.message
     })
     throw new InfrastructureException(error.message)
   }
@@ -54,36 +72,30 @@ export async function fetchNLPDataFromPDF(pdfFile: Buffer, pdfFilename: string):
       const t1 = new Date()
       const delta = (t1.getTime() - t0.getTime()) / 1000
       const perPage = delta / response.data.pdfPageCount
-      const formatLogs: LogsFormat = {
-        ...normalizationFormatLogs,
-        operationName: 'fetchNLPDataFromPDF',
-        msg: `performed pdf-to-text on file ${pdfFilename}`,
-        statusCode: response.status
-      }
       logger.info({
-        ...formatLogs,
-        pdfType: response.data.pdfType,
-        pdfPageCount: response.data.pdfPageCount,
-        duration: delta.toFixed(4),
-        durationAsNumber: delta,
-        durationPerPage: perPage.toFixed(4),
-        durationPerPageAsNumber: perPage,
-        statusCodeAsString: `${response.status}`
+        ...formatLogsNLP,
+        message: JSON.stringify({
+          pdfType: response.data.pdfType,
+          pdfPageCount: response.data.pdfPageCount,
+          duration: delta.toFixed(4),
+          durationAsNumber: delta,
+          durationPerPage: perPage.toFixed(4),
+          durationPerPageAsNumber: perPage,
+          statusCodeAsString: `${response.status}`
+        })
+
       })
     }
     return response.data
   } catch (error) {
-    const formatLogs: LogsFormat = {
-      ...normalizationFormatLogs,
-      operationName: 'fetchNLPDataFromPDF',
-      msg: error.message
-    }
     if (error instanceof AxiosError) {
-      formatLogs.msg = error.code
-      formatLogs.statusCode = error.status
       logger.error({
-        ...formatLogs,
-        statusCodeAsString: `${error.status}`
+        ...formatLogsNLP,
+        message: JSON.stringify({
+          statusCodeAsString: error.status,
+          statusCode: error.status,
+          error: error.message
+        })
       })
       if (error.status === 429 || error.status === 500) {
         throw new PostponeException(error.message)
@@ -92,7 +104,8 @@ export async function fetchNLPDataFromPDF(pdfFile: Buffer, pdfFilename: string):
       }
     } else {
       logger.error({
-        ...formatLogs
+        ...formatLogsNLP,
+        message: error.message
       })
       throw new InfrastructureException(error.message)
     }
@@ -423,14 +436,15 @@ export function HTMLToPlainText(input: string): string {
     const error = new InfrastructureException(
       'Le texte retourné est vide ou potentiellement incomplet'
     )
-    const formatLogs: LogsFormat = {
-      ...normalizationFormatLogs,
-      operationName: 'HTMLToPlainText',
-      msg: error.message,
-      data: {
-        input: input,
-        output: plainText
-      }
+    const formatLogs: TechLog = {
+      ...formatLogsHTMLToText,
+      message: JSON.stringify({
+        error: error.message,
+        data: {
+          input: input,
+          output: plainText
+        }
+      })
     }
     logger.error({
       ...formatLogs
@@ -548,14 +562,15 @@ export function markdownToPlainText(input: string): string {
     const error = new InfrastructureException(
       'Le texte retourné est vide ou potentiellement incomplet'
     )
-    const formatLogs: LogsFormat = {
-      ...normalizationFormatLogs,
-      operationName: 'markdownToPlainText',
-      msg: error.message,
-      data: {
-        input: input,
-        output: plainText
-      }
+    const formatLogs = {
+      ...formatLogsMarkdownToPlainText,
+      message: JSON.stringify({
+        error: error.message,
+        data: {
+          input: input,
+          output: plainText
+        }
+      })
     }
     logger.error({
       ...formatLogs

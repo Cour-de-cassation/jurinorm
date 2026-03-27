@@ -36,7 +36,7 @@ export class DecisionS3Repository implements DecisionRepository {
       await this.s3Client.send(new PutObjectCommand(reqParams))
     } catch (error) {
       logger.error({
-        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        path: 'src/sources/juritcom/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['normalization', 'saveDecision'],
         message: error.message,
         stack: error.stack
@@ -70,7 +70,7 @@ export class DecisionS3Repository implements DecisionRepository {
       await this.s3Client.send(new DeleteObjectCommand(reqParams))
     } catch (error) {
       logger.error({
-        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        path: 'src/sources/juritcom/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['normalization', 'deleteDecision'],
         message: error.message,
         stack: error.stack
@@ -132,7 +132,7 @@ export class DecisionS3Repository implements DecisionRepository {
       await this.s3Client.send(new PutObjectCommand(params))
     } catch (error) {
       logger.error({
-        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        path: 'src/sources/juritcom/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['normalization', 'putDecision'],
         message: error.message,
         stack: error.stack
@@ -153,7 +153,7 @@ export class DecisionS3Repository implements DecisionRepository {
       return JSON.parse(stringifiedDecision)
     } catch (error) {
       logger.error({
-        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        path: 'src/sources/juritcom/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['normalization', 'getDecisionByFilename'],
         message: error.message,
         stack: error.stack
@@ -173,7 +173,7 @@ export class DecisionS3Repository implements DecisionRepository {
       return Buffer.from(await fileFromS3.Body?.transformToByteArray())
     } catch (error) {
       logger.error({
-        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        path: 'src/sources/juritcom/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['normalization', 'getPDFByFilename'],
         message: error.message,
         stack: error.stack
@@ -213,7 +213,7 @@ export class DecisionS3Repository implements DecisionRepository {
       )
     } catch (error) {
       logger.error({
-        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        path: 'src/sources/juritcom/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['normalization', 'archiveFailedDecision'],
         message: error.message,
         stack: error.stack
@@ -238,7 +238,7 @@ export class DecisionS3Repository implements DecisionRepository {
       await this.s3Client.send(new PutObjectCommand(params))
     } catch (error) {
       logger.error({
-        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        path: 'src/sources/juritcom/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['normalization', 'archiveSuccessPDF'],
         message: error.message,
         stack: error.stack
@@ -260,7 +260,7 @@ export class DecisionS3Repository implements DecisionRepository {
       return decisionListFromS3.Contents ? decisionListFromS3.Contents : []
     } catch (error) {
       logger.error({
-        path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
+        path: 'src/sources/juritcom/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['normalization', 'getDecisionList'],
         message: error.message,
         stack: error.stack

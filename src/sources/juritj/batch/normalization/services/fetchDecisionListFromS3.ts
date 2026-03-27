@@ -11,7 +11,7 @@ export async function fetchDecisionListFromS3(
     return rawDecisionList.splice(0, rawDecisionList.length).map((decision) => decision.Key)
   } catch (error) {
     logger.error({
-      path: 'src/tj/batch/normalization/services/fetchDecisionListFromS3.ts',
+      path: 'src/sources/juritj/batch/normalization/services/fetchDecisionListFromS3.ts',
       operations: ['normalization', 'fetchDecisionListFromS3-TJ'],
       message: error.message,
       stack: error.stack

@@ -5,7 +5,7 @@ import {
   findFileInformations,
   mapCursorSync
 } from '../../connectors/dbRawFile'
-import { logger } from '../../config/logger'
+import { logger, TechLog } from '../../config/logger'
 import { COLLECTION_JURICA_RAW } from '../../config/env'
 import { updateRawFileStatus, NormalizationResult } from '../../services/eventSourcing'
 import { annotateDecision } from '../../services/rules/annotation'
@@ -69,7 +69,7 @@ export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
   )
   if (hasNewReception) {
     logger.info({
-      path: 'src/ca/handler.ts',
+      path: 'src/sources/jurica/handler.ts',
       operations: ['normalization', 'normalizeCa'],
       message: `rawCa ${rawCa._id} marked as deleted because new reception`
     })
@@ -97,9 +97,13 @@ export async function normalizeRawCaFiles(
   defaultFilter?: Parameters<typeof findFileInformations<RawCa>>[1],
   limit?: number
 ) {
-  logger.info({
-    path: 'src/ca/handler.ts',
+
+  const normalizationFormatLogs: TechLog = {
+    path: 'src/sources/jurica/handler.ts',
     operations: ['normalization', 'normalizeRawCaFiles'],
+  }
+  logger.info({
+    ...normalizationFormatLogs,
     message: `Starting CA normalization`
   })
   const _rawCaToNormalize = defaultFilter ?? rawCaToNormalize
@@ -110,22 +114,19 @@ export async function normalizeRawCaFiles(
   )
   const rawCaLength = await countFileInformations<RawCa>(COLLECTION_JURICA_RAW, _rawCaToNormalize)
   logger.info({
-    path: 'src/ca/handler.ts',
-    operations: ['normalization', 'normalizeRawCaFiles'],
+    ...normalizationFormatLogs,
     message: `Find ${rawCaLength} raw decisions to normalize. Limit is set to ${limit}`
   })
 
   const results: NormalizationResult<RawCa>[] = await mapCursorSync(rawCaCursor, async (rawCa) => {
     try {
       logger.info({
-        path: 'src/ca/handler.ts',
-        operations: ['normalization', 'normalizeRawCaFiles'],
+        ...normalizationFormatLogs,
         message: `normalize ${rawCa._id} - ${rawCa.path}`
       })
       await normalizeCa(rawCa)
       logger.info({
-        path: 'src/ca/handler.ts',
-        operations: ['normalization', 'normalizeRawCaFiles'],
+        ...normalizationFormatLogs,
         message: `${rawCa._id} normalized with success`
       })
 
@@ -135,8 +136,7 @@ export async function normalizeRawCaFiles(
     } catch (err) {
       const error = toUnexpectedError(err)
       logger.error({
-        path: 'src/ca/handler.ts',
-        operations: ['normalization', 'normalizeRawCaFiles'],
+        ...normalizationFormatLogs,
         message: `${rawCa._id} failed to normalize`,
         stack: error.stack
       })
@@ -150,22 +150,17 @@ export async function normalizeRawCaFiles(
   await Promise.all(results)
 
   logger.info({
-    path: 'src/ca/handler.ts',
-    operations: ['normalization', 'normalizeRawCaFiles'],
-    message: `Decisions successfully normalized: ${
-      results.filter(({ status }) => status === 'success').length
-    }`
+    ...normalizationFormatLogs,
+    message: `Decisions successfully normalized: ${results.filter(({ status }) => status === 'success').length
+      }`
   })
   logger.info({
-    path: 'src/ca/handler.ts',
-    operations: ['normalization', 'normalizeRawCaFiles'],
+    ...normalizationFormatLogs,
     message: `Decisions skipped: ${results.filter(({ status }) => status === 'error').length}`
   })
   logger.info({
-    path: 'src/ca/handler.ts',
-    operations: ['normalization', 'normalizeRawCaFiles'],
-    message: `Decisions marked as deleted: ${
-      results.filter(({ status }) => status === 'deleted').length
-    }`
+    ...normalizationFormatLogs,
+    message: `Decisions marked as deleted: ${results.filter(({ status }) => status === 'deleted').length
+      }`
   })
 }
