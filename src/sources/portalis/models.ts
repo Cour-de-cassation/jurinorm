@@ -1,5 +1,4 @@
 import zod from 'zod'
-import { toNotSupported } from '../../services/error'
 import {
   CategoriesToOmit,
   CodeNac,
@@ -10,7 +9,7 @@ import {
 } from 'dbsder-api-types'
 import { RawFile } from '../../services/eventSourcing'
 
-export type FileCph = {
+export type FilePortalis = {
   mimetype: string
   size: number
   buffer: Buffer
@@ -29,85 +28,74 @@ export function occultationRecommendationCodeNac(
   }
 }
 
-const schemaPublicationRules = zod.object({
+const schemaPortalisMetadatas = zod.object({
   identifiantDecision: zod.string().trim().min(1),
   recommandationOccultation: zod.object({
     suiviRecommandationOccultation: zod.boolean(),
     elementsAOcculter: zod.array(zod.string())
   }),
   interetParticulier: zod.boolean(),
-  sommaireInteretParticulier: zod.string().optional()
-})
-export type PublicationRules = zod.infer<typeof schemaPublicationRules>
-
-const schemaCphMetadatas = zod.object({
-  audiences_dossier: zod
-    .object({
-      audience_dossier: zod.array(
-        zod.object({
-          formation: zod.string().optional(),
-          chronologie: zod.string().optional()
-        })
-      )
-    })
-    .optional(),
-  decision: zod.object({
-    date: zod.string().regex(/\d{8}/),
-    codes_decision: zod.object({
-      code_decision: zod
-        .array(
+  sommaireInteretParticulier: zod.string().optional(),
+  metadatas: zod.object({
+    audiences_dossier: zod
+      .object({
+        audience_dossier: zod.array(
           zod.object({
-            code: zod.string(),
-            libelle: zod.string()
+            formation: zod.string().optional(),
+            chronologie: zod.string().optional()
           })
         )
-        .min(1)
-    })
-  }),
-  dossier: zod.object({
-    nature_affaire_civile: zod.object({
-      code: zod.string(),
-      libelle: zod.string()
-    })
-  }),
-  evenement_porteur: zod.object({
-    caracteristiques: zod.object({
-      caracteristique: zod.array(
-        zod.object({
-          mnemo: zod.string(),
-          libelle: zod.string(),
-          valeur: zod.unknown()
-        })
-      )
+      })
+      .optional(),
+    decision: zod.object({
+      date: zod.string().regex(/\d{8}/),
+      codes_decision: zod.object({
+        code_decision: zod
+          .array(
+            zod.object({
+              code: zod.string(),
+              libelle: zod.string()
+            })
+          )
+          .min(1)
+      })
     }),
-    srj_code_evt: zod.string()
-  }),
-  juridiction: zod.object({
-    libelle_court: zod.string(),
-    libelle_long: zod.string(),
-    code_srj: zod.string()
+    dossier: zod.object({
+      nature_affaire_civile: zod.object({
+        code: zod.string(),
+        libelle: zod.string()
+      })
+    }),
+    evenement_porteur: zod.object({
+      caracteristiques: zod.object({
+        caracteristique: zod.array(
+          zod.object({
+            mnemo: zod.string(),
+            libelle: zod.string(),
+            valeur: zod.unknown()
+          })
+        )
+      }),
+      srj_code_evt: zod.string()
+    }),
+    juridiction: zod.object({
+      libelle_court: zod.string(),
+      libelle_long: zod.string(),
+      code_srj: zod.string()
+    })
   })
 })
-const pdfMetadata = zod.object({
-  root: zod.object({ document: schemaCphMetadatas })
-})
-export type CphMetadatas = zod.infer<typeof schemaCphMetadatas>
-export function parseCphMetadatas(cphMetadatas: any): { root: { document: CphMetadatas } } {
-  const result = pdfMetadata.safeParse(cphMetadatas)
-  if (result.error) throw toNotSupported('cphMetadatas', cphMetadatas, result.error)
-  return result.data
-}
+export type PortalisMetadatas = zod.infer<typeof schemaPortalisMetadatas>
 
 function computeAdditionalTerms(
-  pseudoRules: PublicationRules['recommandationOccultation']
+  pseudoRules: PortalisMetadatas['recommandationOccultation']
 ): string {
   return pseudoRules.elementsAOcculter.map((_) => `+${_}`).join('|')
 }
 
-export function mapCphDecision(
-  metadatas: CphMetadatas,
+export function mapPortalisDecision(
+  { metadatas, ...publicationRules }: PortalisMetadatas,
   content: string,
-  publicationRules: PublicationRules,
   occultationStrategy: Required<Pick<CodeNac, 'blocOccultation' | 'categoriesToOmit'>>,
   filenameSource: string
 ): UnIdentifiedDecisionCph {
@@ -132,11 +120,11 @@ export function mapCphDecision(
     // NACLibelle: metadatas.dossier.nature_affaire_civile.libelle, // TODO: which value ? - low
     endCaseCode: (
       metadatas.decision.codes_decision
-        .code_decision[0] as CphMetadatas['decision']['codes_decision']['code_decision'][number]
+        .code_decision[0] as PortalisMetadatas['metadatas']['decision']['codes_decision']['code_decision'][number]
     ).code, // index[0] is safe due zod schema
     // libelleEndCaseCode: endCaseCode: (
     //   metadatas.decision.codes_decision
-    //     .code_decision[0] as CphMetadatas["decision"]["codes_decision"]["code_decision"][number]
+    //     .code_decision[0] as PortalisMetadatas["decision"]["codes_decision"]["code_decision"][number]
     // ).libelle, // TODO: which value ? - low
     jurisdictionCode: metadatas.juridiction.libelle_court,
     jurisdictionId: metadatas.juridiction.code_srj,
@@ -171,7 +159,7 @@ export function mapCphDecision(
   }
 }
 
-export type RawCph = RawFile<PublicationRules>
+export type RawPortalis = RawFile<PortalisMetadatas>
 
 const utcDateSchema = zod.iso.date().transform((val) => new Date(val))
 export const parseStatusQuery = zod.object({
