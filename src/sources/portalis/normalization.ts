@@ -12,13 +12,13 @@ import { S3_BUCKET_NAME_PORTALIS } from '../../config/env'
 
 async function getPortalisContent(fileNamePdf: string, portalisFile: Buffer): Promise<string> {
   logger.info({
-    path: 'src/service/sources/portalis/normalization.ts',
+    path: 'src/sources/portalis/normalization.ts',
     operations: ['extraction', 'getPortalisContent'],
     message: 'Waiting for text extraction'
   })
   const html = await pdfToHtml(fileNamePdf, portalisFile)
   logger.info({
-    path: 'src/service/sources/portalis/normalization.ts',
+    path: 'src/sources/portalis/normalization.ts',
     operations: ['extraction', 'getPortalisContent'],
     message: 'Text successfully extracted'
   })
