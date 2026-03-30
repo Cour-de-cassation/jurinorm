@@ -33,3 +33,12 @@ async function startNormalization() {
 }
 
 startNormalization()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    logger.error({
+      operations: ['normalization', 'startNormalization'],
+      path: 'src/batch.ts',
+      message: `Batch process failed with error ${err}`
+    })
+    throw err
+  })
