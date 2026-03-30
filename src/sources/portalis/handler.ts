@@ -16,11 +16,11 @@ export async function normalizeRawPortalisFiles(
 ) {
   const normalizationFormatLogs: TechLog = {
     path: 'src/sources/portalis/handler.ts',
-    operations: ['normalization', 'normalizeRawCphFiles']
+    operations: ['normalization', 'normalizeRawPortalisFiles']
   }
   logger.info({
     ...normalizationFormatLogs,
-    message: `Starting CPH normalization`
+    message: `Starting Portalis normalization`
   })
   const rawPortalisFilter = defaultFilter ?? rawPortalisToNormalize
   const rawPortalisCursor = await findFileInformations<RawPortalis>(
@@ -73,9 +73,8 @@ export async function normalizeRawPortalisFiles(
 
   logger.info({
     ...normalizationFormatLogs,
-    message: `Decisions successfully normalized: ${
-      results.filter(({ status }) => status === 'success').length
-    }`
+    message: `Decisions successfully normalized: ${results.filter(({ status }) => status === 'success').length
+      }`
   })
   logger.info({
     ...normalizationFormatLogs,
