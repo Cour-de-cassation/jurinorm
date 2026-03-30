@@ -16,5 +16,9 @@ process.env = {
   NODE_ENV: process.env.NODE_ENV,
   COLLECTION_JURINET_RAW: 'jurinet-raw-files',
   COLLECTION_JURICA_RAW: 'jurica-raw-files',
+  BATCH_MAX_DECISIONS_CA: '100',
+  BATCH_MAX_DECISIONS_TJ: '100',
+  BATCH_MAX_DECISIONS_TCOM: '10',
+  BATCH_MAX_DECISIONS_CPH: '100',
   ENV: 'LOCAL'
 }

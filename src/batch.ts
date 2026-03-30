@@ -1,6 +1,11 @@
-import { CronJob } from 'cron'
 import { logger } from './config/logger'
-import { ENV, NORMALIZATION_BATCH_SCHEDULE } from './config/env'
+import {
+  ENV,
+  BATCH_MAX_DECISIONS_CA,
+  BATCH_MAX_DECISIONS_TJ,
+  BATCH_MAX_DECISIONS_TCOM,
+  BATCH_MAX_DECISIONS_CPH
+} from './config/env'
 
 import { normalizeRawCphFiles } from './sources/portalis/handler'
 import { normalizationJob as normalizeRawTcomFiles } from './sources/juritcom/batch/normalization/normalization'
@@ -8,32 +13,23 @@ import { normalizeRawTjFiles } from './sources/juritj/batch/normalization/handle
 import { normalizeRawCcFiles } from './sources/jurinet/handler'
 import { normalizeRawCaFiles } from './sources/jurica/handler'
 
-const CRON_EVERY_HOUR = '0 * * * *'
-
-const MAX_DECISION_PER_BATCH = 100
-const MAX_DECISION_PER_BATCH_TCOM = 10
+const MAX_DECISION_PER_BATCH_CA = parseInt(BATCH_MAX_DECISIONS_CA, 10)
+const MAX_DECISION_PER_BATCH_TJ = parseInt(BATCH_MAX_DECISIONS_TJ, 10)
+const MAX_DECISION_PER_BATCH_TCOM = parseInt(BATCH_MAX_DECISIONS_TCOM, 10)
+const MAX_DECISION_PER_BATCH_CPH = parseInt(BATCH_MAX_DECISIONS_CPH, 10)
 const filters = undefined
 
 async function startNormalization() {
-  CronJob.from({
-    cronTime: NORMALIZATION_BATCH_SCHEDULE ?? CRON_EVERY_HOUR,
-    async onTick() {
-      logger.info({
-        path: 'src/batch.ts',
-        operations: ['normalization', 'startNormalization']
-      })
-      await normalizeRawCcFiles()
-      await normalizeRawCaFiles(filters, MAX_DECISION_PER_BATCH)
-      await normalizeRawTjFiles(filters, MAX_DECISION_PER_BATCH)
-      await normalizeRawTcomFiles(MAX_DECISION_PER_BATCH_TCOM)
-      if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV))
-        await normalizeRawCphFiles(filters, MAX_DECISION_PER_BATCH)
-    },
-    waitForCompletion: true, // onTick cannot be retry if an instance of it is running
-    timeZone: 'Europe/Paris',
-    runOnInit: true, // This attribute is set to launch the normalization batch once at the start of the cronjob
-    start: true // This attribute starts the cron job after its instantiation (equivalent to cron.start())
+  logger.info({
+    path: 'src/batch.ts',
+    operations: ['normalization', 'startNormalization']
   })
+  await normalizeRawCcFiles()
+  await normalizeRawCaFiles(filters, MAX_DECISION_PER_BATCH_CA)
+  await normalizeRawTjFiles(filters, MAX_DECISION_PER_BATCH_TJ)
+  await normalizeRawTcomFiles(MAX_DECISION_PER_BATCH_TCOM)
+  if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV))
+    await normalizeRawCphFiles(filters, MAX_DECISION_PER_BATCH_CPH)
 }
 
 startNormalization()

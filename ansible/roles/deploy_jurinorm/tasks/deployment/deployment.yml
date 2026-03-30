@@ -1,33 +1,38 @@
 ---
-- name: Create Deployment batch
+- name: Create CronJob batch
   k8s:
     apply: true
     state: present
     verify_ssl: true
     definition:
-      apiVersion: apps/v1
-      kind: Deployment
+      apiVersion: batch/v1
+      kind: CronJob
       metadata:
-        name: "{{ batch_app_id }}-deployment"
+        name: "{{ batch_app_id }}-cronjob"
         namespace: "{{ jurinorm_namespace }}"
         labels:
           app: "{{ batch_app_id }}"
       spec:
-        replicas: 1
-        selector:
-          matchLabels:
-            app: "{{ batch_app_id }}"
-        template:
-          metadata:
-            labels:
-              app: "{{ batch_app_id }}"
+        schedule: "{{ normalization_batch_schedule }}"
+        suspend: "{{ env == 'DEV' }}"
+        timeZone: Europe/Paris
+        successfulJobsHistoryLimit: 3
+        failedJobsHistoryLimit: 10
+        concurrencyPolicy: Forbid
+        jobTemplate:
           spec:
-            containers:
-              - name: "{{ batch_app_id }}"
-                image: "{{ batch_image }}"
-                envFrom:
-                  - configMapRef:
-                      name: "batch-config"
-                  - secretRef:
-                      name: "batch-secret"
+            template:
+              metadata:
+                labels:
+                  app: "{{ batch_app_id }}"
+              spec:
+                restartPolicy: OnFailure
+                containers:
+                  - name: "{{ batch_app_id }}"
+                    image: "{{ batch_image }}"
+                    envFrom:
+                      - configMapRef:
+                          name: "batch-config"
+                      - secretRef:
+                          name: "batch-secret"
 ...
