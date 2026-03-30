@@ -21,6 +21,14 @@ if (process.env.COLLECTION_JURINET_RAW == null)
   throw new MissingValue('process.env.COLLECTION_JURINET_RAW')
 if (process.env.COLLECTION_JURICA_RAW == null)
   throw new MissingValue('process.env.COLLECTION_JURICA_RAW')
+if (process.env.BATCH_MAX_DECISIONS_CA == null)
+  throw new MissingValue('process.env.BATCH_MAX_DECISIONS_CA')
+if (process.env.BATCH_MAX_DECISIONS_TJ == null)
+  throw new MissingValue('process.env.BATCH_MAX_DECISIONS_TJ')
+if (process.env.BATCH_MAX_DECISIONS_TCOM == null)
+  throw new MissingValue('process.env.BATCH_MAX_DECISIONS_TCOM')
+if (process.env.BATCH_MAX_DECISIONS_CPH == null)
+  throw new MissingValue('process.env.BATCH_MAX_DECISIONS_CPH')
 
 export const {
   DBSDER_API_KEY,
@@ -36,5 +44,9 @@ export const {
   S3_SECRET_KEY,
   S3_URL,
   COLLECTION_JURINET_RAW,
-  COLLECTION_JURICA_RAW
+  COLLECTION_JURICA_RAW,
+  BATCH_MAX_DECISIONS_CA,
+  BATCH_MAX_DECISIONS_TJ,
+  BATCH_MAX_DECISIONS_TCOM,
+  BATCH_MAX_DECISIONS_CPH
 } = process.env
