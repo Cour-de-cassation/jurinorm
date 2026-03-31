@@ -42,19 +42,26 @@ export async function annotateDecision<
 
   const nerResult = await postNer(nerParameters)
 
-  annotatedDecision.labelTreatments = [
-    {
-      annotations: nerResult.entities,
-      source: 'NLP',
-      order: 1,
-      checklist: nerResult.checklist,
-      version: nerResult.versions,
-      treatmentDate: new Date().toISOString()
-    }
-  ]
+  return applyNerResult(annotatedDecision, nerResult)
+}
+
+export function applyNerResult<
+  T extends Exclude<UnIdentifiedDecision, UnIdentifiedDecisionDila>
+>(
+  decision: T,
+  nerResult: NerResponse
+): T {
+  decision.labelTreatments = [{
+    annotations: nerResult.entities,
+    source: 'NLP',
+    order: 1,
+    checklist: nerResult.checklist,
+    version: nerResult.versions,
+    treatmentDate: new Date().toISOString()
+  }]
 
   if (nerResult.newCategoriesToAnnotate || nerResult.newCategoriesToUnAnnotate) {
-    annotatedDecision.occultation.categoriesToOmit = computeNewCategoriesToOmit(
+    decision.occultation.categoriesToOmit = computeNewCategoriesToOmit(
       decision.occultation.categoriesToOmit,
       nerResult.newCategoriesToAnnotate,
       nerResult.newCategoriesToUnAnnotate
@@ -65,9 +72,8 @@ export async function annotateDecision<
     nerResult.additionalTermsToAnnotate?.length ||
     nerResult.additionalTermsToUnAnnotate?.length
   ) {
-    annotatedDecision.occultation.additionalTermsToAnnotate = nerResult.additionalTermsToAnnotate
-    annotatedDecision.occultation.additionalTermsToUnAnnotate =
-      nerResult.additionalTermsToUnAnnotate
+    decision.occultation.additionalTermsToAnnotate = nerResult.additionalTermsToAnnotate
+    decision.occultation.additionalTermsToUnAnnotate = nerResult.additionalTermsToUnAnnotate
   }
 
   if (
@@ -75,7 +81,6 @@ export async function annotateDecision<
     decision.occultation.motivationOccultation
   ) {
     try {
-      // parse to have zod error, typeguard to ensure type
       parseCurrentZoning(decision.originalTextZoning)
       if (isCurrentZoning(decision.originalTextZoning)) {
         const motivation = decision.originalTextZoning.zones.motivations
@@ -108,12 +113,15 @@ export async function annotateDecision<
           }
         }
 
-        annotatedDecision.labelTreatments = [
-          ...annotatedDecision.labelTreatments,
+        decision.labelTreatments = [
+          ...decision.labelTreatments,
           {
             order: 2,
             source: 'supplementaryAnnotations',
-            annotations: removeOverlappingEntities([...nerResult.entities, ...motifsAnnotations]),
+            annotations: removeOverlappingEntities([
+              ...(nerResult.entities as Entity[]),
+              ...motifsAnnotations
+            ]),
             treatmentDate: new Date().toISOString()
           }
         ]
@@ -125,10 +133,10 @@ export async function annotateDecision<
     }
   }
 
-  return annotatedDecision
+  return decision
 }
 
-function computeCategories(categoriesToOmit: Category[]): Category[] {
+export function computeCategories(categoriesToOmit: Category[]): Category[] {
   const currentCategories = [
     Category.PERSONNEPHYSIQUE,
     Category.DATENAISSANCE,
@@ -173,7 +181,7 @@ function computeNewCategoriesToOmit(
 
   if (newCategoriesToAnnotate?.length) {
     newCategoriesToOmit = newCategoriesToOmit.filter(
-      (category) => !newCategoriesToAnnotate.includes(category)
+      (category) => !(newCategoriesToAnnotate).includes(category)
     )
   }
 

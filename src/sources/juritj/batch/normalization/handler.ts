@@ -36,19 +36,10 @@ export async function normalizeRawTjFiles(
 
   const results: NormalizationResult<RawTj>[] = await mapCursorSync(rawTjCursor, async (rawTj) => {
     try {
-      logger.info({
-        path: 'src/tj/batch/normalization/handler.ts',
-        operations: ['normalization', 'normalizeRawTjFiles'],
-        message: `normalize ${rawTj._id} - ${rawTj.path}`
-      })
-      await normalizeTj(rawTj)
-      logger.info({
-        path: 'src/tj/batch/normalization/handler.ts',
-        operations: ['normalization', 'normalizeRawTjFiles'],
-        message: `${rawTj._id} normalized with success`
-      })
-
-      const result = { rawFile: rawTj, status: 'success' } as const
+      const status = await normalizeTj(rawTj)
+      const result = status === 'nlpPending'
+        ? ({ rawFile: rawTj, status: 'nlpPending' } as const)
+        : ({ rawFile: rawTj, status: 'success' } as const)
       await updateRawFileStatus(process.env.S3_BUCKET_NAME_RAW_TJ, result)
       return result
     } catch (err) {

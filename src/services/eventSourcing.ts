@@ -1,6 +1,7 @@
 import { isMissingValue, toUnexpectedError, UnexpectedError } from './error'
-import { Id, updateFileInformation } from '../connectors/dbRawFile'
+import { Id, updateFileInformation, appendEventToFile } from '../connectors/dbRawFile'
 import { logger } from '../config/logger'
+import { ObjectId } from 'mongodb'
 
 export type Created = {
   type: 'created'
@@ -31,7 +32,12 @@ export type Deleted = {
   date: Date
 }
 
-export type Event = Created | Normalized | Blocked | Unblocked | Deleted
+export type NlpPending = {
+  type: 'nlpPending'
+  date: Date
+}
+
+export type Event = Created | Normalized | Blocked | Unblocked | Deleted | NlpPending
 
 export type RawFile<T> = {
   _id: Id
@@ -56,10 +62,16 @@ export type NormalizationDeleted<T extends RawFile<unknown>> = {
   status: 'deleted'
 }
 
+export type NormalizationNlpPending<T extends RawFile<unknown>> = {
+  rawFile: T
+  status: 'nlpPending'
+}
+
 export type NormalizationResult<T extends RawFile<unknown>> =
   | NormalizationError<T>
   | NormalizationSucess<T>
   | NormalizationDeleted<T>
+  | NormalizationNlpPending<T>
 
 async function updateEventRawFile<T>(
   collection: string,
@@ -88,6 +100,9 @@ export async function updateRawFileStatus<T extends RawFile<unknown>>(
       return updateEventRawFile(collection, result.rawFile, { type: 'normalized', date })
     if (result.status === 'deleted')
       return updateEventRawFile(collection, result.rawFile, { type: 'deleted', date })
+    if (result.status === 'nlpPending')
+      return updateEventRawFile(collection, result.rawFile, { type: 'nlpPending', date })
+
     return updateEventRawFile(collection, result.rawFile, {
       type: 'blocked',
       date,
@@ -102,4 +117,8 @@ export async function updateRawFileStatus<T extends RawFile<unknown>>(
       stack: error.stack
     })
   }
+}
+
+export async function appendNormalizedEvent(collection: string, id: ObjectId): Promise<void> {
+  await appendEventToFile(collection, id, { type: 'normalized', date: new Date() })
 }

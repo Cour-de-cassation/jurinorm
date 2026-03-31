@@ -21,6 +21,10 @@ if (process.env.COLLECTION_JURINET_RAW == null)
   throw new MissingValue('process.env.COLLECTION_JURINET_RAW')
 if (process.env.COLLECTION_JURICA_RAW == null)
   throw new MissingValue('process.env.COLLECTION_JURICA_RAW')
+if (process.env.RABBITMQ_URL == null)
+  throw new MissingValue('process.env.RABBITMQ_URL')
+if (process.env.S3_BUCKET_NAME_RAW_TJ == null)
+  throw new MissingValue('process.env.S3_BUCKET_NAME_RAW_TJ')
 
 export const {
   DBSDER_API_KEY,
@@ -36,5 +40,8 @@ export const {
   S3_SECRET_KEY,
   S3_URL,
   COLLECTION_JURINET_RAW,
-  COLLECTION_JURICA_RAW
+  COLLECTION_JURICA_RAW,
+  RABBITMQ_URL,
+  NLP_DONE_PREFETCH,
+  S3_BUCKET_NAME_RAW_TJ
 } = process.env

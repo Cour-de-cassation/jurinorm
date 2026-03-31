@@ -16,13 +16,13 @@ import { computeOccultation } from './services/computeOccultation'
 import { DecisionTj, LabelStatus, PublishStatus, UnIdentifiedDecisionTj } from 'dbsder-api-types'
 
 import { strict as assert } from 'assert'
-import { annotateDecision } from '../../../../services/rules/annotation'
 import { computeRulesDecisionTj } from './services/rulesTj'
 import { fetchZoning } from './repositories/gateways/zoning'
 import { findDecisions } from '../../../../connectors/dbSder'
-import { saveDecisionInAffaire } from '../../../../services/affaire'
 import { RawTj } from './models'
 import { getFileByName } from '../../../../connectors/bucket'
+import { publishToNer } from '../../../../connectors/nlpQueues'
+import { computeCategories } from '../../../../services/rules/annotation'
 
 export const rawTjToNormalize = {
   $expr: {
@@ -49,6 +49,9 @@ export const rawTjToNormalize = {
             }
           ]
         }
+      },
+      { $not: {
+          $eq: [{ $arrayElemAt: ['$events.type', -1] }, 'nlpPending'] }
       }
     ]
   }
@@ -62,7 +65,7 @@ interface Diff {
 const dbSderApiGateway = new DbSderApiGateway()
 const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TJ
 
-export async function normalizeTj(rawTj: RawTj): Promise<void> {
+export async function normalizeTj(rawTj: RawTj): Promise<'nlpPending' | void> {
   try {
     const jobId = uuidv4()
     normalizationFormatLogs.correlationId = jobId
@@ -235,14 +238,18 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
         message: 'Decision has no change'
       })
     } else {
-      // Insert new decision:
-      const annotatedDecision = await annotateDecision(decisionWithRules)
-      await saveDecisionInAffaire(annotatedDecision)
-      logger.info({
-        path: 'src/tj/batch/normalization.ts',
-        operations: ['normalization', 'normalizationJob-TJ'],
-        message: `Decision saved in database`
+      await publishToNer({
+        rawTjId: rawTj._id.toString(),
+        decision: decisionWithRules,
+        sourceId: decisionWithRules.sourceId,
+        sourceName: decisionWithRules.sourceName,
+        parties: decisionWithRules.parties,
+        text: decisionWithRules.originalText,
+        categories: computeCategories(decisionWithRules.occultation.categoriesToOmit),
+        additionalTerms: decisionWithRules.occultation.additionalTerms
       })
+
+      return 'nlpPending'
     }
 
     logger.info({

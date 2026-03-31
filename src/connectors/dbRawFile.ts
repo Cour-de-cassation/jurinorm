@@ -65,4 +65,16 @@ export async function mapCursorSync<T, U>(
   return [res, ...(await mapCursorSync(cursor, callbackFn))]
 }
 
+export async function appendEventToFile(
+  collection: string,
+  id: ObjectId,
+  event: object
+): Promise<void> {
+  const db = await dbConnect()
+  await db.collection(collection).updateOne(
+    { _id: id },
+    { $push: { events: event } } as unknown as UpdateFilter<Document> // $push not recognized by MongoType...
+  )
+}
+
 export type Id = ObjectId
