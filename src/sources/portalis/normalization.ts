@@ -39,8 +39,8 @@ async function getOccultationStrategy(
     )
   if (!categoriesToOmit)
     throw new NotFound(
-      'codeNac.categoriesToOmitCA',
-      `codeNac ${code} has no "categoriesToOmitCA" property`
+      'codeNac.categoriesToOmit',
+      `codeNac ${code} has no "categoriesToOmit" property`
     )
 
   return { blocOccultation, categoriesToOmit }
