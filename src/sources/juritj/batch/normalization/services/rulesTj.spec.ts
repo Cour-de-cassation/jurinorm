@@ -1,5 +1,4 @@
 import { expect, jest } from '@jest/globals'
-import { ObjectId } from 'mongodb'
 
 import { DbSderApiGateway } from '../repositories/gateways/dbsderApi.gateway'
 import * as rulesTj from './rulesTj'
@@ -19,7 +18,7 @@ import {
 const findCodeNac = jest.spyOn(DbSderApiGateway.prototype, 'getCodeNac')
 
 const fakeDecision: DecisionTj = {
-  _id: new ObjectId(),
+  _id: '',
   sourceId: 1,
   sourceName: 'juritj',
   __v: 0,
@@ -61,7 +60,7 @@ const fakeDecision: DecisionTj = {
 }
 
 const codeNac: CodeNac = {
-  _id: new ObjectId(),
+  _id: '',
   decisionsPubliques: DecisionsPubliques.DECISIONS_PUBLIQUES,
   codeNAC: '',
   libelleNAC: '',
