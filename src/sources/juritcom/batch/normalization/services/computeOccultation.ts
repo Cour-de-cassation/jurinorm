@@ -15,7 +15,6 @@ export function computeOccultation(
     operations: ['normalization', 'computeOccultation'],
     path: 'src/sources/juritcom/batch/normalization/services/computeOccultation.ts',
     message: 'Starting computeOccultation...'
-
   }
   logger.info(formatLogs)
 

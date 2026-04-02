@@ -11,22 +11,22 @@ import { CodeNac, DecisionTj, UnIdentifiedDecisionTj } from 'dbsder-api-types'
 
 const formatLogs: TechLog = {
   path: 'src/sources/juritj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-  operations: ['normalization', 'saveDecision-TJ'],
+  operations: ['normalization', 'saveDecision-TJ']
 }
 
 const formatLogsGetDecisionBySourceId: TechLog = {
   ...formatLogs,
-  operations: ['normalization', 'getDecisionBySourceId-TJ'],
+  operations: ['normalization', 'getDecisionBySourceId-TJ']
 }
 
 const formatLogsPatchDecision: TechLog = {
   ...formatLogs,
-  operations: ['normalization', 'patchDecision-TJ'],
+  operations: ['normalization', 'patchDecision-TJ']
 }
 
 const formatLogsGetCodeNac: TechLog = {
   ...formatLogs,
-  operations: ['normalization', 'getCodeNac-TJ'],
+  operations: ['normalization', 'getCodeNac-TJ']
 }
 
 export class DbSderApiGateway {
@@ -46,7 +46,6 @@ export class DbSderApiGateway {
       .catch((error) => {
         if (error.response) {
           if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
-
             logger.error({
               ...formatLogs,
               message: JSON.stringify({

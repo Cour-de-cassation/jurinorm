@@ -97,10 +97,9 @@ export async function normalizeRawCaFiles(
   defaultFilter?: Parameters<typeof findFileInformations<RawCa>>[1],
   limit?: number
 ) {
-
   const normalizationFormatLogs: TechLog = {
     path: 'src/sources/jurica/handler.ts',
-    operations: ['normalization', 'normalizeRawCaFiles'],
+    operations: ['normalization', 'normalizeRawCaFiles']
   }
   logger.info({
     ...normalizationFormatLogs,
@@ -151,8 +150,9 @@ export async function normalizeRawCaFiles(
 
   logger.info({
     ...normalizationFormatLogs,
-    message: `Decisions successfully normalized: ${results.filter(({ status }) => status === 'success').length
-      }`
+    message: `Decisions successfully normalized: ${
+      results.filter(({ status }) => status === 'success').length
+    }`
   })
   logger.info({
     ...normalizationFormatLogs,
@@ -160,7 +160,8 @@ export async function normalizeRawCaFiles(
   })
   logger.info({
     ...normalizationFormatLogs,
-    message: `Decisions marked as deleted: ${results.filter(({ status }) => status === 'deleted').length
-      }`
+    message: `Decisions marked as deleted: ${
+      results.filter(({ status }) => status === 'deleted').length
+    }`
   })
 }

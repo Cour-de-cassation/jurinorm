@@ -9,8 +9,6 @@ import {
 import { UnIdentifiedDecisionTcom } from 'dbsder-api-types'
 
 export class ZoningApiService {
-
-
   async getDecisionZoning(
     decision: UnIdentifiedDecisionTcom
   ): Promise<UnIdentifiedDecisionTcom['zoning']> {

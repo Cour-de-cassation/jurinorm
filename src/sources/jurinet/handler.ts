@@ -94,7 +94,7 @@ export async function normalizeRawCcFiles(
 ) {
   const normalizationFormatLogs: TechLog = {
     path: 'src/sources/jurinet/handler.ts',
-    operations: ['normalization', 'normalizeRawCcFiles'],
+    operations: ['normalization', 'normalizeRawCcFiles']
   }
   logger.info({
     ...normalizationFormatLogs,
@@ -140,8 +140,9 @@ export async function normalizeRawCcFiles(
 
   logger.info({
     ...normalizationFormatLogs,
-    message: `Decisions successfully normalized: ${results.filter(({ status }) => status === 'success').length
-      }`
+    message: `Decisions successfully normalized: ${
+      results.filter(({ status }) => status === 'success').length
+    }`
   })
   logger.info({
     ...normalizationFormatLogs,
@@ -149,7 +150,8 @@ export async function normalizeRawCcFiles(
   })
   logger.info({
     ...normalizationFormatLogs,
-    message: `Decisions marked as deleted: ${results.filter(({ status }) => status === 'deleted').length
-      }`
+    message: `Decisions marked as deleted: ${
+      results.filter(({ status }) => status === 'deleted').length
+    }`
   })
 }

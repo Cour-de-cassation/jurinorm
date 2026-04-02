@@ -63,7 +63,7 @@ const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TJ
 
 const normalizationFormatLogs: TechLog = {
   path: 'src/sources/juritj/batch/normalization/normalization.ts',
-  operations: ['normalization', 'normalizationJob-TJ'],
+  operations: ['normalization', 'normalizationJob-TJ']
 }
 
 export async function normalizeTj(rawTj: RawTj): Promise<void> {
