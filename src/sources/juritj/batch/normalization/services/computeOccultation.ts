@@ -8,7 +8,7 @@ export function computeOccultation(
 ): UnIdentifiedDecisionTj['occultation'] {
   const additionalTerms =
     recommandationOccultation === SuiviOccultation.SUBSTITUANT ||
-    recommandationOccultation === SuiviOccultation.COMPLEMENT
+      recommandationOccultation === SuiviOccultation.COMPLEMENT
       ? occultationSupplementaire
       : ''
 
@@ -20,7 +20,7 @@ export function computeOccultation(
 
   const motivationOccultation =
     recommandationOccultation === SuiviOccultation.AUCUNE ||
-    recommandationOccultation === SuiviOccultation.SUBSTITUANT
+      recommandationOccultation === SuiviOccultation.SUBSTITUANT
       ? false
       : !debatPublic
 

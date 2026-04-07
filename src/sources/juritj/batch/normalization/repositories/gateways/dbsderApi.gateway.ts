@@ -46,6 +46,7 @@ export class DbSderApiGateway {
       .catch((error) => {
         if (error.response) {
           if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
+
             logger.error({
               ...formatLogs,
               message: JSON.stringify({
