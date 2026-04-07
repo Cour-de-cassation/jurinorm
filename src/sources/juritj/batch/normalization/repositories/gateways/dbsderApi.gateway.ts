@@ -69,7 +69,7 @@ export class DbSderApiGateway {
 
   async getDecisionBySourceId(sourceId: number) {
     type Response = {
-      decisions: (Omit<DecisionTj, '_id'> & { _id: string })[]
+      decisions: DecisionTj[]
       totalDecisions: number
       nextPage?: string
       previousPage?: string
