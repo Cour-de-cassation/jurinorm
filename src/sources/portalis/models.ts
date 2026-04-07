@@ -136,7 +136,7 @@ export function mapPortalisDecision(
       additionalTerms: computeAdditionalTerms(publicationRules.recommandationOccultation),
       categoriesToOmit:
         occultationStrategy.categoriesToOmit[
-        occultationRecommendationCodeNac(recommandationOccultation)
+          occultationRecommendationCodeNac(recommandationOccultation)
         ],
       motivationOccultation: false
     },

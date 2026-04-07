@@ -73,8 +73,9 @@ export async function normalizeRawPortalisFiles(
 
   logger.info({
     ...normalizationFormatLogs,
-    message: `Decisions successfully normalized: ${results.filter(({ status }) => status === 'success').length
-      }`
+    message: `Decisions successfully normalized: ${
+      results.filter(({ status }) => status === 'success').length
+    }`
   })
   logger.info({
     ...normalizationFormatLogs,
