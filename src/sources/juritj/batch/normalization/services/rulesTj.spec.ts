@@ -14,11 +14,12 @@ import {
   LabelStatus,
   SuiviOccultation
 } from 'dbsder-api-types'
+import { ObjectId } from 'mongodb'
 
 const findCodeNac = jest.spyOn(DbSderApiGateway.prototype, 'getCodeNac')
 
 const fakeDecision: DecisionTj = {
-  _id: '',
+  _id: new ObjectId().toString(),
   sourceId: 1,
   sourceName: 'juritj',
   __v: 0,
