@@ -6,6 +6,7 @@ import { saveDecisionInAffaire } from "../services/affaire"
 import { appendNormalizedEvent } from "../services/eventSourcing"
 import { ObjectId } from "mongodb"
 import { S3_BUCKET_NAME_RAW_TJ, NLP_DONE_PREFETCH } from '../config/env'
+import { NerResponse } from './ner'
 
 export const QUEUES = {
   NLP_NER: "nlp.ner",
@@ -56,11 +57,16 @@ export async function startNlpDoneConsumer(): Promise<void> {
     }
 
     let rawTjId: string | undefined
+    let parsed: Record<string, unknown> = {}
+
     try {
-      const parsed = JSON.parse(doneMsg.content.toString())
-      rawTjId = parsed.rawTjId
+      parsed = JSON.parse(doneMsg.content.toString())
+      rawTjId = parsed.rawTjId as string
       const { decision, ...nerResult } = parsed
-      const annotatedDecision = applyNerResult(decision, nerResult)
+      const annotatedDecision = applyNerResult(
+        decision as UnIdentifiedDecisionTj,
+        nerResult as NerResponse
+      )
       await saveDecisionInAffaire(annotatedDecision)
       await appendNormalizedEvent(S3_BUCKET_NAME_RAW_TJ, new ObjectId(rawTjId))
 
@@ -78,11 +84,11 @@ export async function startNlpDoneConsumer(): Promise<void> {
         stack: err instanceof Error ? err.stack : undefined,
         message: `Failed to apply NLP result for rawTjId=${rawTjId}: ${err.message}`
       })
-
       // Nested try/catch needed because channel may have died, making amqp calls unsafe
       try {
-        const failMsg = Buffer.from(JSON.stringify({ rawTjId, error: err.message }))
-        channel.sendToQueue(QUEUES.JURINORM_FAIL, failMsg,{ persistent: true })
+        parsed.error = err instanceof Error ? err.message : 'Unknown error'
+        const failMsg = Buffer.from(JSON.stringify(parsed))
+        channel.sendToQueue(QUEUES.JURINORM_FAIL, failMsg, { persistent: true })
         channel.nack(doneMsg, false, false)
       } catch (channelErr) {
         logger.error({
