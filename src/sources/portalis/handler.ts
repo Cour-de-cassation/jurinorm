@@ -6,7 +6,7 @@ import {
   mapCursorSync
 } from '../../connectors/dbRawFile'
 import { normalizePortalis, rawPortalisToNormalize } from './normalization'
-import { logger, TechLog } from '../../config/logger'
+import { DecisionLog, logger, TechLog } from '../../config/logger'
 import { S3_BUCKET_NAME_PORTALIS } from '../../config/env'
 import { updateRawFileStatus, NormalizationResult } from '../../services/eventSourcing'
 
@@ -40,14 +40,23 @@ export async function normalizeRawPortalisFiles(
   const results: NormalizationResult<RawPortalis>[] = await mapCursorSync(
     rawPortalisCursor,
     async (rawPortalis) => {
+      const normalizationFormatDecisionLogs: DecisionLog = {
+        path: 'src/sources/portalis/handler.ts',
+        operations: ['normalization', 'normalizeRawPortalisFiles'],
+        decision: {
+          _id: rawPortalis._id.toJSON(),
+          sourceId: rawPortalis.metadatas.identifiantDecision,
+          sourceName: 'Portalis'
+        }
+      }
       try {
         logger.info({
-          ...normalizationFormatLogs,
-          message: `normalize ${rawPortalis._id} - ${rawPortalis.path}`
+          ...normalizationFormatDecisionLogs,
+          message: `Starting normalization for ${rawPortalis._id} - ${rawPortalis.path}`
         })
         await normalizePortalis(rawPortalis)
         logger.info({
-          ...normalizationFormatLogs,
+          ...normalizationFormatDecisionLogs,
           message: `${rawPortalis._id} normalized with success`
         })
 
@@ -57,7 +66,7 @@ export async function normalizeRawPortalisFiles(
       } catch (err) {
         const error = toUnexpectedError(err)
         logger.error({
-          ...normalizationFormatLogs,
+          ...normalizationFormatDecisionLogs,
           message: `${rawPortalis._id} failed to normalize`,
           stack: error.stack
         })

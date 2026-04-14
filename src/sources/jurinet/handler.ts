@@ -5,7 +5,7 @@ import {
 } from '../../connectors/dbRawFile'
 import { toUnexpectedError } from '../../services/error'
 import { RawCc } from './models'
-import { logger, TechLog } from '../../config/logger'
+import { DecisionLog, logger, TechLog } from '../../config/logger'
 import { COLLECTION_JURINET_RAW } from '../../config/env'
 import { updateRawFileStatus, NormalizationResult } from '../../services/eventSourcing'
 import { annotateDecision } from '../../services/rules/annotation'
@@ -109,14 +109,26 @@ export async function normalizeRawCcFiles(
   })
 
   const results: NormalizationResult<RawCc>[] = await mapCursorSync(rawCcCursor, async (rawCc) => {
+    const formatDecisionLogs: DecisionLog = {
+      path: 'src/sources/jurinet/handler.ts',
+      operations: ['normalization', 'normalizeRawCcFiles'],
+      decision: {
+        _id: rawCc._id.toJSON(),
+        sourceId: rawCc.metadatas.sourceId.toString(),
+        sourceName: rawCc.metadatas.sourceName,
+        publishStatus: rawCc.metadatas.publishStatus,
+        labelStatus: rawCc.metadatas.labelStatus
+      }
+    }
     try {
       logger.info({
         ...normalizationFormatLogs,
         message: `normalize ${rawCc._id} - ${rawCc.path}`
       })
       const result = await normalizeCc(rawCc)
+
       logger.info({
-        ...normalizationFormatLogs,
+        ...formatDecisionLogs,
         message: `${rawCc._id} normalized with success`
       })
 
@@ -125,7 +137,7 @@ export async function normalizeRawCcFiles(
     } catch (err) {
       const error = toUnexpectedError(err)
       logger.error({
-        ...normalizationFormatLogs,
+        ...formatDecisionLogs,
         message: `${rawCc._id} failed to normalize`,
         stack: error.stack
       })

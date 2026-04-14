@@ -17,6 +17,7 @@ export async function normalizeRawTjFiles(
     path: 'src/sources/juritj/batch/normalization/handler.ts',
     operations: ['normalization', 'normalizeRawTjFiles']
   }
+
   logger.info({
     ...normalizationFormatLogs,
     message: `Starting TJ normalization`

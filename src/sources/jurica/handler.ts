@@ -5,7 +5,7 @@ import {
   findFileInformations,
   mapCursorSync
 } from '../../connectors/dbRawFile'
-import { logger, TechLog } from '../../config/logger'
+import { DecisionLog, logger, TechLog } from '../../config/logger'
 import { COLLECTION_JURICA_RAW } from '../../config/env'
 import { updateRawFileStatus, NormalizationResult } from '../../services/eventSourcing'
 import { annotateDecision } from '../../services/rules/annotation'
@@ -118,6 +118,17 @@ export async function normalizeRawCaFiles(
   })
 
   const results: NormalizationResult<RawCa>[] = await mapCursorSync(rawCaCursor, async (rawCa) => {
+    const formatDecisionLogs: DecisionLog = {
+      path: 'src/sources/jurica/handler.ts',
+      operations: ['normalization', 'normalizeCa'],
+      decision: {
+        _id: rawCa._id.toJSON(),
+        sourceId: rawCa.metadatas.sourceId.toString(),
+        sourceName: rawCa.metadatas.sourceName,
+        publishStatus: rawCa.metadatas.publishStatus,
+        labelStatus: rawCa.metadatas.labelStatus
+      }
+    }
     try {
       logger.info({
         ...normalizationFormatLogs,
@@ -125,7 +136,7 @@ export async function normalizeRawCaFiles(
       })
       await normalizeCa(rawCa)
       logger.info({
-        ...normalizationFormatLogs,
+        ...formatDecisionLogs,
         message: `${rawCa._id} normalized with success`
       })
 
@@ -135,7 +146,7 @@ export async function normalizeRawCaFiles(
     } catch (err) {
       const error = toUnexpectedError(err)
       logger.error({
-        ...normalizationFormatLogs,
+        ...formatDecisionLogs,
         message: `${rawCa._id} failed to normalize`,
         stack: error.stack
       })

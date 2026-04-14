@@ -16,23 +16,8 @@ export interface NLPPDFToTextDTO {
   versions?: object
 }
 
-const formatLogsPdfFromS3: TechLog = {
-  operations: ['normalization', 'fetchPDFFromS3'],
-  path: 'src/sources/juritcom/batch/normalization/services/PDFToText.ts'
-}
-
 const formatLogsNLP: TechLog = {
   operations: ['normalization', 'fetchNLPDataFromPDF'],
-  path: 'src/sources/juritcom/batch/normalization/services/PDFToText.ts'
-}
-
-const formatLogsHTMLToText: TechLog = {
-  operations: ['normalization', 'HTMLToPlainText'],
-  path: 'src/sources/juritcom/batch/normalization/services/PDFToText.ts'
-}
-
-const formatLogsMarkdownToPlainText: TechLog = {
-  operations: ['normalization', 'MarkdownToPlainText'],
   path: 'src/sources/juritcom/batch/normalization/services/PDFToText.ts'
 }
 
@@ -44,7 +29,8 @@ export async function fetchPDFFromS3(
     return await s3Repository.getPDFByFilename(pdfFilename)
   } catch (error) {
     logger.error({
-      ...formatLogsPdfFromS3,
+      operations: ['normalization', 'fetchPDFFromS3'],
+      path: 'src/sources/juritcom/batch/normalization/services/PDFToText.ts',
       message: error.message
     })
     throw new InfrastructureException(error.message)
@@ -433,7 +419,8 @@ export function HTMLToPlainText(input: string): string {
       'Le texte retourné est vide ou potentiellement incomplet'
     )
     const formatLogs: TechLog = {
-      ...formatLogsHTMLToText,
+      operations: ['normalization', 'HTMLToPlainText'],
+      path: 'src/sources/juritcom/batch/normalization/services/PDFToText.ts',
       message: JSON.stringify({
         error: error.message,
         data: {
@@ -558,8 +545,9 @@ export function markdownToPlainText(input: string): string {
     const error = new InfrastructureException(
       'Le texte retourné est vide ou potentiellement incomplet'
     )
-    const formatLogs = {
-      ...formatLogsMarkdownToPlainText,
+    const formatLogs: TechLog = {
+      operations: ['normalization', 'MarkdownToPlainText'],
+      path: 'src/sources/juritcom/batch/normalization/services/PDFToText.ts',
       message: JSON.stringify({
         error: error.message,
         data: {

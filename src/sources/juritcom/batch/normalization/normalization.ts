@@ -18,7 +18,7 @@ import {
 } from './services/PDFToText'
 import { PostponeException } from './infrastructure/nlp.exception'
 import { LabelStatus, PublishStatus, UnIdentifiedDecisionTcom } from 'dbsder-api-types'
-import { logger } from '../../../../config/logger'
+import { DecisionLog, logger } from '../../../../config/logger'
 
 import { strict as assert } from 'assert'
 import { annotateDecision } from '../../../../services/rules/annotation'
@@ -147,13 +147,21 @@ export async function normalizationJob(
         decision.metadonnees,
         decisionFilename
       )
-
+      const decisionLogFormat: DecisionLog = {
+        operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
+        path: 'src/sources/juritcom/batch/normalization/normalization.ts',
+        decision: {
+          sourceId: decisionToSave.sourceId.toString(),
+          sourceName: decisionToSave.sourceName,
+          publishStatus: decisionToSave.publishStatus,
+          labelStatus: decisionToSave.labelStatus
+        }
+      }
       try {
         decisionToSave.originalTextZoning = await zoningApiService.getDecisionZoning(decisionToSave)
       } catch (error) {
         logger.error({
-          operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-          path: 'src/sources/juritcom/batch/normalization/normalization.ts',
+          ...decisionLogFormat,
           message: `Error while calling zoning. Error : ${error}`
         })
       }
@@ -194,8 +202,7 @@ export async function normalizationJob(
           decisionToSave.publishStatus = PublishStatus.BLOCKED
           // Bad new date? Throw a warning... @TODO ODDJDashboard
           logger.warn({
-            operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-            path: 'src/sources/juritcom/batch/normalization/normalization.ts',
+            ...decisionLogFormat,
             message: `Decision has a bad updated date: ${decisionToSave.dateDecision}`
           })
         } else {
@@ -237,8 +244,7 @@ export async function normalizationJob(
         const annotatedDecision = await annotateDecision(decisionToSave)
         await saveDecisionInAffaire(annotatedDecision)
         logger.info({
-          operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-          path: 'src/sources/juritcom/batch/normalization/normalization.ts',
+          ...decisionLogFormat,
           message: `Decision saved in database`
         })
       }
@@ -250,8 +256,7 @@ export async function normalizationJob(
       )
 
       logger.info({
-        operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-        path: 'src/sources/juritcom/batch/normalization/normalization.ts',
+        ...decisionLogFormat,
         message: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
       })
 
@@ -263,8 +268,7 @@ export async function normalizationJob(
       await s3Repository.deleteDecision(reqParamsDelete)
 
       logger.info({
-        operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-        path: 'src/sources/juritcom/batch/normalization/normalization.ts',
+        ...decisionLogFormat,
         message: 'Successful normalization of ' + decisionFilename
       })
 

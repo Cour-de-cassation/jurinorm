@@ -5,7 +5,7 @@ import {
   isEmptyText,
   hasNoBreak
 } from './services/removeOrReplaceUnnecessaryCharacters'
-import { logger, TechLog } from '../../../../config/logger'
+import { DecisionLog, logger, TechLog } from '../../../../config/logger'
 import { mapDecisionNormaliseeToDecisionDto } from './infrastructure/decision.dto'
 import { transformDecisionIntegreFromWPDToText } from './services/transformDecisionIntegreContent'
 import { computeLabelStatus } from './services/computeLabelStatus'
@@ -61,7 +61,7 @@ interface Diff {
 const dbSderApiGateway = new DbSderApiGateway()
 const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TJ
 
-const normalizationFormatLogs: TechLog = {
+const normalizationFormatTechLogs: TechLog = {
   path: 'src/sources/juritj/batch/normalization/normalization.ts',
   operations: ['normalization', 'normalizationJob-TJ']
 }
@@ -75,14 +75,14 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
     const metadonnees = rawTj.metadatas
 
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatTechLogs,
       message: 'Starting normalization of ' + rawTj.path
     })
 
     // Step 3: Generating unique id for decision
     const _id = generateUniqueId(metadonnees)
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatTechLogs,
       message: JSON.stringify({
         msg: `Unique id generated for decision: ${_id}`,
         correlationId: jobId,
@@ -94,7 +94,7 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
     const decisionContent = await transformDecisionIntegreFromWPDToText(wpdFile, rawTj.path)
 
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatTechLogs,
       message: 'Decision conversion finished. Removing unnecessary characters'
     })
 
@@ -142,7 +142,7 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
 
     // Step 7: check diff (major/minor) and upsert/patch accordingly
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatTechLogs,
       message: `Check diff with previous version of decision ${decisionWithRules.sourceName} ${decisionWithRules.sourceId} (if any)...`
     })
 
@@ -156,7 +156,7 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
     const hasRecentUnblocked = rawTj.events.slice(-3).some((event) => event.type === 'unblocked')
     if (hasRecentUnblocked) {
       logger.info({
-        ...normalizationFormatLogs,
+        ...normalizationFormatTechLogs,
         message: `Decision has a recent 'unblocked' event among the last 3 events: skipping diff, treating as major update`
       })
     }
@@ -184,19 +184,19 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
       ) {
         decisionWithRules.publishStatus = PublishStatus.BLOCKED
         logger.warn({
-          ...normalizationFormatLogs,
+          ...normalizationFormatTechLogs,
           message: `Decision has a bad updated date: ${decisionWithRules.dateDecision}`
         })
       } else if (decisionWithRules.labelStatus === LabelStatus.IGNORED_CODE_DECISION_BLOQUE_CC) {
         decisionWithRules.publishStatus = PublishStatus.BLOCKED
         logger.warn({
-          ...normalizationFormatLogs,
+          ...normalizationFormatTechLogs,
           message: `Decision has a codeDecision in blocked codeDecision list: ${decisionWithRules.endCaseCode}`
         })
       } else if (decisionWithRules.labelStatus === LabelStatus.IGNORED_CARACTERE_INCONNU) {
         decisionWithRules.publishStatus = PublishStatus.BLOCKED
         logger.warn({
-          ...normalizationFormatLogs,
+          ...normalizationFormatTechLogs,
           message: `Decision contains unknown characters`
         })
       } else {
@@ -218,7 +218,7 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
       }
       await dbSderApiGateway.patchDecision(previousVersion._id, decisionWithRules)
       logger.info({
-        ...normalizationFormatLogs,
+        ...normalizationFormatTechLogs,
         message: `Decision patched in database with minor changes: ${JSON.stringify(diff.minor)}`
       })
     } else if (
@@ -227,7 +227,7 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
       previousVersion.labelStatus !== LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
     ) {
       logger.warn({
-        ...normalizationFormatLogs,
+        ...normalizationFormatTechLogs,
         message: 'Decision has no change'
       })
     } else {
@@ -235,13 +235,13 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
       const annotatedDecision = await annotateDecision(decisionWithRules)
       await saveDecisionInAffaire(annotatedDecision)
       logger.info({
-        ...normalizationFormatLogs,
+        ...normalizationFormatTechLogs,
         message: `Decision saved in database`
       })
     }
 
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatTechLogs,
       message: 'Successful normalization of ' + rawTj.path
     })
   } catch (error) {
@@ -258,20 +258,31 @@ function computeDiff(
     minor: []
   }
 
+  const normalizationFormatDecisionLogs: DecisionLog = {
+    path: 'src/sources/juritj/batch/normalization/normalization.ts',
+    operations: ['normalization', 'normalizationJob-TJ'],
+    decision: {
+      sourceId: newDecision.sourceId.toString(),
+      sourceName: newDecision.sourceName,
+      publishStatus: newDecision.publishStatus,
+      labelStatus: newDecision.labelStatus
+    }
+  }
   // Major changes...
   // Note: we skip zoning diff, because the zoning should only change if the originalText changes (which is a major change anyway). If the zoning changes with the same given originalText, then the change comes from us, not from the sender
   if (newDecision.public !== oldDecision.public) {
     diff.major.push('public')
+
     logger.info({
-      ...normalizationFormatLogs,
-      message: `major change to public: '${oldDecision.public}' -> '${newDecision.public}'`
+      ...normalizationFormatDecisionLogs,
+      message: `major change to public: 'Old Version: sourceId$: ${oldDecision.sourceId}, public: ${oldDecision.public}' -> 'New Version: sourceId$: ${newDecision.sourceId}, sourceName: ${newDecision.sourceName}, public: ${newDecision.public}'`
     })
   }
   if (newDecision.debatPublic !== oldDecision.debatPublic) {
     diff.major.push('debatPublic')
     logger.info({
-      ...normalizationFormatLogs,
-      message: `major change to debatPublic: '${oldDecision.debatPublic}' -> '${newDecision.debatPublic}'`
+      ...normalizationFormatDecisionLogs,
+      message: `major change to debatPublic: 'Old Version: sourceId$: ${oldDecision.sourceId}, debatPublic: ${oldDecision.debatPublic}' -> 'New Version: sourceId$: ${newDecision.sourceId}, sourceName: ${newDecision.sourceName}, debatPublic: ${newDecision.debatPublic}'`
     })
   }
   if (newDecision.originalText !== oldDecision.originalText) {
@@ -299,28 +310,28 @@ function computeDiff(
   if (newDecision.dateDecision !== oldDecision.dateDecision) {
     diff.minor.push('dateDecision')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to dateDecision: '${oldDecision.dateDecision}' -> '${newDecision.dateDecision}'`
     })
   }
   if (newDecision.jurisdictionId !== oldDecision.jurisdictionId) {
     diff.minor.push('jurisdictionId')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to jurisdictionId: '${oldDecision.jurisdictionId}' -> '${newDecision.jurisdictionId}'`
     })
   }
   if (newDecision.jurisdictionName !== oldDecision.jurisdictionName) {
     diff.minor.push('jurisdictionName')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to jurisdictionName: '${oldDecision.jurisdictionName}' -> '${newDecision.jurisdictionName}'`
     })
   }
   if (newDecision.numeroRoleGeneral !== oldDecision.numeroRoleGeneral) {
     diff.minor.push('numeroRoleGeneral')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to numeroRoleGeneral: '${oldDecision.numeroRoleGeneral}' -> '${newDecision.numeroRoleGeneral}'`
     })
   }
@@ -343,126 +354,126 @@ function computeDiff(
   if (newDecision.selection !== oldDecision.selection) {
     diff.minor.push('selection')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to selection: '${oldDecision.selection}' -> '${newDecision.selection}'`
     })
   }
   if (newDecision.libelleEndCaseCode !== oldDecision.libelleEndCaseCode) {
     diff.minor.push('libelleEndCaseCode')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to libelleEndCaseCode: '${oldDecision.libelleEndCaseCode}' -> '${newDecision.libelleEndCaseCode}'`
     })
   }
   if (newDecision.registerNumber !== oldDecision.registerNumber) {
     diff.minor.push('registerNumber')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to registerNumber: '${oldDecision.registerNumber}' -> '${newDecision.registerNumber}'`
     })
   }
   if (newDecision.jurisdictionCode !== oldDecision.jurisdictionCode) {
     diff.minor.push('jurisdictionCode')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to jurisdictionCode: '${oldDecision.jurisdictionCode}' -> '${newDecision.jurisdictionCode}'`
     })
   }
   if (newDecision.solution !== oldDecision.solution) {
     diff.minor.push('solution')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to solution: '${oldDecision.solution}' -> '${newDecision.solution}'`
     })
   }
   if (newDecision.formation !== oldDecision.formation) {
     diff.minor.push('formation')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to formation: '${oldDecision.formation}' -> '${newDecision.formation}'`
     })
   }
   if (newDecision.libelleNAC !== oldDecision.libelleNAC) {
     diff.minor.push('libelleNAC')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to libelleNAC: '${oldDecision.libelleNAC}' -> '${newDecision.libelleNAC}'`
     })
   }
   if (newDecision.NPCode !== oldDecision.NPCode) {
     diff.minor.push('NPCode')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to NPCode: '${oldDecision.NPCode}' -> '${newDecision.NPCode}'`
     })
   }
   if (newDecision.libelleNatureParticuliere !== oldDecision.libelleNatureParticuliere) {
     diff.minor.push('libelleNatureParticuliere')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to libelleNatureParticuliere: '${oldDecision.libelleNatureParticuliere}' -> '${newDecision.libelleNatureParticuliere}'`
     })
   }
   if (newDecision.codeService !== oldDecision.codeService) {
     diff.minor.push('codeService')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to codeService: '${oldDecision.codeService}' -> '${newDecision.codeService}'`
     })
   }
   if (newDecision.libelleService !== oldDecision.libelleService) {
     diff.minor.push('libelleService')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to libelleService: '${oldDecision.libelleService}' -> '${newDecision.libelleService}'`
     })
   }
   if (newDecision.indicateurQPC !== oldDecision.indicateurQPC) {
     diff.minor.push('indicateurQPC')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to indicateurQPC: '${oldDecision.indicateurQPC}' -> '${newDecision.indicateurQPC}'`
     })
   }
   if (newDecision.matiereDeterminee !== oldDecision.matiereDeterminee) {
     diff.minor.push('matiereDeterminee')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to matiereDeterminee: '${oldDecision.matiereDeterminee}' -> '${newDecision.matiereDeterminee}'`
     })
   }
   if (newDecision.pourvoiCourDeCassation !== oldDecision.pourvoiCourDeCassation) {
     diff.minor.push('pourvoiCourDeCassation')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to pourvoiCourDeCassation: '${oldDecision.pourvoiCourDeCassation}' -> '${newDecision.pourvoiCourDeCassation}'`
     })
   }
   if (newDecision.pourvoiLocal !== oldDecision.pourvoiLocal) {
     diff.minor.push('pourvoiLocal')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to pourvoiLocal: '${oldDecision.pourvoiLocal}' -> '${newDecision.pourvoiLocal}'`
     })
   }
   if (newDecision.sommaire !== oldDecision.sommaire) {
     diff.minor.push('sommaire')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to sommaire: '${oldDecision.sommaire}' -> '${newDecision.sommaire}'`
     })
   }
   if (newDecision.president !== oldDecision.president) {
     diff.minor.push('president')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to president: '${oldDecision.president}' -> '${newDecision.president}'`
     })
   }
   if (newDecision.decisionAssociee !== oldDecision.decisionAssociee) {
     diff.minor.push('decisionAssociee')
     logger.info({
-      ...normalizationFormatLogs,
+      ...normalizationFormatDecisionLogs,
       message: `minor change to decisionAssociee: '${oldDecision.decisionAssociee}' -> '${newDecision.decisionAssociee}'`
     })
   }
