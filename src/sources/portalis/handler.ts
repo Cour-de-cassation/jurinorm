@@ -6,7 +6,7 @@ import {
   mapCursorSync
 } from '../../connectors/dbRawFile'
 import { normalizePortalis, rawPortalisToNormalize } from './normalization'
-import { logger } from '../../config/logger'
+import { DecisionLog, logger, TechLog } from '../../config/logger'
 import { S3_BUCKET_NAME_PORTALIS } from '../../config/env'
 import { updateRawFileStatus, NormalizationResult } from '../../services/eventSourcing'
 
@@ -14,9 +14,12 @@ export async function normalizeRawPortalisFiles(
   defaultFilter?: Parameters<typeof findFileInformations<RawPortalis>>[1],
   limit?: number
 ) {
+  const normalizationFormatLogs: TechLog = {
+    path: 'src/sources/portalis/handler.ts',
+    operations: ['normalization', 'normalizeRawPortalisFiles']
+  }
   logger.info({
-    path: 'src/service/sources/portalis/handler.ts',
-    operations: ['normalization', 'normalizeRawPortalisFiles'],
+    ...normalizationFormatLogs,
     message: `Starting Portalis normalization`
   })
   const rawPortalisFilter = defaultFilter ?? rawPortalisToNormalize
@@ -30,24 +33,30 @@ export async function normalizeRawPortalisFiles(
     rawPortalisFilter
   )
   logger.info({
-    path: 'src/service/sources/portalis/handler.ts',
-    operations: ['normalization', 'normalizeRawPortalisFiles'],
+    ...normalizationFormatLogs,
     message: `Find ${rawPortalisLength} raw decisions to normalize batch. Limit is set to ${limit}`
   })
 
   const results: NormalizationResult<RawPortalis>[] = await mapCursorSync(
     rawPortalisCursor,
     async (rawPortalis) => {
+      const normalizationFormatDecisionLogs: DecisionLog = {
+        path: 'src/sources/portalis/handler.ts',
+        operations: ['normalization', 'normalizeRawPortalisFiles'],
+        decision: {
+          _id: rawPortalis._id.toJSON(),
+          sourceId: rawPortalis.metadatas.identifiantDecision,
+          sourceName: 'Portalis'
+        }
+      }
       try {
         logger.info({
-          path: 'src/service/sources/portalis/handler.ts',
-          operations: ['normalization', 'normalizeRawPortalisFiles'],
-          message: `normalize ${rawPortalis._id} - ${rawPortalis.path}`
+          ...normalizationFormatDecisionLogs,
+          message: `Starting normalization for ${rawPortalis._id} - ${rawPortalis.path}`
         })
         await normalizePortalis(rawPortalis)
         logger.info({
-          path: 'src/service/sources/portalis/handler.ts',
-          operations: ['normalization', 'normalizeRawPortalisFiles'],
+          ...normalizationFormatDecisionLogs,
           message: `${rawPortalis._id} normalized with success`
         })
 
@@ -57,8 +66,7 @@ export async function normalizeRawPortalisFiles(
       } catch (err) {
         const error = toUnexpectedError(err)
         logger.error({
-          path: 'src/service/sources/portalis/handler.ts',
-          operations: ['normalization', 'normalizeRawPortalisFiles'],
+          ...normalizationFormatDecisionLogs,
           message: `${rawPortalis._id} failed to normalize`,
           stack: error.stack
         })
@@ -73,15 +81,13 @@ export async function normalizeRawPortalisFiles(
   await Promise.all(results)
 
   logger.info({
-    path: 'src/service/sources/portalis/handler.ts',
-    operations: ['normalization', 'normalizeRawPortalisFiles'],
+    ...normalizationFormatLogs,
     message: `Decisions successfully normalized: ${
       results.filter(({ status }) => status === 'success').length
     }`
   })
   logger.info({
-    path: 'src/service/sources/portalis/handler.ts',
-    operations: ['normalization', 'normalizeRawPortalisFiles'],
+    ...normalizationFormatLogs,
     message: `Decisions skipped: ${results.filter(({ status }) => status === 'error').length}`
   })
 }

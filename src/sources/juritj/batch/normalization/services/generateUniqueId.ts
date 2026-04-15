@@ -1,6 +1,5 @@
-import { logger } from '../../../shared/infrastructure/utils/log'
 import { MetadonneesDto } from '../../../shared/infrastructure/dto/metadonnees.dto'
-
+import { logger } from '../../../../../config/logger'
 const requiredKeys = ['idJuridiction', 'numeroRegistre', 'numeroRoleGeneral', 'dateDecision']
 
 export function generateUniqueId(metadonnees: MetadonneesDto): string {
@@ -14,7 +13,7 @@ export function generateUniqueId(metadonnees: MetadonneesDto): string {
     return uniqueId.replaceAll('/', '-')
   } else {
     logger.error({
-      path: 'src/tj/batch/normalization/services/generateUniqueId.ts',
+      path: 'src/sources/juritj/batch/normalization/services/generateUniqueId.ts',
       operations: ['normalization', 'generateUniqueId-TJ'],
       message:
         'Could not generate unique ID based on metadata: ' +

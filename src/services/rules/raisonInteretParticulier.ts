@@ -48,7 +48,7 @@ function getRaisonInteretParticulierByCode(code: string): RaisonInteretParticuli
 
   if (!raison) {
     logger.warn({
-      path: __filename,
+      path: 'src/services/rules/raisonInteretParticulier.ts',
       operations: ['normalization', 'getRaisonInteretParticulierByCode'],
       message: `Invalid RaisonInteretParticulier code: "${code}".`
     })

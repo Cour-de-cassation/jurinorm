@@ -4,7 +4,7 @@ import {
   findFileInformations,
   mapCursorSync
 } from '../../../../connectors/dbRawFile'
-import { logger } from '../../../../config/logger'
+import { logger, TechLog } from '../../../../config/logger'
 import { updateRawFileStatus, NormalizationResult } from '../../../../services/eventSourcing'
 import { RawTj } from './models'
 import { normalizeTj, rawTjToNormalize } from './normalization'
@@ -13,9 +13,13 @@ export async function normalizeRawTjFiles(
   defaultFilter?: Parameters<typeof findFileInformations<RawTj>>[1],
   limit?: number
 ) {
+  const normalizationFormatLogs: TechLog = {
+    path: 'src/sources/juritj/batch/normalization/handler.ts',
+    operations: ['normalization', 'normalizeRawTjFiles']
+  }
+
   logger.info({
-    path: 'src/tj/batch/normalization/handler.ts',
-    operations: ['normalization', 'normalizeRawTjFiles'],
+    ...normalizationFormatLogs,
     message: `Starting TJ normalization`
   })
   const _rawTjToNormalize = defaultFilter ?? rawTjToNormalize
@@ -29,22 +33,20 @@ export async function normalizeRawTjFiles(
     _rawTjToNormalize
   )
   logger.info({
-    path: 'src/tj/batch/normalization/handler.ts',
-    operations: ['normalization', 'normalizeRawTJFiles'],
+    ...normalizationFormatLogs,
     message: `Find ${rawTjLength} raw decisions to normalize batch. Limit is set to ${limit}`
   })
 
   const results: NormalizationResult<RawTj>[] = await mapCursorSync(rawTjCursor, async (rawTj) => {
     try {
+      // Log a passer en DecisionLog (problème dans les metadata de rawfils juritj, nous n'avons pas de sourceId => ??IdDecision??)
       logger.info({
-        path: 'src/tj/batch/normalization/handler.ts',
-        operations: ['normalization', 'normalizeRawTjFiles'],
+        ...normalizationFormatLogs,
         message: `normalize ${rawTj._id} - ${rawTj.path}`
       })
       await normalizeTj(rawTj)
       logger.info({
-        path: 'src/tj/batch/normalization/handler.ts',
-        operations: ['normalization', 'normalizeRawTjFiles'],
+        ...normalizationFormatLogs,
         message: `${rawTj._id} normalized with success`
       })
 
@@ -54,8 +56,7 @@ export async function normalizeRawTjFiles(
     } catch (err) {
       const error = toUnexpectedError(err)
       logger.error({
-        path: 'src/tj/batch/normalization/handler.ts',
-        operations: ['normalization', 'normalizeRawTjFiles'],
+        ...normalizationFormatLogs,
         message: `failed to normalize ${rawTj._id} raw file`,
         stack: error.stack
       })
@@ -69,15 +70,13 @@ export async function normalizeRawTjFiles(
   await Promise.all(results)
 
   logger.info({
-    path: 'src/tj/batch/normalization/handler.ts',
-    operations: ['normalization', 'normalizeRawTjFiles'],
+    ...normalizationFormatLogs,
     message: `Decisions successfully normalized: ${
       results.filter(({ status }) => status === 'success').length
     }`
   })
   logger.info({
-    path: 'src/tj/batch/normalization/handler.ts',
-    operations: ['normalization', 'normalizeRawTjFiles'],
+    ...normalizationFormatLogs,
     message: `Decisions skipped: ${results.filter(({ status }) => status === 'error').length}`
   })
 }

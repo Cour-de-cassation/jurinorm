@@ -1,16 +1,17 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common'
+import { Injectable, InternalServerErrorException } from '@nestjs/common'
+import { logger } from '../../../../../config/logger'
 import * as fs from 'fs'
 
 @Injectable()
 export class FileService {
   private readonly uploadPath = process.env.AV_PDF_PATH
-  private readonly logger = new Logger(FileService.name)
 
   constructor() {
     if (!fs.existsSync(this.uploadPath)) {
-      this.logger.warn({
-        operationName: FileService.name,
-        msg: `AV_PDF_PATH ${this.uploadPath} not found or volume does not exist`
+      logger.warn({
+        operations: ['other', `${FileService.name}`],
+        path: 'src/sources/juritcom/shared/infrastructure/files/file.service.ts',
+        message: `AV_PDF_PATH ${this.uploadPath} not found or volume does not exist`
       })
     }
   }
@@ -27,9 +28,10 @@ export class FileService {
       }
     } catch (_error) {
       const error = new InternalServerErrorException('Error saving file')
-      this.logger.error({
-        operationName: FileService.name,
-        msg: error.message
+      logger.error({
+        operations: ['other', `${FileService.name}`],
+        path: 'src/sources/juritcom/shared/infrastructure/files/file.service.ts',
+        message: error.message
       })
       throw error
     }

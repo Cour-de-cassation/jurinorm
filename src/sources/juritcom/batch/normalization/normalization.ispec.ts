@@ -16,15 +16,16 @@ import { InfrastructureException } from '../../shared/infrastructure/exceptions/
 import { CollectDto } from '../../shared/infrastructure/dto/collect.dto'
 // import { ConvertedDecisionWithMetadonneesDto } from '../../shared/infrastructure/dto/convertedDecisionWithMetadonnees.dto'
 
-jest.mock('./logger', () => ({
+jest.mock('../../../../config/logger', () => ({
   logger: {
     log: jest.fn(),
     info: jest.fn(),
     error: jest.fn()
   },
   normalizationFormatLogs: {
-    operationName: 'normalizationJob',
-    msg: 'Starting normalization job...'
+    operations: ['normalizationJob'],
+    path: 'src/sources/juritcom/batch/normalization/normalization.ispec.ts',
+    message: 'Starting normalization job...'
   }
 }))
 

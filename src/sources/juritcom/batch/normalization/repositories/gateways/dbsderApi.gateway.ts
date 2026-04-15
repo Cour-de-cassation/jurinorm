@@ -7,8 +7,7 @@ import {
 } from '@nestjs/common'
 import axios from 'axios'
 import { DecisionTcom, UnIdentifiedDecisionTcom } from 'dbsder-api-types'
-import { LogsFormat } from '../../../../shared/infrastructure/utils/logsFormat.utils'
-import { logger, normalizationFormatLogs } from '../../logger'
+import { logger, TechLog } from '../../../../../../config/logger'
 
 export class DbSderApiGateway {
   async saveDecision(decisionToSave: UnIdentifiedDecisionTcom) {
@@ -25,18 +24,20 @@ export class DbSderApiGateway {
         }
       )
       .catch((error) => {
-        const formatLogs: LogsFormat = {
-          ...normalizationFormatLogs,
-          operationName: 'saveDecision',
-          msg: 'Error while calling DbSder API'
+        const formatLogs: TechLog = {
+          operations: ['normalization', 'saveDecision'],
+          path: 'src/sources/juritcom/batch/normalization/repositories/gateways/dbsderApi.gateway.ts',
+          message: 'Error while calling DbSder API'
         }
         if (error.response) {
           if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: error.response.data,
-              statusCode: HttpStatus.BAD_REQUEST
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: error.response.data,
+                statusCode: HttpStatus.BAD_REQUEST
+              })
             })
             throw new BadRequestException(
               'DbSderAPI Bad request error : ' + error.response.data.message
@@ -44,26 +45,32 @@ export class DbSderApiGateway {
           } else if (error.response.data.statusCode === HttpStatus.UNAUTHORIZED) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: error.response.data,
-              statusCode: HttpStatus.UNAUTHORIZED
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: error.response.data,
+                statusCode: HttpStatus.UNAUTHORIZED
+              })
             })
 
             throw new UnauthorizedException('You are not authorized to call this route')
           } else if (error.response.data.statusCode === HttpStatus.CONFLICT) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: error.response.data,
-              statusCode: HttpStatus.CONFLICT
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: error.response.data,
+                statusCode: HttpStatus.CONFLICT
+              })
             })
             throw new ConflictException('DbSderAPI error: ' + error.response.data.message)
           } else {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: error.response.data,
-              statusCode: HttpStatus.SERVICE_UNAVAILABLE
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: error.response.data,
+                statusCode: HttpStatus.SERVICE_UNAVAILABLE
+              })
             })
           }
         }
@@ -83,18 +90,20 @@ export class DbSderApiGateway {
         }
       })
       .catch((error) => {
-        const formatLogs: LogsFormat = {
-          ...normalizationFormatLogs,
-          operationName: 'patchDecision',
-          msg: 'Error while calling DbSder API'
+        const formatLogs: TechLog = {
+          operations: ['normalization', 'patchDecision'],
+          path: 'src/sources/juritcom/batch/normalization/repositories/gateways/dbsderApi.gateway.ts',
+          message: 'Error while calling DbSder API'
         }
         if (error.response) {
           if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: error.response.data,
-              statusCode: HttpStatus.BAD_REQUEST
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: error.response.data,
+                statusCode: HttpStatus.BAD_REQUEST
+              })
             })
             throw new BadRequestException(
               'DbSderAPI Bad request error : ' + error.response.data.message
@@ -102,26 +111,32 @@ export class DbSderApiGateway {
           } else if (error.response.data.statusCode === HttpStatus.UNAUTHORIZED) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: error.response.data,
-              statusCode: HttpStatus.UNAUTHORIZED
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: error.response.data,
+                statusCode: HttpStatus.UNAUTHORIZED
+              })
             })
 
             throw new UnauthorizedException('You are not authorized to call this route')
           } else if (error.response.data.statusCode === HttpStatus.CONFLICT) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: error.response.data,
-              statusCode: HttpStatus.CONFLICT
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: error.response.data,
+                statusCode: HttpStatus.CONFLICT
+              })
             })
             throw new ConflictException('DbSderAPI error: ' + error.response.data.message)
           } else {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: error.response.data,
-              statusCode: HttpStatus.SERVICE_UNAVAILABLE
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: error.response.data,
+                statusCode: HttpStatus.SERVICE_UNAVAILABLE
+              })
             })
           }
         }
@@ -159,18 +174,20 @@ export class DbSderApiGateway {
         }
       })
       .catch((error) => {
-        const formatLogs: LogsFormat = {
-          ...normalizationFormatLogs,
-          operationName: 'listDecisions',
-          msg: 'Error while calling DbSder API'
+        const formatLogs: TechLog = {
+          operations: ['normalization', 'listDecisions'],
+          path: 'src/sources/juritcom/batch/normalization/repositories/gateways/dbsderApi.gateway.ts',
+          message: 'Error while calling DbSder API'
         }
         if (error.response) {
           if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: error.response.data,
-              statusCode: HttpStatus.BAD_REQUEST
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: error.response.data,
+                statusCode: HttpStatus.BAD_REQUEST
+              })
             })
             throw new BadRequestException(
               'DbSderAPI Bad request error : ' + error.response.data.message
@@ -178,26 +195,32 @@ export class DbSderApiGateway {
           } else if (error.response.data.statusCode === HttpStatus.UNAUTHORIZED) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: error.response.data,
-              statusCode: HttpStatus.UNAUTHORIZED
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: error.response.data,
+                statusCode: HttpStatus.UNAUTHORIZED
+              })
             })
 
             throw new UnauthorizedException('You are not authorized to call this route')
           } else if (error.response.data.statusCode === HttpStatus.CONFLICT) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: error.response.data,
-              statusCode: HttpStatus.CONFLICT
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: error.response.data,
+                statusCode: HttpStatus.CONFLICT
+              })
             })
             throw new ConflictException('DbSderAPI error: ' + error.response.data.message)
           } else {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: error.response.data,
-              statusCode: HttpStatus.SERVICE_UNAVAILABLE
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: error.response.data,
+                statusCode: HttpStatus.SERVICE_UNAVAILABLE
+              })
             })
           }
         }
@@ -253,21 +276,23 @@ export class DbSderApiGateway {
         }
       })
       .catch((error) => {
-        const formatLogs: LogsFormat = {
-          ...normalizationFormatLogs,
-          operationName: 'getDecisionBySourceId',
-          msg: 'Error while calling DbSder API'
+        const formatLogs: TechLog = {
+          operations: ['normalization', 'getDecisionBySourceId'],
+          path: 'src/sources/juritcom/batch/normalization/repositories/gateways/dbsderApi.gateway.ts',
+          message: 'Error while calling DbSder API'
         }
         if (error.response) {
           if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: {
-                ...error.response.data,
-                sourceId: sourceId
-              },
-              statusCode: HttpStatus.BAD_REQUEST
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: {
+                  ...error.response.data,
+                  sourceId: sourceId
+                },
+                statusCode: HttpStatus.BAD_REQUEST
+              })
             })
             throw new BadRequestException(
               'DbSderAPI Bad request error : ' + error.response.data.message
@@ -275,35 +300,41 @@ export class DbSderApiGateway {
           } else if (error.response.data.statusCode === HttpStatus.UNAUTHORIZED) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: {
-                ...error.response.data,
-                sourceId: sourceId
-              },
-              statusCode: HttpStatus.UNAUTHORIZED
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: {
+                  ...error.response.data,
+                  sourceId: sourceId
+                },
+                statusCode: HttpStatus.UNAUTHORIZED
+              })
             })
 
             throw new UnauthorizedException('You are not authorized to call this route')
           } else if (error.response.data.statusCode === HttpStatus.CONFLICT) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: {
-                ...error.response.data,
-                sourceId: sourceId
-              },
-              statusCode: HttpStatus.CONFLICT
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: {
+                  ...error.response.data,
+                  sourceId: sourceId
+                },
+                statusCode: HttpStatus.CONFLICT
+              })
             })
             throw new ConflictException('DbSderAPI error: ' + error.response.data.message)
           } else {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: {
-                ...error.response.data,
-                sourceId: sourceId
-              },
-              statusCode: HttpStatus.SERVICE_UNAVAILABLE
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: {
+                  ...error.response.data,
+                  sourceId: sourceId
+                },
+                statusCode: HttpStatus.SERVICE_UNAVAILABLE
+              })
             })
           }
         }
@@ -327,21 +358,23 @@ export class DbSderApiGateway {
         }
       })
       .catch((error) => {
-        const formatLogs: LogsFormat = {
-          ...normalizationFormatLogs,
-          operationName: 'getDecisionById',
-          msg: 'Error while calling DbSder API'
+        const formatLogs: TechLog = {
+          operations: ['normalization', 'getDecisionById'],
+          path: 'src/sources/juritcom/batch/normalization/repositories/gateways/dbsderApi.gateway.ts',
+          message: 'Error while calling DbSder API'
         }
         if (error.response) {
           if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: {
-                ...error.response.data,
-                id: id
-              },
-              statusCode: HttpStatus.BAD_REQUEST
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: {
+                  ...error.response.data,
+                  id: id
+                },
+                statusCode: HttpStatus.BAD_REQUEST
+              })
             })
             throw new BadRequestException(
               'DbSderAPI Bad request error : ' + error.response.data.message
@@ -349,35 +382,41 @@ export class DbSderApiGateway {
           } else if (error.response.data.statusCode === HttpStatus.UNAUTHORIZED) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: {
-                ...error.response.data,
-                id: id
-              },
-              statusCode: HttpStatus.UNAUTHORIZED
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: {
+                  ...error.response.data,
+                  id: id
+                },
+                statusCode: HttpStatus.UNAUTHORIZED
+              })
             })
 
             throw new UnauthorizedException('You are not authorized to call this route')
           } else if (error.response.data.statusCode === HttpStatus.CONFLICT) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: {
-                ...error.response.data,
-                id: id
-              },
-              statusCode: HttpStatus.CONFLICT
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: {
+                  ...error.response.data,
+                  id: id
+                },
+                statusCode: HttpStatus.CONFLICT
+              })
             })
             throw new ConflictException('DbSderAPI error: ' + error.response.data.message)
           } else {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: {
-                ...error.response.data,
-                id: id
-              },
-              statusCode: HttpStatus.SERVICE_UNAVAILABLE
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: {
+                  ...error.response.data,
+                  id: id
+                },
+                statusCode: HttpStatus.SERVICE_UNAVAILABLE
+              })
             })
           }
         }
@@ -397,21 +436,23 @@ export class DbSderApiGateway {
         }
       })
       .catch((error) => {
-        const formatLogs: LogsFormat = {
-          ...normalizationFormatLogs,
-          operationName: 'deleteDecisionById',
-          msg: 'Error while calling DbSder API'
+        const formatLogs: TechLog = {
+          operations: ['normalization', 'deleteDecisionById'],
+          path: 'src/sources/juritcom/batch/normalization/repositories/gateways/dbsderApi.gateway.ts',
+          message: 'Error while calling DbSder API'
         }
         if (error.response) {
           if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: {
-                ...error.response.data,
-                id: id
-              },
-              statusCode: HttpStatus.BAD_REQUEST
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: {
+                  ...error.response.data,
+                  id: id
+                },
+                statusCode: HttpStatus.BAD_REQUEST
+              })
             })
             throw new BadRequestException(
               'DbSderAPI Bad request error : ' + error.response.data.message
@@ -419,34 +460,40 @@ export class DbSderApiGateway {
           } else if (error.response.data.statusCode === HttpStatus.UNAUTHORIZED) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: {
-                ...error.response.data,
-                id: id
-              },
-              statusCode: HttpStatus.UNAUTHORIZED
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: {
+                  ...error.response.data,
+                  id: id
+                },
+                statusCode: HttpStatus.UNAUTHORIZED
+              })
             })
             throw new UnauthorizedException('You are not authorized to call this route')
           } else if (error.response.data.statusCode === HttpStatus.CONFLICT) {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: {
-                ...error.response.data,
-                id: id
-              },
-              statusCode: HttpStatus.CONFLICT
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: {
+                  ...error.response.data,
+                  id: id
+                },
+                statusCode: HttpStatus.CONFLICT
+              })
             })
             throw new ConflictException('DbSderAPI error: ' + error.response.data.message)
           } else {
             logger.error({
               ...formatLogs,
-              msg: error.response.data.message,
-              data: {
-                ...error.response.data,
-                id: id
-              },
-              statusCode: HttpStatus.SERVICE_UNAVAILABLE
+              message: JSON.stringify({
+                error: error.response.data.message,
+                data: {
+                  ...error.response.data,
+                  id: id
+                },
+                statusCode: HttpStatus.SERVICE_UNAVAILABLE
+              })
             })
           }
         }

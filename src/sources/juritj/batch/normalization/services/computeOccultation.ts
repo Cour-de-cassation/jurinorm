@@ -13,7 +13,7 @@ export function computeOccultation(
       : ''
 
   logger.error({
-    path: 'src/tj/batch/normalization/services/computeOccultation.ts',
+    path: 'src/sources/juritj/batch/normalization/services/computeOccultation.ts',
     operations: ['normalization', 'computeOccultation-TJ'],
     message: `additionalTerms computed`
   })
@@ -25,7 +25,7 @@ export function computeOccultation(
       : !debatPublic
 
   logger.error({
-    path: 'src/tj/batch/normalization/services/computeOccultation.ts',
+    path: 'src/sources/juritj/batch/normalization/services/computeOccultation.ts',
     operations: ['normalization', 'computeOccultation-TJ'],
     message: `motivationOccultation computed ${motivationOccultation}`
   })

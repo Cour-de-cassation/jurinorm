@@ -1,7 +1,7 @@
 import pino, { Logger, LoggerOptions } from 'pino'
 import { NODE_ENV } from '../config/env'
 
-type DecisionLog = {
+export type DecisionLog = {
   decision: {
     _id?: string
     sourceId: string
@@ -14,7 +14,7 @@ type DecisionLog = {
   message?: string
 }
 
-type TechLog = {
+export type TechLog = {
   path: string
   operations: readonly ['collect' | 'extraction' | 'normalization' | 'other', string]
   message?: string
@@ -52,7 +52,7 @@ const loggerOptions: LoggerOptions = {
 }
 
 export type CustomLogger = Omit<Logger, 'error' | 'warn' | 'info'> & {
-  error: (a: TechLog & Pick<Error, 'stack'>) => void
+  error: (a: (TechLog | DecisionLog) & Pick<Error, 'stack'>) => void
   warn: (a: TechLog) => void
   info: (a: TechLog | DecisionLog) => void
 }

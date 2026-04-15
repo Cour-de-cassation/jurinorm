@@ -1,7 +1,6 @@
 import axios from 'axios'
-import { LogsFormat } from '../../../shared/infrastructure/utils/logsFormat.utils'
+import { logger, TechLog } from '../../../../../config/logger'
 import {
-  Logger,
   HttpStatus,
   BadRequestException,
   ServiceUnavailableException,
@@ -10,15 +9,14 @@ import {
 import { UnIdentifiedDecisionTcom } from 'dbsder-api-types'
 
 export class ZoningApiService {
-  private readonly logger = new Logger()
-
   async getDecisionZoning(
     decision: UnIdentifiedDecisionTcom
   ): Promise<UnIdentifiedDecisionTcom['zoning']> {
     if (process.env.ZONING_DISABLED === 'true') {
-      this.logger.warn({
-        operationName: 'getDecisionZoning',
-        msg: 'Call to zoning API is disabled by env variable. Skiping.'
+      logger.warn({
+        operations: ['normalization', 'getDecisionZoning'],
+        path: 'src/sources/juritcom/batch/normalization/services/zoningApi.service.ts',
+        message: 'Call to zoning API is disabled by env variable. Skiping.'
       })
     } else {
       let zonageSource: string
@@ -45,37 +43,44 @@ export class ZoningApiService {
         method: 'post',
         url: `${zoningApiUrl}/zonage`
       }).catch((error) => {
-        const formatLogs: LogsFormat = {
-          operationName: 'getDecisionZoning',
-          msg: 'Error while calling Zoning API'
+        const formatLogs: TechLog = {
+          operations: ['normalization', 'getDecisionZoning'],
+          path: 'src/sources/juritcom/batch/normalization/services/zoningApi.service.ts',
+          message: 'Error while calling Zoning API'
         }
         if (error.response) {
           if (error.response.status === HttpStatus.BAD_REQUEST) {
-            this.logger.error({
+            logger.error({
               ...formatLogs,
-              msg: error.response.statusText,
-              data: error.response.data,
-              statusCode: HttpStatus.BAD_REQUEST
+              message: JSON.stringify({
+                message: error.response.statusText,
+                data: error.response.data,
+                statusCode: HttpStatus.BAD_REQUEST
+              })
             })
             throw new BadRequestException(
               `Zoning API Bad request error :  + ${error.response.statusText}`
             )
           } else if (error.response.status === HttpStatus.UNPROCESSABLE_ENTITY) {
-            this.logger.error({
+            logger.error({
               ...formatLogs,
-              msg: error.response.statusText,
-              data: error.response.data,
-              statusCode: HttpStatus.UNPROCESSABLE_ENTITY
+              message: JSON.stringify({
+                message: error.response.statusText,
+                data: error.response.data,
+                statusCode: HttpStatus.UNPROCESSABLE_ENTITY
+              })
             })
             throw new UnprocessableEntityException(
               `Le texte de la décision ${decision.sourceName}:${decision.sourceId} est mal encodé pour l'API de zonage : ${error.response.statusText}`
             )
           } else {
-            this.logger.error({
+            logger.error({
               ...formatLogs,
-              msg: error.response.statusText,
-              data: error.response.data,
-              statusCode: HttpStatus.SERVICE_UNAVAILABLE
+              message: JSON.stringify({
+                message: error.response.statusText,
+                data: error.response.data,
+                statusCode: HttpStatus.SERVICE_UNAVAILABLE
+              })
             })
           }
         }
