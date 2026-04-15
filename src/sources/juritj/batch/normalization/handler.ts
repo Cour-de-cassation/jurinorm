@@ -39,6 +39,7 @@ export async function normalizeRawTjFiles(
 
   const results: NormalizationResult<RawTj>[] = await mapCursorSync(rawTjCursor, async (rawTj) => {
     try {
+      // Log a passer en DecisionLog (problème dans les metadata de rawfils juritj, nous n'avons pas de sourceId => ??IdDecision??)
       logger.info({
         ...normalizationFormatLogs,
         message: `normalize ${rawTj._id} - ${rawTj.path}`
