@@ -61,6 +61,7 @@ const schemaPortalisMetadatas = zod.object({
       })
     }),
     dossier: zod.object({
+      numero: zod.string(),
       nature_affaire_civile: zod.object({
         code: zod.string(),
         libelle: zod.string()
@@ -107,6 +108,7 @@ export function mapPortalisDecision(
   return {
     sourceId: publicationRules.identifiantDecision,
     sourceName: 'portalis-cph',
+    portalisNumber: metadatas.dossier.numero,
     originalText: content,
     labelStatus: LabelStatus.TOBETREATED,
     publishStatus: PublishStatus.TOBEPUBLISHED,
