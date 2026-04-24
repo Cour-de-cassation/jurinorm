@@ -8,10 +8,12 @@ import {
 import { logger } from '../../config/logger'
 import { COLLECTION_JURICA_RAW } from '../../config/env'
 import { updateRawFileStatus, NormalizationResult } from '../../services/eventSourcing'
-import { annotateDecision } from '../../services/rules/annotation'
+import { /*annotateDecision,*/ computeCategories } from '../../services/rules/annotation'
 import { LabelStatus } from 'dbsder-api-types'
 import { saveDecisionInAffaire } from '../../services/affaire'
+import { UnIdentifiedDecisionSupported } from '../../connectors/dbSder'
 import { computeRaisonInteretParticulier } from '../../services/rules/raisonInteretParticulier'
+import { publishToNer } from '../../../src/connectors/nlpQueues'
 
 export const rawCaToNormalize = {
   // Ne contient pas deleted:
@@ -40,12 +42,18 @@ export const rawCaToNormalize = {
             }
           ]
         }
+      },
+      // Le dernier event n'est pas "nlpPending":
+      {
+        $not: {
+          $eq: [{ $arrayElemAt: ['$events.type', -1] }, 'nlpPending']
+        }
       }
     ]
   }
 }
 
-export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
+export async function normalizeCa(rawCa: RawCa): Promise<NormalizationResult<RawCa>> {
   const decisionMetadata = rawCa.metadatas
 
   const raisonInteretParticulier = computeRaisonInteretParticulier(
@@ -77,7 +85,7 @@ export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
   }
   // Fin de code temporaire
 
-  /* 
+  /*
     On annote uniquement les décisions qui sont "toBeTreated" car dans
     le cas d'une réception d'une mise a jour de décision qui ne nécessite
     pas un retraitement dans label il ne faut pas réannoter la décision.
@@ -86,11 +94,27 @@ export async function normalizeCa(rawCa: RawCa): Promise<unknown> {
     caDecision?.labelStatus === LabelStatus.TOBETREATED ||
     caDecision?.labelStatus === LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
   ) {
-    const annotatedDecision = await annotateDecision(caDecision)
-    return saveDecisionInAffaire(annotatedDecision)
+    // const annotatedDecision = await annotateDecision(caDecision)
+    // return saveDecisionInAffaire(annotatedDecision)
+
+    await publishToNer({
+      rawId: rawCa._id.toString(),
+      rawCollection: COLLECTION_JURICA_RAW,
+      decision: caDecision,
+      sourceId: caDecision.sourceId,
+      sourceName: caDecision.sourceName,
+      parties: caDecision.parties,
+      text: caDecision.originalText,
+      categories: computeCategories(caDecision.occultation.categoriesToOmit),
+      additionalTerms: caDecision.occultation.additionalTerms
+    })
+
+    return { status: 'nlpPending', rawFile: rawCa }
   }
 
-  return saveDecisionInAffaire(caDecision)
+  await saveDecisionInAffaire(caDecision as UnIdentifiedDecisionSupported)
+
+  return { status: 'success', rawFile: rawCa }
 }
 
 export async function normalizeRawCaFiles(
@@ -122,14 +146,7 @@ export async function normalizeRawCaFiles(
         operations: ['normalization', 'normalizeRawCaFiles'],
         message: `normalize ${rawCa._id} - ${rawCa.path}`
       })
-      await normalizeCa(rawCa)
-      logger.info({
-        path: 'src/ca/handler.ts',
-        operations: ['normalization', 'normalizeRawCaFiles'],
-        message: `${rawCa._id} normalized with success`
-      })
-
-      const result = { rawFile: rawCa, status: 'success' } as const
+      const result = await normalizeCa(rawCa)
       await updateRawFileStatus(COLLECTION_JURICA_RAW, result)
       return result
     } catch (err) {

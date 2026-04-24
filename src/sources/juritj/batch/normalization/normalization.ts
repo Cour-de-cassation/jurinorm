@@ -23,6 +23,7 @@ import { RawTj } from './models'
 import { getFileByName } from '../../../../connectors/bucket'
 import { publishToNer } from '../../../../connectors/nlpQueues'
 import { computeCategories } from '../../../../services/rules/annotation'
+import { saveDecisionInAffaire } from '../../../../services/affaire'
 
 export const rawTjToNormalize = {
   $expr: {
@@ -238,18 +239,25 @@ export async function normalizeTj(rawTj: RawTj): Promise<'nlpPending' | void> {
         message: 'Decision has no change'
       })
     } else {
-      await publishToNer({
-        rawTjId: rawTj._id.toString(),
-        decision: decisionWithRules,
-        sourceId: decisionWithRules.sourceId,
-        sourceName: decisionWithRules.sourceName,
-        parties: decisionWithRules.parties,
-        text: decisionWithRules.originalText,
-        categories: computeCategories(decisionWithRules.occultation.categoriesToOmit),
-        additionalTerms: decisionWithRules.occultation.additionalTerms
-      })
-
-      return 'nlpPending'
+      if (
+        decisionWithRules.labelStatus === LabelStatus.TOBETREATED ||
+        decisionWithRules.labelStatus === LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
+      ) {
+        await publishToNer({
+          rawId: rawTj._id.toString(),
+          rawCollection: bucketNameIntegre as string,
+          decision: decisionWithRules,
+          sourceId: decisionWithRules.sourceId,
+          sourceName: decisionWithRules.sourceName,
+          parties: decisionWithRules.parties,
+          text: decisionWithRules.originalText,
+          categories: computeCategories(decisionWithRules.occultation.categoriesToOmit),
+          additionalTerms: decisionWithRules.occultation.additionalTerms
+        })
+        return 'nlpPending'
+      } else {
+        await saveDecisionInAffaire(decisionWithRules)
+      }
     }
 
     logger.info({

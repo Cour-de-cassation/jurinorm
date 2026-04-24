@@ -8,7 +8,7 @@ import {
   UnIdentifiedDecisionDila,
   ZoneRange
 } from 'dbsder-api-types'
-import { NerParameters, NerResponse, postNer } from '../../connectors/ner'
+import { /*NerParameters,*/ NerResponse/*, postNer*/ } from '../../connectors/ner'
 import { isCurrentZoning, parseCurrentZoning } from 'dbsder-api-types/dist/typeGuards/common.zod'
 import { NotSupported, toNotSupported } from '../error'
 import { logger } from '../../config/logger'
@@ -20,37 +20,35 @@ export type AnnotationResult = {
   additionalTermsToUnAnnotate?: string[]
 }
 
-export async function annotateDecision<
-  T extends Exclude<UnIdentifiedDecision, UnIdentifiedDecisionDila>
->(decision: T): Promise<T> {
-  const nerParameters: NerParameters = {
-    sourceId: decision.sourceId,
-    sourceName: decision.sourceName,
-    parties: decision.parties,
-    text: decision.originalText,
-    categories: computeCategories(decision.occultation.categoriesToOmit),
-    additionalTerms: decision.occultation.additionalTerms
-  }
+// export async function annotateDecision<
+//   T extends Exclude<UnIdentifiedDecision, UnIdentifiedDecisionDila>
+// >(decision: T): Promise<T> {
+//   const nerParameters: NerParameters = {
+//     sourceId: decision.sourceId,
+//     sourceName: decision.sourceName,
+//     parties: decision.parties,
+//     text: decision.originalText,
+//     categories: computeCategories(decision.occultation.categoriesToOmit),
+//     additionalTerms: decision.occultation.additionalTerms
+//   }
 
-  const annotatedDecision = decision
+//   const annotatedDecision = decision
 
-  logger.info({
-    path: 'src/library/annotation.ts',
-    operations: ['other', 'annotation'],
-    message: `Sending ${decision.sourceName} ${decision.sourceId} to /ner endpoint`
-  })
+//   logger.info({
+//     path: 'src/library/annotation.ts',
+//     operations: ['other', 'annotation'],
+//     message: `Sending ${decision.sourceName} ${decision.sourceId} to /ner endpoint`
+//   })
 
-  const nerResult = await postNer(nerParameters)
+//   const nerResult = await postNer(nerParameters)
 
-  return applyNerResult(annotatedDecision, nerResult)
-}
+//   return applyNerResult(annotatedDecision, nerResult) as T
+// }
 
-export function applyNerResult<
-  T extends Exclude<UnIdentifiedDecision, UnIdentifiedDecisionDila>
->(
-  decision: T,
+export function applyNerResult(
+  decision: UnIdentifiedDecision,
   nerResult: NerResponse
-): T {
+): UnIdentifiedDecision {
   decision.labelTreatments = [{
     annotations: nerResult.entities,
     source: 'NLP',
@@ -72,8 +70,12 @@ export function applyNerResult<
     nerResult.additionalTermsToAnnotate?.length ||
     nerResult.additionalTermsToUnAnnotate?.length
   ) {
-    decision.occultation.additionalTermsToAnnotate = nerResult.additionalTermsToAnnotate
-    decision.occultation.additionalTermsToUnAnnotate = nerResult.additionalTermsToUnAnnotate
+    const occultation = decision.occultation as {
+      additionalTermsToAnnotate?: string[]
+      additionalTermsToUnAnnotate?: string[]
+    }
+    occultation.additionalTermsToAnnotate = nerResult.additionalTermsToAnnotate
+    occultation.additionalTermsToUnAnnotate = nerResult.additionalTermsToUnAnnotate
   }
 
   if (
@@ -96,7 +98,7 @@ export function applyNerResult<
 
         const motifsAnnotations: Entity[] = []
         if (motivation && motivation.length > 0) {
-          const annotation = extractZoneEntity(motivation[0], decision.originalText, 'motivation')
+          const annotation = extractZoneEntity(motivation[0], decision.originalText as string, 'motivation')
           if (annotation) {
             motifsAnnotations.push(annotation)
           }
@@ -105,7 +107,7 @@ export function applyNerResult<
         if (exposeDuLitige) {
           const annotation = extractZoneEntity(
             exposeDuLitige,
-            decision.originalText,
+            decision.originalText as string,
             'exposeDuLitige'
           )
           if (annotation) {

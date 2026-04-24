@@ -22,25 +22,25 @@ export type NerParameters = {
   additionalTerms: UnIdentifiedDecision['occultation']['additionalTerms']
 }
 
-export async function postNer(parameters: NerParameters): Promise<NerResponse> {
-  const route = `${NLP_PSEUDONYMISATION_API_URL}/ner`
-  const data = {
-    sourceId: parameters.sourceId,
-    sourceName: parameters.sourceName,
-    parties: parameters.parties,
-    text: parameters.text,
-    categories: parameters.categories,
-    additionalTerms: parameters.additionalTerms
-  }
-  try {
-    const response = await axios.post<NerResponse>(route, data)
-    return response.data
-  } catch (err) {
-    if (axios.isAxiosError(err) && err.response) {
-      throw new UnexpectedError(
-        `Call POST - ${route} response with code ${err.response.status}: ${err.response.data.message}`
-      )
-    }
-    throw err
-  }
-}
+// export async function postNer(parameters: NerParameters): Promise<NerResponse> {
+//   const route = `${NLP_PSEUDONYMISATION_API_URL}/ner`
+//   const data = {
+//     sourceId: parameters.sourceId,
+//     sourceName: parameters.sourceName,
+//     parties: parameters.parties,
+//     text: parameters.text,
+//     categories: parameters.categories,
+//     additionalTerms: parameters.additionalTerms
+//   }
+//   try {
+//     const response = await axios.post<NerResponse>(route, data)
+//     return response.data
+//   } catch (err) {
+//     if (axios.isAxiosError(err) && err.response) {
+//       throw new UnexpectedError(
+//         `Call POST - ${route} response with code ${err.response.status}: ${err.response.data.message}`
+//       )
+//     }
+//     throw err
+//   }
+// }

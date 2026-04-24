@@ -1,11 +1,12 @@
-import { Category, UnIdentifiedDecision, UnIdentifiedDecisionTj } from 'dbsder-api-types'
+import { Category, UnIdentifiedDecision } from 'dbsder-api-types'
 import { logger } from '../config/logger'
 import { getAmqpChannel } from "./amqp"
 import { applyNerResult } from "../services/rules/annotation"
 import { saveDecisionInAffaire } from "../services/affaire"
+import { UnIdentifiedDecisionSupported } from "./dbSder"
 import { appendNormalizedEvent } from "../services/eventSourcing"
 import { ObjectId } from "mongodb"
-import { S3_BUCKET_NAME_RAW_TJ, NLP_DONE_PREFETCH } from '../config/env'
+import { NLP_DONE_PREFETCH } from '../config/env'
 import { NerResponse } from './ner'
 
 export const QUEUES = {
@@ -15,14 +16,17 @@ export const QUEUES = {
 }
 
 export type NerParameters = {
-  rawTjId: string
-  decision: UnIdentifiedDecisionTj
+  rawId: string
+  rawCollection?: string  // pour CC/CA/TJ
+  decisionFilename?: string  // pour TCOM
+  pdfFilename?: string       // pour TCOM avec PLAINTEXT_SOURCE=nlp
+  decision: UnIdentifiedDecision
   sourceId: UnIdentifiedDecision['sourceId']
   sourceName: UnIdentifiedDecision['sourceName']
   parties: UnIdentifiedDecision['parties']
   text: UnIdentifiedDecision['originalText']
   categories: Category[]
-  additionalTerms: UnIdentifiedDecision['occultation']['additionalTerms']
+  additionalTerms: string
 }
 
 export async function assertQueues(): Promise<void> {
@@ -41,7 +45,7 @@ export async function publishToNer(parameters: NerParameters): Promise<void> {
   logger.info({
     path: 'src/connectors/nlpQueues.ts',
     operations: ['normalization', 'publishToNer'],
-    message: `Decision ${parameters.rawTjId} sent to NLP queue.`
+    message: `Decision ${parameters.rawId} sent to NLP queue.`
   })
 }
 
@@ -56,24 +60,28 @@ export async function startNlpDoneConsumer(): Promise<void> {
       return
     }
 
-    let rawTjId: string | undefined
+    let rawId: string | undefined
+    let sourceName: string | undefined
     let parsed: Record<string, unknown> = {}
 
     try {
       parsed = JSON.parse(doneMsg.content.toString())
-      rawTjId = parsed.rawTjId as string
+      rawId = parsed.rawId as string
+      sourceName = parsed.sourceName as string
       const { decision, ...nerResult } = parsed
       const annotatedDecision = applyNerResult(
-        decision as UnIdentifiedDecisionTj,
+        decision as UnIdentifiedDecision,
         nerResult as NerResponse
       )
-      await saveDecisionInAffaire(annotatedDecision)
-      await appendNormalizedEvent(S3_BUCKET_NAME_RAW_TJ, new ObjectId(rawTjId))
+      await saveDecisionInAffaire(annotatedDecision as UnIdentifiedDecisionSupported)
+      if (sourceName.toLowerCase() !== 'juritcom') {
+        await appendNormalizedEvent(parsed.rawCollection as string, new ObjectId(rawId))
+      }
 
       logger.info({
         path: 'src/connectors/nlpQueues.ts',
         operations: ['normalization', 'nlpDoneConsumer'],
-        message: `Decision rawTjId=${rawTjId} saved in database`
+        message: `Decision rawId=${rawId} saved in database`
       })
 
       channel.ack(doneMsg)
@@ -82,7 +90,7 @@ export async function startNlpDoneConsumer(): Promise<void> {
         path: 'src/connectors/nlpQueues.ts',
         operations: ['normalization', 'nlpDoneConsumer'],
         stack: err instanceof Error ? err.stack : undefined,
-        message: `Failed to apply NLP result for rawTjId=${rawTjId}: ${err.message}`
+        message: `Failed to apply NLP result for rawId=${rawId}: ${err instanceof Error ? err.message : 'Unknown error'}`
       })
       // Nested try/catch needed because channel may have died, making amqp calls unsafe
       try {
@@ -95,7 +103,7 @@ export async function startNlpDoneConsumer(): Promise<void> {
           path: 'src/connectors/nlpQueues.ts',
           operations: ['normalization', 'nlpDoneConsumer'],
           stack: channelErr instanceof Error ? channelErr.stack : undefined,
-          message: `Failed to send rawTjId=${rawTjId} to fail queue: ${channelErr instanceof Error ? channelErr.message : 'Unknown error'}`
+          message: `Failed to send rawId=${rawId} to fail queue: ${channelErr instanceof Error ? channelErr.message : 'Unknown error'}`
         })
       }
 
