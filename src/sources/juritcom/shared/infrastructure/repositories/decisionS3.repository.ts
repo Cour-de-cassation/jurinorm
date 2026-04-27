@@ -111,6 +111,26 @@ export class DecisionS3Repository implements DecisionRepository {
     await this.saveDecision(reqParams)
   }
 
+  async moveRawToPending(requestToS3Dto: string, filename: string) {
+    const reqParams = {
+      Body: requestToS3Dto,
+      Bucket: process.env.S3_BUCKET_NAME_PENDING_TCOM,
+      Key: filename,
+      ContentType: 'application/json',
+      Metadata: {
+        date: new Date().toISOString(),
+        originalFilename: filename
+      }
+    }
+    await this.saveDecision(reqParams)
+
+    const reqParamsDelete = {
+      Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM,
+      Key: filename
+    }
+    await this.deleteDecision(reqParamsDelete)
+  }
+
   async uploadFichierDecisionIntegre(
     file: Express.Multer.File,
     originalPdfFileName: string,
@@ -141,9 +161,9 @@ export class DecisionS3Repository implements DecisionRepository {
     }
   }
 
-  async getDecisionByFilename(filename: string): Promise<CollectDto & { _id: string }> {
+  async getDecisionByFilename(filename: string, bucket: string): Promise<CollectDto & { _id: string }> {
     const reqParams = {
-      Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM,
+      Bucket: bucket,
       Key: filename
     }
 
@@ -155,7 +175,7 @@ export class DecisionS3Repository implements DecisionRepository {
       logger.error({
         path: 'src/tcom/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['normalization', 'getDecisionByFilename'],
-        message: error.message,
+        message: `Error for ${filename}: ${error.message}`,
         stack: error.stack
       })
       throw new BucketError(error)
@@ -169,7 +189,11 @@ export class DecisionS3Repository implements DecisionRepository {
     }
 
     try {
+      console.log(`reqParams: ${JSON.stringify(reqParams)}`)
+
       const fileFromS3 = await this.s3Client.send(new GetObjectCommand(reqParams))
+      console.log(`Retrieved PDF from S3: ${filename}`)
+
       return Buffer.from(await fileFromS3.Body?.transformToByteArray())
     } catch (error) {
       logger.error({

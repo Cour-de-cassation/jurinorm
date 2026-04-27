@@ -8,9 +8,11 @@ import { RawCc } from './models'
 import { logger } from '../../config/logger'
 import { COLLECTION_JURINET_RAW } from '../../config/env'
 import { updateRawFileStatus, NormalizationResult } from '../../services/eventSourcing'
-import { annotateDecision } from '../../services/rules/annotation'
+// import { annotateDecision } from '../../services/rules/annotation'
 import { LabelStatus } from 'dbsder-api-types'
 import { saveDecisionInAffaire } from '../../services/affaire'
+import { computeCategories } from '../../services/rules/annotation'
+import { publishToNlpNer } from '../../connectors/nlpQueues'
 
 export const rawCcToNormalize = {
   // Ne contient pas deleted:
@@ -38,6 +40,12 @@ export const rawCcToNormalize = {
               }
             }
           ]
+        }
+      },
+      // Le dernier event n'est pas "nlpPending"
+      {
+        $not: {
+          $eq: [{ $arrayElemAt: ['$events.type', -1] }, 'nlpPending']
         }
       }
     ]
@@ -71,7 +79,7 @@ export async function normalizeCc(rawCc: RawCc): Promise<NormalizationResult<Raw
   }
   // Fin de code temporaire
 
-  /* 
+  /*
     On annote uniquement les décisions qui sont "toBeTreated" car dans
     le cas d'une réception d'une mise a jour de décision qui ne nécessite
     pas un retraitement dans label il ne faut pas réannoter la décision.
@@ -80,9 +88,23 @@ export async function normalizeCc(rawCc: RawCc): Promise<NormalizationResult<Raw
     ccDecision?.labelStatus === LabelStatus.TOBETREATED ||
     ccDecision?.labelStatus === LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
   ) {
-    const annotatedDecision = await annotateDecision(ccDecision)
-    await saveDecisionInAffaire(annotatedDecision)
-    return { status: 'success', rawFile: rawCc }
+    // const annotatedDecision = await annotateDecision(ccDecision)
+    // await saveDecisionInAffaire(annotatedDecision)
+    // return { status: 'success', rawFile: rawCc }
+
+    await publishToNlpNer({
+      rawId: rawCc._id.toString(),
+      rawCollection: COLLECTION_JURINET_RAW,
+      decision: ccDecision,
+      sourceId: ccDecision.sourceId,
+      sourceName: ccDecision.sourceName,
+      parties: ccDecision.parties,
+      text: ccDecision.originalText,
+      categories: computeCategories(ccDecision.occultation.categoriesToOmit),
+      additionalTerms: ccDecision.occultation.additionalTerms
+    })
+
+    return { status: 'nlpPending', rawFile: rawCc }
   }
 
   await saveDecisionInAffaire(ccDecision)
@@ -98,7 +120,7 @@ export async function normalizeRawCcFiles(
     message: `Starting CC normalization`
   })
   const _rawCcToNormalize = defaultFilter ?? rawCcToNormalize
-  const rawCcCursor = await findFileInformations<RawCc>(COLLECTION_JURINET_RAW, _rawCcToNormalize)
+  const rawCcCursor = await findFileInformations<RawCc>(COLLECTION_JURINET_RAW, _rawCcToNormalize, 2)
   const rawCcLength = await countFileInformations<RawCc>(COLLECTION_JURINET_RAW, _rawCcToNormalize)
   logger.info({
     path: 'src/cc/handler.ts',
@@ -114,12 +136,6 @@ export async function normalizeRawCcFiles(
         message: `normalize ${rawCc._id} - ${rawCc.path}`
       })
       const result = await normalizeCc(rawCc)
-      logger.info({
-        path: 'src/cc/handler.ts',
-        operations: ['normalization', 'normalizeRawCcFiles'],
-        message: `${rawCc._id} normalized with success`
-      })
-
       await updateRawFileStatus(COLLECTION_JURINET_RAW, result)
       return result
     } catch (err) {

@@ -10,16 +10,18 @@ import { NLP_DONE_PREFETCH } from '../config/env'
 import { NerResponse } from './ner'
 
 export const QUEUES = {
-  NLP_NER: "nlp.ner",
-  NLP_DONE: "nlp.done",
-  JURINORM_FAIL: "jurinorm.fail",
+  NLP_PROCESS: "nlp.process",
+  NLP_NER_DONE: 'nlp.ner.done',
+  NLP_PDF_TO_TEXT_DONE: "nlp.pdfToText.done",
+  JURINORM_NLP_NER_DONE_FAIL: "jurinorm.nlp.ner.done.fail",
+  JURINORM_NLP_PDF_TO_TEXT_DONE_FAIL: "jurinorm.nlp.pdfToText.done.fail"
 }
 
 export type NerParameters = {
   rawId: string
-  rawCollection?: string  // pour CC/CA/TJ
-  decisionFilename?: string  // pour TCOM
-  pdfFilename?: string       // pour TCOM avec PLAINTEXT_SOURCE=nlp
+  rawCollection?: string     // for CC/CA/TJ/CPH
+  decisionFilename?: string  // for TCOM
+  pdfFilename?: string       // for TCOM
   decision: UnIdentifiedDecision
   sourceId: UnIdentifiedDecision['sourceId']
   sourceName: UnIdentifiedDecision['sourceName']
@@ -31,31 +33,48 @@ export type NerParameters = {
 
 export async function assertQueues(): Promise<void> {
   const channel = await getAmqpChannel()
-  await channel.assertQueue(QUEUES.NLP_NER, { durable: true })
-  await channel.assertQueue(QUEUES.NLP_DONE, { durable: true })
-  await channel.assertQueue(QUEUES.JURINORM_FAIL, { durable: true })
+  for (const queue of Object.values(QUEUES)) {
+    await channel.assertQueue(queue, { durable: true })
+  }
 }
 
-// --- PRODUCER ---
-export async function publishToNer(parameters: NerParameters): Promise<void> {
+// --- PRODUCERS ---
+export async function publishToNlpNer(parameters: NerParameters): Promise<void> {
   const channel = await getAmqpChannel()
   const msgToSend = Buffer.from(JSON.stringify(parameters))
-  channel.sendToQueue(QUEUES.NLP_NER, msgToSend, { persistent: true })
+  channel.sendToQueue(QUEUES.NLP_PROCESS, msgToSend, { persistent: true })
 
   logger.info({
     path: 'src/connectors/nlpQueues.ts',
-    operations: ['normalization', 'publishToNer'],
+    operations: ['normalization', 'publishToNlpNer'],
     message: `Decision ${parameters.rawId} sent to NLP queue.`
   })
 }
 
-// --- CONSUMER ---
-export async function startNlpDoneConsumer(): Promise<void> {
+export async function publishToNlpPdf(
+  pdfFilename: string,
+  decisionFilename: string,
+  jobId: string
+): Promise<void> {
+  const channel = await getAmqpChannel()
+  const msgToSend = Buffer.from(JSON.stringify({ pdfFilename, decisionFilename, jobId }))
+  channel.sendToQueue(QUEUES.NLP_PROCESS, msgToSend, { persistent: true })
+
+  logger.info({
+    path: 'src/connectors/nlpQueues.ts',
+    operations: ['normalization', 'publishToNlpPdf'],
+    message: `PDF ${pdfFilename} for decision ${decisionFilename} sent to NLP queue with jobId=${jobId}.`
+
+  })
+}
+
+// --- CONSUMERS ---
+export async function startNlpNerDoneConsumer(): Promise<void> {
   const channel = await getAmqpChannel()
   const prefetch = Number(NLP_DONE_PREFETCH ?? '1')
   channel.prefetch(prefetch)
 
-  channel.consume(QUEUES.NLP_DONE, async (doneMsg) => {
+  channel.consume(QUEUES.NLP_NER_DONE, async (doneMsg) => {
     if (!doneMsg) {
       return
     }
@@ -80,15 +99,15 @@ export async function startNlpDoneConsumer(): Promise<void> {
 
       logger.info({
         path: 'src/connectors/nlpQueues.ts',
-        operations: ['normalization', 'nlpDoneConsumer'],
-        message: `Decision rawId=${rawId} saved in database`
+        operations: ['normalization', 'startNlpNerDoneConsumer'],
+        message: `Decision rawId=${rawId} for ${sourceName} saved in database`
       })
 
       channel.ack(doneMsg)
     } catch (err) {
       logger.error({
         path: 'src/connectors/nlpQueues.ts',
-        operations: ['normalization', 'nlpDoneConsumer'],
+        operations: ['normalization', 'startNlpNerDoneConsumer'],
         stack: err instanceof Error ? err.stack : undefined,
         message: `Failed to apply NLP result for rawId=${rawId}: ${err instanceof Error ? err.message : 'Unknown error'}`
       })
@@ -96,7 +115,7 @@ export async function startNlpDoneConsumer(): Promise<void> {
       try {
         parsed.error = err instanceof Error ? err.message : 'Unknown error'
         const failMsg = Buffer.from(JSON.stringify(parsed))
-        channel.sendToQueue(QUEUES.JURINORM_FAIL, failMsg, { persistent: true })
+        channel.sendToQueue(QUEUES.JURINORM_NLP_NER_DONE_FAIL, failMsg, { persistent: true })
         channel.nack(doneMsg, false, false)
       } catch (channelErr) {
         logger.error({

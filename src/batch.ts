@@ -8,15 +8,16 @@ import { normalizeRawTjFiles } from './sources/juritj/batch/normalization/handle
 import { normalizeRawCcFiles } from './sources/jurinet/handler'
 import { normalizeRawCaFiles } from './sources/jurica/handler'
 
-import { assertQueues, startNlpDoneConsumer } from './connectors/nlpQueues'
+import { assertQueues, startNlpNerDoneConsumer } from './connectors/nlpQueues'
+import { startNlpPdfDoneConsumer } from './sources/juritcom/batch/normalization/nlpPdfDoneConsumer'
 import { closeAmqpConnection } from './connectors/amqp'
 
 const CRON_EVERY_HOUR = '0 * * * *'
 
 // TODO: reset batch size, changed for testing purposes
-const MAX_DECISION_PER_BATCH = 1
-const MAX_DECISION_PER_BATCH_TCOM = 1
-const MAX_DECISION_PER_BATCH_TJ = 3
+const MAX_DECISION_PER_BATCH = 100
+const MAX_DECISION_PER_BATCH_TCOM = 100
+const MAX_DECISION_PER_BATCH_TJ = 100
 const filters = undefined
 
 async function startNormalization() {
@@ -31,8 +32,8 @@ async function startNormalization() {
       await normalizeRawCaFiles(filters, MAX_DECISION_PER_BATCH)
       await normalizeRawTjFiles(filters, MAX_DECISION_PER_BATCH_TJ)
       await normalizeRawTcomFiles(MAX_DECISION_PER_BATCH_TCOM)
-      if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV))
-        await normalizeRawCphFiles(filters, MAX_DECISION_PER_BATCH)
+      // if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV))
+      //   await normalizeRawCphFiles(filters, MAX_DECISION_PER_BATCH)
     },
     waitForCompletion: true, // onTick cannot be retry if an instance of it is running
     timeZone: 'Europe/Paris',
@@ -50,12 +51,21 @@ function buildErrorsArray(err): string[] {
 
 assertQueues()
   .then(() => {
-    startNlpDoneConsumer().catch((err) => {
+    startNlpNerDoneConsumer().catch((err) => {
       const errors = buildErrorsArray(err)
       logger.warn({
         path: 'src/batch.ts',
-        operations: ['normalization', 'startNlpDoneConsumer'],
-        message: `Failed to start consumer for nlp.done: ${errors.join(', ')}`
+        operations: ['normalization', 'startNlpNerDoneConsumer'],
+        message: `Failed to start Ner done consumer : ${errors.join(', ')}`
+      })
+    })
+
+    startNlpPdfDoneConsumer().catch((err) => {
+      const errors = buildErrorsArray(err)
+      logger.warn({
+        path: 'src/batch.ts',
+        operations: ['normalization', 'startNlpPdfDoneConsumer'],
+        message: `Failed to start Pdf done consumer : ${errors.join(', ')}`
       })
     })
   })
@@ -79,10 +89,11 @@ async function shutdown(signal: string) {
   try {
     await closeAmqpConnection()
   } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error'
     logger.warn({
       path: 'src/batch.ts',
       operations: ['normalization', 'shutdown'],
-      message: `Failed to close RabbitMQ connection: ${err.message}`
+      message: `Failed to close RabbitMQ connection: ${msg}`
     })
   } finally {
     process.exit(0)

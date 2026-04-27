@@ -44,14 +44,7 @@ export async function normalizeRawCphFiles(
           operations: ['normalization', 'normalizeRawCphFiles'],
           message: `normalize ${rawCph._id} - ${rawCph.path}`
         })
-        await normalizeCph(rawCph)
-        logger.info({
-          path: 'src/service/cph/handler.ts',
-          operations: ['normalization', 'normalizeRawCphFiles'],
-          message: `${rawCph._id} normalized with success`
-        })
-
-        const result = { rawFile: rawCph, status: 'success' } as const
+        const result = await normalizeCph(rawCph)
         await updateRawFileStatus(S3_BUCKET_NAME_PORTALIS, result)
         return result
       } catch (err) {

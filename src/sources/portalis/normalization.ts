@@ -1,15 +1,17 @@
-import { CodeNac } from 'dbsder-api-types'
+import { CodeNac, LabelStatus } from 'dbsder-api-types'
 import { getFileByName } from '../../connectors/bucket'
-import { getCodeNac } from '../../connectors/dbSder'
+import { getCodeNac, UnIdentifiedDecisionSupported } from '../../connectors/dbSder'
 import { NotFound, UnexpectedError } from '../../services/error'
 import { htmlToPlainText } from './library/formats/html'
 import { extractAttachments, pdfToHtml } from './library/formats/pdf'
 import { parseXml } from './library/formats/xml'
 import { logger } from '../../config/logger'
 import { CphMetadatas, mapCphDecision, parseCphMetadatas, RawCph } from './models'
-import { annotateDecision } from '../../services/rules/annotation'
 import { saveDecisionInAffaire } from '../../services/affaire'
 import { S3_BUCKET_NAME_PORTALIS } from '../../config/env'
+import { computeCategories } from '../../services/rules/annotation'
+import { publishToNlpNer } from '../../connectors/nlpQueues'
+import { NormalizationResult } from '../../services/eventSourcing'
 
 function searchXml(attachments: { name: string; data: Buffer }[]): unknown {
   const attachment = attachments.reduce<CphMetadatas | undefined>((acc, attachment, index) => {
@@ -75,7 +77,7 @@ async function getOccultationStrategy(
   return { blocOccultation, categoriesToOmit }
 }
 
-export async function normalizeCph(rawCph: RawCph): Promise<unknown> {
+export async function normalizeCph(rawCph: RawCph): Promise<NormalizationResult<RawCph>> {
   const cphFile = await getFileByName(S3_BUCKET_NAME_PORTALIS, rawCph.path)
   const cphMetadatas = await getCphMetadatas(cphFile)
   const cphPseudoCustomRules = rawCph.metadatas
@@ -92,12 +94,31 @@ export async function normalizeCph(rawCph: RawCph): Promise<unknown> {
     rawCph.path
   )
 
-  const annotatedDecision = await annotateDecision(cphDecision)
+  if (
+    cphDecision.labelStatus === LabelStatus.TOBETREATED ||
+    cphDecision.labelStatus === LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
+  ) {
+    await publishToNlpNer({
+      rawId: rawCph._id.toString(),
+      rawCollection: S3_BUCKET_NAME_PORTALIS,
+      decision: cphDecision,
+      sourceId: cphDecision.sourceId,
+      sourceName: cphDecision.sourceName,
+      parties: cphDecision.parties,
+      text: cphDecision.originalText,
+      categories: computeCategories(cphDecision.occultation.categoriesToOmit),
+      additionalTerms: cphDecision.occultation.additionalTerms
+    })
+    return { status: 'nlpPending', rawFile: rawCph }
+  }
 
-  return saveDecisionInAffaire(annotatedDecision)
+  await saveDecisionInAffaire(cphDecision as UnIdentifiedDecisionSupported)
+  return { status: 'success', rawFile: rawCph }
 }
 
 export const rawCphToNormalize = {
+  // Ne contient pas deleted:
+  events: { $not: { $elemMatch: { type: 'deleted' } } },
   $expr: {
     $and: [
       // Le dernier event n'est pas "normalized":
@@ -121,6 +142,12 @@ export const rawCphToNormalize = {
               }
             }
           ]
+        }
+      },
+      // Le dernier event n'est pas "nlpPending":
+      {
+        $not: {
+          $eq: [{ $arrayElemAt: ['$events.type', -1] }, 'nlpPending']
         }
       }
     ]

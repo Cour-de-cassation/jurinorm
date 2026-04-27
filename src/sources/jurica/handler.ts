@@ -13,7 +13,7 @@ import { LabelStatus } from 'dbsder-api-types'
 import { saveDecisionInAffaire } from '../../services/affaire'
 import { UnIdentifiedDecisionSupported } from '../../connectors/dbSder'
 import { computeRaisonInteretParticulier } from '../../services/rules/raisonInteretParticulier'
-import { publishToNer } from '../../../src/connectors/nlpQueues'
+import { publishToNlpNer } from '../../../src/connectors/nlpQueues'
 
 export const rawCaToNormalize = {
   // Ne contient pas deleted:
@@ -97,7 +97,7 @@ export async function normalizeCa(rawCa: RawCa): Promise<NormalizationResult<Raw
     // const annotatedDecision = await annotateDecision(caDecision)
     // return saveDecisionInAffaire(annotatedDecision)
 
-    await publishToNer({
+    await publishToNlpNer({
       rawId: rawCa._id.toString(),
       rawCollection: COLLECTION_JURICA_RAW,
       decision: caDecision,

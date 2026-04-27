@@ -21,12 +21,13 @@ import { LabelStatus, PublishStatus, UnIdentifiedDecisionTcom } from 'dbsder-api
 import { logger } from '../../../../config/logger'
 
 import { strict as assert } from 'assert'
-import { annotateDecision } from '../../../../services/rules/annotation'
+import { computeCategories } from '../../../../services/rules/annotation'
 import { saveDecisionInAffaire } from '../../../../services/affaire'
 import { ZoningApiService } from './services/zoningApi.service'
+import { publishToNlpNer, publishToNlpPdf } from '../../../../connectors/nlpQueues'
+import { CollectDto } from '../../shared/infrastructure/dto/collect.dto'
 
 const dbSderApiGateway = new DbSderApiGateway()
-const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TCOM
 
 interface Diff {
   major: Array<string>
@@ -42,11 +43,11 @@ export async function normalizationJob(
     message: 'Starting TCOM normalization'
   })
 
-  const listConvertedDecision: ConvertedDecisionWithMetadonneesDto[] = []
-  const s3Repository = new DecisionS3Repository()
 
+  const s3Repository = new DecisionS3Repository()
   const zoningApiService: ZoningApiService = new ZoningApiService()
 
+  const listConvertedDecision: ConvertedDecisionWithMetadonneesDto[] = []
   const decisionList = (await fetchDecisionListFromS3(s3Repository, limit)).filter((name) =>
     name.endsWith('.json')
   )
@@ -55,223 +56,47 @@ export async function normalizationJob(
     try {
       const jobId = uuidv4()
 
-      // Step 1: Fetch decision from S3
-      const decision = await s3Repository.getDecisionByFilename(decisionFilename)
-
+      const decision = await s3Repository.getDecisionByFilename(decisionFilename, process.env.S3_BUCKET_NAME_RAW_TCOM)
       if (process.env.PLAINTEXT_SOURCE === 'nlp') {
-        // Step 2a, use pdf-to-text NLP API:
+        // Send PDF to NLP API to extract text and metadata
+        const pdfFilename = decisionFilename.replace(/\.json$/, '.pdf')
+        await fetchPDFFromS3(s3Repository, pdfFilename)
+        await publishToNlpPdf(pdfFilename, decisionFilename, jobId)
 
-        // Fetch PDF from -pdf bucket
-        const pdfFilename: string = decisionFilename.replace(/\.json$/, '.pdf')
-        const pdfFile = await fetchPDFFromS3(s3Repository, pdfFilename)
-
-        try {
-          // Transforming decision from PDF to text
-
-          // 1. Get data from NLP API:
-          const NLPData: NLPPDFToTextDTO = await fetchNLPDataFromPDF(pdfFile, pdfFilename)
-
-          if (NLPData.HTMLText) {
-            // 2.1. Get plain text from HTML:
-            decision.texteDecisionIntegre = HTMLToPlainText(NLPData.HTMLText)
-          } else if (NLPData.markdownText) {
-            // 2.2. Get plain text from markdown:
-            decision.texteDecisionIntegre = markdownToPlainText(NLPData.markdownText)
-          }
-
-          // 3. Store NLP data in -pdf-success bucket:
-          await s3Repository.archiveSuccessPDF(NLPData, pdfFilename)
-        } catch (error) {
-          logger.error({
-            operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-            path: 'src/tcom/batch/normalization/normalization.ts',
-            message: `NLPPDFToText failed for decision ${pdfFilename}: ${error.message}`
-          })
-          throw error
-        }
+        // Move decision JSON file to pending bucket
+        await s3Repository.moveRawToPending(
+          JSON.stringify(decision),
+          decisionFilename
+        )
 
         logger.info({
           operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
           path: 'src/tcom/batch/normalization/normalization.ts',
-          message: 'Plain text extracted by NLP API from collected PDF file'
+          message: 'Decision sent to NLP API and moved to pending bucket.'
         })
-      } else {
-        // Step 2b, use texteDecisionIntegre property:
 
-        if (
-          !decision.texteDecisionIntegre ||
-          isEmptyText(decision.texteDecisionIntegre) ||
-          hasNoBreak(decision.texteDecisionIntegre)
-        ) {
-          throw new Error('Collected texteDecisionIntegre property is empty')
-        }
-
-        logger.info({
-          operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-          path: 'src/tcom/batch/normalization/normalization.ts',
-          message: 'Plain text from collected texteDecisionIntegre property'
-        })
+        continue
       }
 
-      // Step 3: Cloning decision to save it in normalized bucket
-      const decisionFromS3Clone = JSON.parse(JSON.stringify(decision))
-
-      logger.info({
-        operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-        path: 'src/tcom/batch/normalization/normalization.ts',
-        message: 'Starting normalization of ' + decisionFilename
-      })
-
-      // Step 4: Generating unique id for decision
-      const _id = decision.metadonnees.idDecision
-
-      logger.info({
-        operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-        path: 'src/tcom/batch/normalization/normalization.ts',
-        message: 'Generated unique id for decision'
-      })
-
-      // Step 5: Removing or replace (by other thing) unnecessary characters from decision
-      const cleanedDecision = removeOrReplaceUnnecessaryCharacters(decision.texteDecisionIntegre)
-
-      logger.info({
-        operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-        path: 'src/tcom/batch/normalization/normalization.ts',
-        message: 'Removed unnecessary characters'
-      })
-
-      // Step 6: Map decision to DBSDER API Type to save it in database
-      const decisionToSave = mapDecisionNormaliseeToDecisionDto(
-        _id,
-        cleanedDecision,
-        decision.metadonnees,
-        decisionFilename
-      )
-
-      try {
-        decisionToSave.originalTextZoning = await zoningApiService.getDecisionZoning(decisionToSave)
-      } catch (error) {
-        logger.error({
-          operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-          path: 'src/tcom/batch/normalization/normalization.ts',
-          message: `Error while calling zoning. Error : ${error}`
-        })
-      }
-
-      decisionToSave.labelStatus = await computeLabelStatus(decisionToSave)
-      decisionToSave.occultation = {
-        additionalTerms: '',
-        categoriesToOmit: [],
-        motivationOccultation: false
-      }
-      decisionToSave.occultation = computeOccultation(decision.metadonnees)
-
-      decisionToSave.publishStatus =
-        decisionToSave.labelStatus !== LabelStatus.TOBETREATED
-          ? PublishStatus.BLOCKED
-          : PublishStatus.TOBEPUBLISHED
-
-      // Step 7: check diff (major/minor) and upsert/patch accordingly
-      const previousVersion = await dbSderApiGateway.getDecisionBySourceId(decisionToSave.sourceId)
-      const diff = previousVersion ? computeDiff(previousVersion, decisionToSave) : null
+      // If PLAINTEXT_SOURCE !== 'nlp' : use texteDecisionIntegre property
       if (
-        diff?.major?.length === 0 &&
-        diff?.minor?.length > 0 &&
-        previousVersion.labelStatus !== LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
+        !decision.texteDecisionIntegre ||
+        isEmptyText(decision.texteDecisionIntegre) ||
+        hasNoBreak(decision.texteDecisionIntegre)
       ) {
-        // Patch decision with minor changes:
-        delete decisionToSave.__v
-        delete decisionToSave.sourceId
-        delete decisionToSave.sourceName
-        delete decisionToSave.public
-        delete decisionToSave.debatPublic
-        delete decisionToSave.occultation
-        delete decisionToSave.originalText
-        if (
-          decisionToSave.labelStatus === LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE ||
-          decisionToSave.labelStatus === LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
-        ) {
-          decisionToSave.publishStatus = PublishStatus.BLOCKED
-          // Bad new date? Throw a warning... @TODO ODDJDashboard
-          logger.warn({
-            operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-            path: 'src/tcom/batch/normalization/normalization.ts',
-            message: `Decision has a bad updated date: ${decisionToSave.dateDecision}`
-          })
-        } else {
-          if (previousVersion.labelStatus === LabelStatus.EXPORTED) {
-            decisionToSave.labelStatus = LabelStatus.DONE
-          } else {
-            decisionToSave.labelStatus = previousVersion.labelStatus
-          }
-          if (
-            previousVersion.publishStatus === PublishStatus.SUCCESS ||
-            previousVersion.publishStatus === PublishStatus.UNPUBLISHED ||
-            previousVersion.publishStatus === PublishStatus.FAILURE_PREPARING ||
-            previousVersion.publishStatus === PublishStatus.FAILURE_INDEXING
-          ) {
-            decisionToSave.publishStatus = PublishStatus.TOBEPUBLISHED
-          } else {
-            decisionToSave.publishStatus = previousVersion.publishStatus
-          }
-        }
-        await dbSderApiGateway.patchDecision(previousVersion._id, decisionToSave)
-        logger.info({
-          operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-          path: 'src/tcom/batch/normalization/normalization.ts',
-          message: `Decision patched in database with minor changes: ${JSON.stringify(diff.minor)}`
-        })
-      } else if (
-        diff?.major?.length === 0 &&
-        diff?.minor?.length === 0 &&
-        previousVersion.labelStatus !== LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
-      ) {
-        // No change? Throw a warning and do nothing... @TODO ODDJDashboard
-        logger.warn({
-          operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-          path: 'src/tcom/batch/normalization/normalization.ts',
-          message: 'Decision has no change'
-        })
-      } else {
-        // Insert new decision:
-        const annotatedDecision = await annotateDecision(decisionToSave)
-        await saveDecisionInAffaire(annotatedDecision)
-        logger.info({
-          operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-          path: 'src/tcom/batch/normalization/normalization.ts',
-          message: `Decision saved in database`
-        })
+        throw new Error('Collected texteDecisionIntegre property is empty')
       }
-
-      // Step 8: Save decision in normalized bucket
-      await s3Repository.saveDecisionNormalisee(
-        JSON.stringify(decisionFromS3Clone),
-        decisionFilename
-      )
 
       logger.info({
         operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
         path: 'src/tcom/batch/normalization/normalization.ts',
-        message: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
+        message: 'Plain text from collected texteDecisionIntegre property'
       })
 
-      // Step 9: Delete decision in raw bucket
-      const reqParamsDelete = {
-        Bucket: bucketNameIntegre,
-        Key: decisionFilename
+      const result = await normalizeDecision(decision, decisionFilename, jobId, s3Repository, zoningApiService)
+      if (result) {
+        listConvertedDecision.push(result)
       }
-      await s3Repository.deleteDecision(reqParamsDelete)
-
-      logger.info({
-        operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-        path: 'src/tcom/batch/normalization/normalization.ts',
-        message: 'Successful normalization of ' + decisionFilename
-      })
-
-      listConvertedDecision.push({
-        metadonnees: decisionToSave,
-        decisionNormalisee: cleanedDecision
-      })
     } catch (error) {
       if (error.message && /nosuchkey/i.test(error.message)) {
         logger.error({
@@ -321,6 +146,188 @@ export async function normalizationJob(
   }
 
   return listConvertedDecision
+}
+
+export async function normalizeDecision(
+  decision: CollectDto,
+  decisionFilename: string,
+  jobId: string,
+  s3Repository: DecisionS3Repository,
+  zoningApiService: ZoningApiService,
+  fromPendingBucket: boolean = false
+): Promise<ConvertedDecisionWithMetadonneesDto | null> {
+  // Step 3: Cloning decision to save it in normalized bucket
+  const decisionFromS3Clone = JSON.parse(JSON.stringify(decision))
+
+  logger.info({
+    operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
+    path: 'src/tcom/batch/normalization/normalization.ts',
+    message: 'Starting normalization of ' + decisionFilename
+  })
+
+  // Step 4: Generating unique id for decision
+  const _id = decision.metadonnees.idDecision
+
+  logger.info({
+    operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
+    path: 'src/tcom/batch/normalization/normalization.ts',
+    message: 'Generated unique id for decision'
+  })
+
+  // Step 5: Removing or replace (by other thing) unnecessary characters from decision
+  const cleanedDecision = removeOrReplaceUnnecessaryCharacters(decision.texteDecisionIntegre)
+
+  logger.info({
+    operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
+    path: 'src/tcom/batch/normalization/normalization.ts',
+    message: 'Removed unnecessary characters'
+  })
+
+  // Step 6: Map decision to DBSDER API Type to save it in database
+  const decisionToSave = mapDecisionNormaliseeToDecisionDto(
+    _id,
+    cleanedDecision,
+    decision.metadonnees,
+    decisionFilename
+  )
+
+  try {
+    decisionToSave.originalTextZoning = await zoningApiService.getDecisionZoning(decisionToSave)
+  } catch (error) {
+    logger.error({
+      operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
+      path: 'src/tcom/batch/normalization/normalization.ts',
+      message: `Error while calling zoning. Error : ${error}`
+    })
+  }
+
+  decisionToSave.labelStatus = await computeLabelStatus(decisionToSave)
+  decisionToSave.occultation = {
+    additionalTerms: '',
+    categoriesToOmit: [],
+    motivationOccultation: false
+  }
+  decisionToSave.occultation = computeOccultation(decision.metadonnees)
+
+  decisionToSave.publishStatus =
+    decisionToSave.labelStatus !== LabelStatus.TOBETREATED
+      ? PublishStatus.BLOCKED
+      : PublishStatus.TOBEPUBLISHED
+
+  // Step 7: check diff (major/minor) and upsert/patch accordingly
+  const previousVersion = await dbSderApiGateway.getDecisionBySourceId(decisionToSave.sourceId)
+  const diff = previousVersion ? computeDiff(previousVersion, decisionToSave) : null
+  if (
+    diff?.major?.length === 0 &&
+    diff?.minor?.length > 0 &&
+    previousVersion.labelStatus !== LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
+  ) {
+    // Patch decision with minor changes:
+    delete decisionToSave.__v
+    delete decisionToSave.sourceId
+    delete decisionToSave.sourceName
+    delete decisionToSave.public
+    delete decisionToSave.debatPublic
+    delete decisionToSave.occultation
+    delete decisionToSave.originalText
+    if (
+      decisionToSave.labelStatus === LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE ||
+      decisionToSave.labelStatus === LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
+    ) {
+      decisionToSave.publishStatus = PublishStatus.BLOCKED
+      // Bad new date? Throw a warning... @TODO ODDJDashboard
+      logger.warn({
+        operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
+        path: 'src/tcom/batch/normalization/normalization.ts',
+        message: `Decision has a bad updated date: ${decisionToSave.dateDecision}`
+      })
+    } else {
+      if (previousVersion.labelStatus === LabelStatus.EXPORTED) {
+        decisionToSave.labelStatus = LabelStatus.DONE
+      } else {
+        decisionToSave.labelStatus = previousVersion.labelStatus
+      }
+      if (
+        previousVersion.publishStatus === PublishStatus.SUCCESS ||
+        previousVersion.publishStatus === PublishStatus.UNPUBLISHED ||
+        previousVersion.publishStatus === PublishStatus.FAILURE_PREPARING ||
+        previousVersion.publishStatus === PublishStatus.FAILURE_INDEXING
+      ) {
+        decisionToSave.publishStatus = PublishStatus.TOBEPUBLISHED
+      } else {
+        decisionToSave.publishStatus = previousVersion.publishStatus
+      }
+    }
+    await dbSderApiGateway.patchDecision(previousVersion._id, decisionToSave)
+    logger.info({
+      operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
+      path: 'src/tcom/batch/normalization/normalization.ts',
+      message: `Decision patched in database with minor changes: ${JSON.stringify(diff.minor)}`
+    })
+  } else if (
+    diff?.major?.length === 0 &&
+    diff?.minor?.length === 0 &&
+    previousVersion.labelStatus !== LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
+  ) {
+    // No change? Throw a warning and do nothing... @TODO ODDJDashboard
+    logger.warn({
+      operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
+      path: 'src/tcom/batch/normalization/normalization.ts',
+      message: 'Decision has no change'
+    })
+  } else {
+    // if (
+    //   decisionToSave.labelStatus === LabelStatus.TOBETREATED ||
+    //   decisionToSave.labelStatus === LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
+    // ) {
+      await publishToNlpNer({
+        rawId: _id.toString(),
+        decisionFilename,
+        decision: decisionToSave,
+        sourceId: decisionToSave.sourceId,
+        sourceName: decisionToSave.sourceName,
+        parties: decisionToSave.parties,
+        text: decisionToSave.originalText,
+        categories: computeCategories(decisionToSave.occultation.categoriesToOmit),
+        additionalTerms: decisionToSave.occultation.additionalTerms
+      })
+
+    //   return null
+    // } else {
+    //   await saveDecisionInAffaire(decisionToSave)
+    // }
+  }
+
+  // Step 8: Save decision in normalized bucket BEFORE publishing it to NLP
+  // in case NLP fails, we have the normalized decision saved and we can retry to publish to NLP without having to redo the normalization
+  await s3Repository.saveDecisionNormalisee(
+    JSON.stringify(decisionFromS3Clone),
+    decisionFilename
+  )
+
+  logger.info({
+    operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
+    path: 'src/tcom/batch/normalization/normalization.ts',
+    message: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
+  })
+
+  // Step 9: Delete raw/pending decision
+  const bucketToDeleteFrom = fromPendingBucket
+    ? process.env.S3_BUCKET_NAME_PENDING_TCOM
+    : process.env.S3_BUCKET_NAME_RAW_TCOM
+  const reqParamsDelete = {
+    Bucket: bucketToDeleteFrom,
+    Key: decisionFilename
+  }
+  await s3Repository.deleteDecision(reqParamsDelete)
+
+  logger.info({
+    operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
+    path: 'src/tcom/batch/normalization/normalization.ts',
+    message: 'Successful normalization of ' + decisionFilename
+  })
+
+  return { metadonnees: decisionToSave, decisionNormalisee: cleanedDecision}
 }
 
 function computeDiff(

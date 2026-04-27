@@ -21,7 +21,7 @@ import { fetchZoning } from './repositories/gateways/zoning'
 import { findDecisions } from '../../../../connectors/dbSder'
 import { RawTj } from './models'
 import { getFileByName } from '../../../../connectors/bucket'
-import { publishToNer } from '../../../../connectors/nlpQueues'
+import { publishToNlpNer } from '../../../../connectors/nlpQueues'
 import { computeCategories } from '../../../../services/rules/annotation'
 import { saveDecisionInAffaire } from '../../../../services/affaire'
 
@@ -239,11 +239,11 @@ export async function normalizeTj(rawTj: RawTj): Promise<'nlpPending' | void> {
         message: 'Decision has no change'
       })
     } else {
-      if (
-        decisionWithRules.labelStatus === LabelStatus.TOBETREATED ||
-        decisionWithRules.labelStatus === LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
-      ) {
-        await publishToNer({
+      // if (
+      //   decisionWithRules.labelStatus === LabelStatus.TOBETREATED ||
+      //   decisionWithRules.labelStatus === LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
+      // ) {
+        await publishToNlpNer({
           rawId: rawTj._id.toString(),
           rawCollection: bucketNameIntegre as string,
           decision: decisionWithRules,
@@ -255,9 +255,9 @@ export async function normalizeTj(rawTj: RawTj): Promise<'nlpPending' | void> {
           additionalTerms: decisionWithRules.occultation.additionalTerms
         })
         return 'nlpPending'
-      } else {
-        await saveDecisionInAffaire(decisionWithRules)
-      }
+      // } else {
+        // await saveDecisionInAffaire(decisionWithRules)
+      // }
     }
 
     logger.info({
