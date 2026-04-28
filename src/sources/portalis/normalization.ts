@@ -9,6 +9,7 @@ import { mapPortalisDecision, RawPortalis } from './models'
 import { annotateDecision } from '../../services/rules/annotation'
 import { saveDecisionInAffaire } from '../../services/affaire'
 import { S3_BUCKET_NAME_PORTALIS } from '../../config/env'
+import { fetchZoning } from '../../connectors/jurizonage'
 
 async function getPortalisContent(fileNamePdf: string, portalisFile: Buffer): Promise<string> {
   logger.info({
@@ -60,10 +61,16 @@ export async function normalizePortalis(rawPortalis: RawPortalis): Promise<unkno
     portalisMetadatas.metadatas.dossier.nature_affaire_civile.code
   )
   const portalisContent = await getPortalisContent(rawPortalis.path, portalisFile)
+  const originalTextZoning = await fetchZoning({
+    arret_id: portalisMetadatas.identifiantDecision,
+    source: 'portalis-cph',
+    text: portalisContent
+  })
 
   const portalisDecision = mapPortalisDecision(
     portalisMetadatas,
     portalisContent,
+    originalTextZoning,
     occultationStrategy,
     rawPortalis.path
   )
