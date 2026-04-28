@@ -23,7 +23,7 @@ import { DecisionLog, logger } from '../../../../config/logger'
 import { strict as assert } from 'assert'
 import { annotateDecision } from '../../../../services/rules/annotation'
 import { saveDecisionInAffaire } from '../../../../services/affaire'
-import { ZoningApiService } from './services/zoningApi.service'
+import { fetchZoning } from '../../../../connectors/jurizonage'
 
 const dbSderApiGateway = new DbSderApiGateway()
 const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TCOM
@@ -44,8 +44,6 @@ export async function normalizationJob(
 
   const listConvertedDecision: ConvertedDecisionWithMetadonneesDto[] = []
   const s3Repository = new DecisionS3Repository()
-
-  const zoningApiService: ZoningApiService = new ZoningApiService()
 
   const decisionList = (await fetchDecisionListFromS3(s3Repository, limit)).filter((name) =>
     name.endsWith('.json')
@@ -158,7 +156,11 @@ export async function normalizationJob(
         }
       }
       try {
-        decisionToSave.originalTextZoning = await zoningApiService.getDecisionZoning(decisionToSave)
+        decisionToSave.originalTextZoning = await fetchZoning({
+          arret_id: decisionToSave.sourceId,
+          source: 'tcom',
+          text: decisionToSave.originalText
+        })
       } catch (error) {
         logger.error({
           ...decisionLogFormat,
