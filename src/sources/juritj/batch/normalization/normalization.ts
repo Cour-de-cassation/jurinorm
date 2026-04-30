@@ -17,11 +17,11 @@ import { DecisionTj, LabelStatus, PublishStatus, UnIdentifiedDecisionTj } from '
 import { strict as assert } from 'assert'
 import { annotateDecision } from '../../../../services/rules/annotation'
 import { computeRulesDecisionTj } from './services/rulesTj'
-import { fetchZoning } from './repositories/gateways/zoning'
 import { findDecisions } from '../../../../connectors/dbSder'
 import { saveDecisionInAffaire } from '../../../../services/affaire'
 import { RawTj } from './models'
 import { getFileByName } from '../../../../connectors/bucket'
+import { fetchZoning } from '../../../../connectors/jurizonage'
 
 export const rawTjToNormalize = {
   $expr: {

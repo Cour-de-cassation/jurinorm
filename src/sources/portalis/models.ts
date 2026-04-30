@@ -8,6 +8,7 @@ import {
   UnIdentifiedDecisionCph
 } from 'dbsder-api-types'
 import { RawFile } from '../../services/eventSourcing'
+import { Zoning } from 'dbsder-api-types/dist/typeGuards/common.zod'
 
 export type FilePortalis = {
   mimetype: string
@@ -97,6 +98,7 @@ function computeAdditionalTerms(
 export function mapPortalisDecision(
   { metadatas, ...publicationRules }: PortalisMetadatas,
   content: string,
+  originalTextZoning: Zoning,
   occultationStrategy: Required<Pick<CodeNac, 'blocOccultation' | 'categoriesToOmit'>>,
   filenameSource: string
 ): UnIdentifiedDecisionCph {
@@ -124,10 +126,7 @@ export function mapPortalisDecision(
       metadatas.decision.codes_decision
         .code_decision[0] as PortalisMetadatas['metadatas']['decision']['codes_decision']['code_decision'][number]
     ).code, // index[0] is safe due zod schema
-    // libelleEndCaseCode: endCaseCode: (
-    //   metadatas.decision.codes_decision
-    //     .code_decision[0] as PortalisMetadatas["decision"]["codes_decision"]["code_decision"][number]
-    // ).libelle, // TODO: which value ? - low
+    originalTextZoning: originalTextZoning,
     jurisdictionCode: metadatas.juridiction.libelle_court,
     jurisdictionId: metadatas.juridiction.code_srj,
     jurisdictionName: metadatas.juridiction.libelle_long,
