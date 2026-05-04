@@ -130,9 +130,11 @@ const schemaJuricaMetadata = zod.object({
 
 export type JuricaMetadata = zod.infer<typeof schemaJuricaMetadata>
 
-function computeAdditionalTerms(pseudoRules: JuricaMetadata['recommandationOccultation']): string {
+/* @TODO ???
+function computeAdditionalTerms(pseudoRules: JuricaMetadata['recommandationOccultation']): string { 
   return pseudoRules.elementsAOcculter.map((_) => `+${_}`).join('|')
 }
+*/
 
 export function mapJuricaDecision(
   data: JuricaMetadata,
@@ -140,34 +142,31 @@ export function mapJuricaDecision(
   occultationStrategy: Required<Pick<CodeNac, 'blocOccultation' | 'categoriesToOmit'>>,
   filenameSource: string
 ): UnIdentifiedDecisionCaV2 {
+  /* @TOD ???
   const recommandationOccultation = publicationRules.recommandationOccultation
     .suiviRecommandationOccultation
     ? SuiviOccultation.CONFORME
     : SuiviOccultation.AUCUNE
+  */
 
   return {
-    sourceId: data._id,
+    sourceId: data._id.toHexString(),
     sourceName: 'juricav2',
     originalText: content,
     labelStatus: LabelStatus.TOBETREATED,
     publishStatus: PublishStatus.TOBEPUBLISHED,
     dateCreation: new Date().toISOString(),
     dateDecision: new Date(data.date_decision).toISOString(),
-    NACCode: metadatas.dossier.nature_affaire_civile.code,
-    // NACLibelle: metadatas.dossier.nature_affaire_civile.libelle, // TODO: which value ? - low
-    endCaseCode: (
-      metadatas.decision.codes_decision
-        .code_decision[0] as JuricaMetadatas['metadatas']['decision']['codes_decision']['code_decision'][number]
-    ).code, // index[0] is safe due zod schema
-    // libelleEndCaseCode: endCaseCode: (
-    //   metadatas.decision.codes_decision
-    //     .code_decision[0] as JuricaMetadatas["decision"]["codes_decision"]["code_decision"][number]
-    // ).libelle, // TODO: which value ? - low
-    jurisdictionCode: metadatas.juridiction.libelle_court,
-    jurisdictionId: metadatas.juridiction.code_srj,
-    jurisdictionName: metadatas.juridiction.libelle_long,
-    selection: publicationRules.interetParticulier,
-    sommaire: publicationRules.sommaireInteretParticulier,
+    NACCode: data.code_nac,
+    NACLibelle: data.label_nac,
+    endCaseCode: data.decision_code,
+    libelleEndCaseCode: data.decision_label,
+    jurisdictionCode: data.code_juridiction_detail, // attention à la confusion possible
+    jurisdictionId: data.juridiction_code, // attention à la confusion possible
+    jurisdictionName: data.juridiction_name,
+    selection: data.is_selected,
+    sommaire: data.sommaire,
+    /* @TODO ???
     blocOccultation: occultationStrategy.blocOccultation,
     occultation: {
       additionalTerms: computeAdditionalTerms(publicationRules.recommandationOccultation),
@@ -178,21 +177,16 @@ export function mapJuricaDecision(
       motivationOccultation: false
     },
     recommandationOccultation,
-    formation: (metadatas.audiences_dossier?.audience_dossier ?? []).find(
-      (_) => _.chronologie === 'COURANTE'
-    )?.formation,
-    parties: [], // TODO: which value ? - low
-    composition: [], // TODO: which value ? - low
-    tiers: [], // TODO: which value ? - low
-    public:
-      (metadatas.evenement_porteur.caracteristiques.caracteristique.find((_) => _.mnemo === 'PUBD')
-        ?.valeur ?? 'audience publique') === 'audience publique',
-    debatPublic:
-      (metadatas.evenement_porteur.caracteristiques.caracteristique.find((_) => _.mnemo === 'PUB')
-        ?.valeur ?? '') === '', // TODO: which value ? - high
-    pourvoiCourDeCassation: false, // TODO: which value ? - high
-    pourvoiLocal: false, // TODO: which value ? - high
-    filenameSource
+    */
+    // formation: @TODO ???
+    parties: [], // @TODO: which values from data.parties ???
+    composition: data.composition_tribunal,
+    // tiers: @TODO ???
+    public: data.is_decision_publique,
+    debatPublic: data.is_debat_public,
+    pourvoiCourDeCassation: data.has_pourvoi_cassation,
+    pourvoiLocal: data.has_pourvoi_local,
+    filenameSource: data.fichier_archive
   }
 }
 
