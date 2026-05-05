@@ -130,29 +130,31 @@ const schemaJuricaMetadata = zod.object({
 
 export type JuricaMetadata = zod.infer<typeof schemaJuricaMetadata>
 
-/* @TODO ???
-function computeAdditionalTerms(pseudoRules: JuricaMetadata['recommandationOccultation']): string { 
-  return pseudoRules.elementsAOcculter.map((_) => `+${_}`).join('|')
+function getRecommandationOccultation(codeRecommandation: number): SuiviOccultation {
+  const correspondanceCodeRecommandation = {
+    0: SuiviOccultation.AUCUNE,
+    1: SuiviOccultation.CONFORME,
+    2: SuiviOccultation.SUBSTITUANT,
+    3: SuiviOccultation.COMPLEMENT
+  }
+  if (isNaN(codeRecommandation) || codeRecommandation < 0 || codeRecommandation > 3) {
+    codeRecommandation = 0
+  }
+  return correspondanceCodeRecommandation[codeRecommandation]
 }
-*/
 
 export function mapJuricaDecision(
   data: JuricaMetadata,
   content: string,
-  occultationStrategy: Required<Pick<CodeNac, 'blocOccultation' | 'categoriesToOmit'>>,
-  filenameSource: string
+  occultationStrategy: Required<Pick<CodeNac, 'blocOccultation' | 'categoriesToOmit'>>
 ): UnIdentifiedDecisionCaV2 {
-  /* @TOD ???
-  const recommandationOccultation = publicationRules.recommandationOccultation
-    .suiviRecommandationOccultation
-    ? SuiviOccultation.CONFORME
-    : SuiviOccultation.AUCUNE
-  */
+  const recommandationOccultation = getRecommandationOccultation(data.occultation_complementaire)
 
   return {
     sourceId: data._id.toHexString(),
     sourceName: 'juricav2',
     originalText: content,
+    registerNumber: `${data.numero_rg} ${data.numero_registre}`, // on reproduit sciemment "l'erreur" de la collecte originale (qui sera "réparée" lors de la publication)
     labelStatus: LabelStatus.TOBETREATED,
     publishStatus: PublishStatus.TOBEPUBLISHED,
     dateCreation: new Date().toISOString(),
@@ -166,10 +168,9 @@ export function mapJuricaDecision(
     jurisdictionName: data.juridiction_name,
     selection: data.is_selected,
     sommaire: data.sommaire,
-    /* @TODO ???
-    blocOccultation: occultationStrategy.blocOccultation,
+    // blocOccultation: @TODO lost with Jurica v2 ???
     occultation: {
-      additionalTerms: computeAdditionalTerms(publicationRules.recommandationOccultation),
+      additionalTerms: data.occultation_complementaire_libre, // @TODO for sure ???
       categoriesToOmit:
         occultationStrategy.categoriesToOmit[
           occultationRecommendationCodeNac(recommandationOccultation)
@@ -177,7 +178,6 @@ export function mapJuricaDecision(
       motivationOccultation: false
     },
     recommandationOccultation,
-    */
     // formation: @TODO ???
     parties: [], // @TODO: which values from data.parties ???
     composition: data.composition_tribunal,
