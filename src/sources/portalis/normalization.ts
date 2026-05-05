@@ -1,30 +1,16 @@
 import { CodeNac } from 'dbsder-api-types'
-import { getFileByName } from '../../connectors/bucket'
-import { getCodeNac } from '../../connectors/dbSder'
-import { NotFound, NotSupported } from '../../services/error'
-import { htmlToPlainText } from './library/formats/html'
-import { pdfToHtml } from './library/formats/pdf'
-import { logger } from '../../config/logger'
-import { mapPortalisDecision, RawPortalis } from './models'
-import { annotateDecision } from '../../services/rules/annotation'
-import { saveDecisionInAffaire } from '../../services/affaire'
 import { S3_BUCKET_NAME_PORTALIS } from '../../config/env'
 import { fetchZoning } from '../../connectors/jurizonage'
 
-async function getPortalisContent(fileNamePdf: string, portalisFile: Buffer): Promise<string> {
-  logger.info({
-    path: 'src/sources/portalis/normalization.ts',
-    operations: ['extraction', 'getPortalisContent'],
-    message: 'Waiting for text extraction'
-  })
-  const html = await pdfToHtml(fileNamePdf, portalisFile)
-  logger.info({
-    path: 'src/sources/portalis/normalization.ts',
-    operations: ['extraction', 'getPortalisContent'],
-    message: 'Text successfully extracted'
-  })
-  return htmlToPlainText(html)
-}
+import { getFileByName } from '../../connectors/bucket'
+import { getCodeNac } from '../../connectors/dbSder'
+
+import { NotFound, NotSupported } from '../../services/error'
+import { saveDecisionInAffaire } from '../../services/affaire'
+import { annotateDecision } from '../../services/rules/annotation'
+import { getPdfContent } from '../../services/textExtraction/pdf'
+
+import { mapPortalisDecision, RawPortalis } from './models'
 
 async function getOccultationStrategy(
   code: string
@@ -60,7 +46,7 @@ export async function normalizePortalis(rawPortalis: RawPortalis): Promise<unkno
   const occultationStrategy = await getOccultationStrategy(
     portalisMetadatas.metadatas.dossier.nature_affaire_civile.code
   )
-  const portalisContent = await getPortalisContent(rawPortalis.path, portalisFile)
+  const portalisContent = await getPdfContent(rawPortalis.path, portalisFile, false)
   const originalTextZoning = await fetchZoning({
     arret_id: portalisMetadatas.identifiantDecision,
     source: 'portalis-cph',

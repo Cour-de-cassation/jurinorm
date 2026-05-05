@@ -7,15 +7,7 @@ import { mapDecisionNormaliseeToDecisionDto } from './infrastructure/decision.dt
 import { computeLabelStatus } from './services/computeLabelStatus'
 import { computeOccultation } from './services/computeOccultation'
 import { DbSderApiGateway } from './repositories/gateways/dbsderApi.gateway'
-import {
-  fetchPDFFromS3,
-  fetchNLPDataFromPDF,
-  HTMLToPlainText,
-  markdownToPlainText,
-  NLPPDFToTextDTO,
-  isEmptyText,
-  hasNoBreak
-} from './services/PDFToText'
+import { fetchPDFFromS3 } from './services/PDFToText'
 import { PostponeException } from './infrastructure/nlp.exception'
 import { LabelStatus, PublishStatus, UnIdentifiedDecisionTcom } from 'dbsder-api-types'
 import { DecisionLog, logger } from '../../../../config/logger'
@@ -24,6 +16,7 @@ import { strict as assert } from 'assert'
 import { annotateDecision } from '../../../../services/rules/annotation'
 import { saveDecisionInAffaire } from '../../../../services/affaire'
 import { fetchZoning } from '../../../../connectors/jurizonage'
+import { getPdfContent } from '../../../../services/textExtraction/pdf'
 
 const dbSderApiGateway = new DbSderApiGateway()
 const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TCOM
@@ -65,20 +58,7 @@ export async function normalizationJob(
 
         try {
           // Transforming decision from PDF to text
-
-          // 1. Get data from NLP API:
-          const NLPData: NLPPDFToTextDTO = await fetchNLPDataFromPDF(pdfFile, pdfFilename)
-
-          if (NLPData.HTMLText) {
-            // 2.1. Get plain text from HTML:
-            decision.texteDecisionIntegre = HTMLToPlainText(NLPData.HTMLText)
-          } else if (NLPData.markdownText) {
-            // 2.2. Get plain text from markdown:
-            decision.texteDecisionIntegre = markdownToPlainText(NLPData.markdownText)
-          }
-
-          // 3. Store NLP data in -pdf-success bucket:
-          await s3Repository.archiveSuccessPDF(NLPData, pdfFilename)
+          decision.texteDecisionIntegre = await getPdfContent(pdfFilename, pdfFile)
         } catch (error) {
           logger.error({
             operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
@@ -87,28 +67,6 @@ export async function normalizationJob(
           })
           throw error
         }
-
-        logger.info({
-          operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-          path: 'src/sources/juritcom/batch/normalization/normalization.ts',
-          message: 'Plain text extracted by NLP API from collected PDF file'
-        })
-      } else {
-        // Step 2b, use texteDecisionIntegre property:
-
-        if (
-          !decision.texteDecisionIntegre ||
-          isEmptyText(decision.texteDecisionIntegre) ||
-          hasNoBreak(decision.texteDecisionIntegre)
-        ) {
-          throw new Error('Collected texteDecisionIntegre property is empty')
-        }
-
-        logger.info({
-          operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-          path: 'src/sources/juritcom/batch/normalization/normalization.ts',
-          message: 'Plain text from collected texteDecisionIntegre property'
-        })
       }
 
       // Step 3: Cloning decision to save it in normalized bucket
