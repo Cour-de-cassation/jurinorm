@@ -9,7 +9,7 @@ async function main(key: string) {
   const t1 = new Date()
   logger
   logger.info({
-    path: 'src/tj/scripts/benchS3.ts',
+    path: 'src/sources/juritj/scripts/benchS3.ts',
     operations: ['other', 'script-benchS3-TJ'],
     message: `Got idDecision ${decision.metadonnees.idDecision} for file ${key} \nTook ${(
       (t1.getTime() - t0.getTime()) /

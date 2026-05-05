@@ -6,8 +6,28 @@ import {
   UnauthorizedException
 } from '@nestjs/common'
 import axios from 'axios'
-import { logger } from '../../../../shared/infrastructure/utils/log'
+import { logger, TechLog } from '../../../../../../config/logger'
 import { CodeNac, DecisionTj, UnIdentifiedDecisionTj } from 'dbsder-api-types'
+
+const formatLogs: TechLog = {
+  path: 'src/sources/juritj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
+  operations: ['normalization', 'saveDecision-TJ']
+}
+
+const formatLogsGetDecisionBySourceId: TechLog = {
+  ...formatLogs,
+  operations: ['normalization', 'getDecisionBySourceId-TJ']
+}
+
+const formatLogsPatchDecision: TechLog = {
+  ...formatLogs,
+  operations: ['normalization', 'patchDecision-TJ']
+}
+
+const formatLogsGetCodeNac: TechLog = {
+  ...formatLogs,
+  operations: ['normalization', 'getCodeNac-TJ']
+}
 
 export class DbSderApiGateway {
   async saveDecision(decisionToSave: UnIdentifiedDecisionTj) {
@@ -27,18 +47,20 @@ export class DbSderApiGateway {
         if (error.response) {
           if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'saveDecision-TJ'],
-              message: error.response.data.message,
-              stack: error.stack
+              ...formatLogs,
+              message: JSON.stringify({
+                message: error.response.statusText,
+                data: error.response.data,
+                statusCode: HttpStatus.BAD_REQUEST
+              })
             })
+
             throw new BadRequestException(
               'DbSderAPI Bad request error : ' + error.response.data.message
             )
           } else if (error.response.data.statusCode === HttpStatus.UNAUTHORIZED) {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'saveDecision-TJ'],
+              ...formatLogs,
               message: error.response.data.message,
               stack: error.stack
             })
@@ -46,16 +68,14 @@ export class DbSderApiGateway {
             throw new UnauthorizedException('You are not authorized to call this route')
           } else if (error.response.data.statusCode === HttpStatus.CONFLICT) {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'saveDecision-TJ'],
+              ...formatLogs,
               message: error.response.data.message,
               stack: error.stack
             })
             throw new ConflictException('DbSderAPI error: ' + error.response.data.message)
           } else {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'saveDecision-TJ'],
+              ...formatLogs,
               message: error.response.data.message,
               stack: error.stack
             })
@@ -69,7 +89,7 @@ export class DbSderApiGateway {
 
   async getDecisionBySourceId(sourceId: number) {
     type Response = {
-      decisions: (Omit<DecisionTj, '_id'> & { _id: string })[]
+      decisions: DecisionTj[]
       totalDecisions: number
       nextPage?: string
       previousPage?: string
@@ -88,8 +108,7 @@ export class DbSderApiGateway {
         if (error.response) {
           if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'getDecisionBySourceId-TJ'],
+              ...formatLogsGetDecisionBySourceId,
               message: error.response.data.message,
               stack: error.stack
             })
@@ -98,8 +117,7 @@ export class DbSderApiGateway {
             )
           } else if (error.response.data.statusCode === HttpStatus.UNAUTHORIZED) {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'getDecisionBySourceId-TJ'],
+              ...formatLogsGetDecisionBySourceId,
               message: error.response.data.message,
               stack: error.stack
             })
@@ -107,16 +125,14 @@ export class DbSderApiGateway {
             throw new UnauthorizedException('You are not authorized to call this route')
           } else if (error.response.data.statusCode === HttpStatus.CONFLICT) {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'getDecisionBySourceId-TJ'],
+              ...formatLogsGetDecisionBySourceId,
               message: error.response.data.message,
               stack: error.stack
             })
             throw new ConflictException('DbSderAPI error: ' + error.response.data.message)
           } else {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'getDecisionBySourceId-TJ'],
+              ...formatLogsGetDecisionBySourceId,
               message: error.response.data.message,
               stack: error.stack
             })
@@ -145,8 +161,7 @@ export class DbSderApiGateway {
         if (error.response) {
           if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'patchDecision-TJ'],
+              ...formatLogsPatchDecision,
               message: error.response.data.message,
               stack: error.stack
             })
@@ -155,8 +170,7 @@ export class DbSderApiGateway {
             )
           } else if (error.response.data.statusCode === HttpStatus.UNAUTHORIZED) {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'patchDecision-TJ'],
+              ...formatLogsPatchDecision,
               message: error.response.data.message,
               stack: error.stack
             })
@@ -164,16 +178,14 @@ export class DbSderApiGateway {
             throw new UnauthorizedException('You are not authorized to call this route')
           } else if (error.response.data.statusCode === HttpStatus.CONFLICT) {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'patchDecision-TJ'],
+              ...formatLogsPatchDecision,
               message: error.response.data.message,
               stack: error.stack
             })
             throw new ConflictException('DbSderAPI error: ' + error.response.data.message)
           } else {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'patchDecision-TJ'],
+              ...formatLogsPatchDecision,
               message: error.response.data.message,
               stack: error.stack
             })
@@ -203,8 +215,7 @@ export class DbSderApiGateway {
           }
           if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'getCodeNac-TJ'],
+              ...formatLogsGetCodeNac,
               message: error.response.data.message,
               stack: error.stack
             })
@@ -213,8 +224,7 @@ export class DbSderApiGateway {
             )
           } else if (error.response.data.statusCode === HttpStatus.UNAUTHORIZED) {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'getCodeNac-TJ'],
+              ...formatLogsGetCodeNac,
               message: error.response.data.message,
               stack: error.stack
             })
@@ -222,16 +232,14 @@ export class DbSderApiGateway {
             throw new UnauthorizedException('You are not authorized to call this route')
           } else if (error.response.data.statusCode === HttpStatus.CONFLICT) {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'getCodeNac-TJ'],
+              ...formatLogsGetCodeNac,
               message: error.response.data.message,
               stack: error.stack
             })
             throw new ConflictException('DbSderAPI error: ' + error.response.data.message)
           } else {
             logger.error({
-              path: 'src/tj/batch/normalization/repositories/gateway/dbsderApi.gateway.ts',
-              operations: ['normalization', 'getCodeNac-TJ'],
+              ...formatLogsGetCodeNac,
               message: error.response.data.message,
               stack: error.stack
             })

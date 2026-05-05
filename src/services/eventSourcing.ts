@@ -20,12 +20,18 @@ export type Blocked = {
   reason: string
 }
 
+export type Unblocked = {
+  type: 'unblocked'
+  date: Date
+  reason: string
+}
+
 export type Deleted = {
   type: 'deleted'
   date: Date
 }
 
-export type Event = Created | Normalized | Blocked | Deleted
+export type Event = Created | Normalized | Blocked | Unblocked | Deleted
 
 export type RawFile<T> = {
   _id: Id

@@ -109,7 +109,7 @@ export async function findAffaire(
 export async function findDecisions<T extends Decision>(params: Partial<T>, searchAfter?: string) {
   const route = process.env.DBSDER_API_URL + '/decisions'
   type Response = {
-    decisions: (Omit<T, '_id'> & { _id: string })[]
+    decisions: T[]
     totalDecisions: number
     nextCursor?: string
   }

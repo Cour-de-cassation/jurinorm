@@ -1,9 +1,9 @@
 import axios, { AxiosError } from 'axios'
-import { toNotSupported, UnexpectedError } from '../../../../../../services/error'
+import { toNotSupported, UnexpectedError } from '../services/error'
 
 export type ZoningParameters = {
-  arret_id: number
-  source: 'tj' | 'ca' | 'cc' | 'tcom'
+  arret_id: number | string
+  source: 'tj' | 'ca' | 'cc' | 'tcom' | 'portalis-cph'
   text: string
 }
 

@@ -5,7 +5,7 @@ import {
 } from '../../connectors/dbRawFile'
 import { toUnexpectedError } from '../../services/error'
 import { RawCc } from './models'
-import { logger } from '../../config/logger'
+import { DecisionLog, logger, TechLog } from '../../config/logger'
 import { COLLECTION_JURINET_RAW } from '../../config/env'
 import { updateRawFileStatus, NormalizationResult } from '../../services/eventSourcing'
 import { annotateDecision } from '../../services/rules/annotation'
@@ -13,24 +13,34 @@ import { LabelStatus } from 'dbsder-api-types'
 import { saveDecisionInAffaire } from '../../services/affaire'
 
 export const rawCcToNormalize = {
-  // Ne contient ni normalized ni deleted:
-  events: { $not: { $elemMatch: { type: { $in: ['normalized', 'deleted'] } } } },
-  // Les 3 derniers events ne sont pas "blocked":
+  // Ne contient pas deleted:
+  events: { $not: { $elemMatch: { type: 'deleted' } } },
   $expr: {
-    $not: {
-      $eq: [
-        3,
-        {
-          $size: {
-            $filter: {
-              input: { $slice: ['$events', -3] },
-              as: 'e',
-              cond: { $eq: ['$$e.type', 'blocked'] }
-            }
-          }
+    $and: [
+      // Le dernier event n'est pas "normalized":
+      {
+        $not: {
+          $eq: [{ $arrayElemAt: ['$events.type', -1] }, 'normalized']
         }
-      ]
-    }
+      },
+      // Les 3 derniers events ne sont pas "blocked":
+      {
+        $not: {
+          $eq: [
+            3,
+            {
+              $size: {
+                $filter: {
+                  input: { $slice: ['$events', -3] },
+                  as: 'e',
+                  cond: { $eq: ['$$e.type', 'blocked'] }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
   }
 }
 
@@ -53,7 +63,7 @@ export async function normalizeCc(rawCc: RawCc): Promise<NormalizationResult<Raw
   )
   if (hasNewReception) {
     logger.info({
-      path: 'src/cc/handler.ts',
+      path: 'src/sources/jurinet/handler.ts',
       operations: ['normalization', 'normalizeCc'],
       message: `rawCc ${rawCc._id} marked as deleted because new reception`
     })
@@ -82,31 +92,43 @@ export async function normalizeCc(rawCc: RawCc): Promise<NormalizationResult<Raw
 export async function normalizeRawCcFiles(
   defaultFilter?: Parameters<typeof findFileInformations<RawCc>>[1]
 ) {
+  const normalizationFormatLogs: TechLog = {
+    path: 'src/sources/jurinet/handler.ts',
+    operations: ['normalization', 'normalizeRawCcFiles']
+  }
   logger.info({
-    path: 'src/cc/handler.ts',
-    operations: ['normalization', 'normalizeRawCcFiles'],
+    ...normalizationFormatLogs,
     message: `Starting CC normalization`
   })
   const _rawCcToNormalize = defaultFilter ?? rawCcToNormalize
   const rawCcCursor = await findFileInformations<RawCc>(COLLECTION_JURINET_RAW, _rawCcToNormalize)
   const rawCcLength = await countFileInformations<RawCc>(COLLECTION_JURINET_RAW, _rawCcToNormalize)
   logger.info({
-    path: 'src/cc/handler.ts',
-    operations: ['normalization', 'normalizeRawCcFiles'],
+    ...normalizationFormatLogs,
     message: `Find ${rawCcLength} raw decisions to normalize`
   })
 
   const results: NormalizationResult<RawCc>[] = await mapCursorSync(rawCcCursor, async (rawCc) => {
+    const formatDecisionLogs: DecisionLog = {
+      path: 'src/sources/jurinet/handler.ts',
+      operations: ['normalization', 'normalizeRawCcFiles'],
+      decision: {
+        _id: rawCc._id.toJSON(),
+        sourceId: rawCc.metadatas.sourceId.toString(),
+        sourceName: rawCc.metadatas.sourceName,
+        publishStatus: rawCc.metadatas.publishStatus,
+        labelStatus: rawCc.metadatas.labelStatus
+      }
+    }
     try {
       logger.info({
-        path: 'src/cc/handler.ts',
-        operations: ['normalization', 'normalizeRawCcFiles'],
+        ...normalizationFormatLogs,
         message: `normalize ${rawCc._id} - ${rawCc.path}`
       })
       const result = await normalizeCc(rawCc)
+
       logger.info({
-        path: 'src/cc/handler.ts',
-        operations: ['normalization', 'normalizeRawCcFiles'],
+        ...formatDecisionLogs,
         message: `${rawCc._id} normalized with success`
       })
 
@@ -115,8 +137,7 @@ export async function normalizeRawCcFiles(
     } catch (err) {
       const error = toUnexpectedError(err)
       logger.error({
-        path: 'src/cc/handler.ts',
-        operations: ['normalization', 'normalizeRawCcFiles'],
+        ...formatDecisionLogs,
         message: `${rawCc._id} failed to normalize`,
         stack: error.stack
       })
@@ -130,20 +151,17 @@ export async function normalizeRawCcFiles(
   await Promise.all(results)
 
   logger.info({
-    path: 'src/cc/handler.ts',
-    operations: ['normalization', 'normalizeRawCcFiles'],
+    ...normalizationFormatLogs,
     message: `Decisions successfully normalized: ${
       results.filter(({ status }) => status === 'success').length
     }`
   })
   logger.info({
-    path: 'src/cc/handler.ts',
-    operations: ['normalization', 'normalizeRawCcFiles'],
+    ...normalizationFormatLogs,
     message: `Decisions skipped: ${results.filter(({ status }) => status === 'error').length}`
   })
   logger.info({
-    path: 'src/cc/handler.ts',
-    operations: ['normalization', 'normalizeRawCcFiles'],
+    ...normalizationFormatLogs,
     message: `Decisions marked as deleted: ${
       results.filter(({ status }) => status === 'deleted').length
     }`

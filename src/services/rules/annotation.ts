@@ -35,7 +35,7 @@ export async function annotateDecision<
   const annotatedDecision = decision
 
   logger.info({
-    path: 'src/library/annotation.ts',
+    path: 'src/services/rules/annotation.ts',
     operations: ['other', 'annotation'],
     message: `Sending ${decision.sourceName} ${decision.sourceId} to /ner endpoint`
   })

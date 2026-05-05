@@ -1,54 +1,26 @@
 import { CodeNac } from 'dbsder-api-types'
 import { getFileByName } from '../../connectors/bucket'
 import { getCodeNac } from '../../connectors/dbSder'
-import { NotFound, UnexpectedError } from '../../services/error'
+import { NotFound, NotSupported } from '../../services/error'
 import { htmlToPlainText } from './library/formats/html'
-import { extractAttachments, pdfToHtml } from './library/formats/pdf'
-import { parseXml } from './library/formats/xml'
+import { pdfToHtml } from './library/formats/pdf'
 import { logger } from '../../config/logger'
-import { CphMetadatas, mapCphDecision, parseCphMetadatas, RawCph } from './models'
+import { mapPortalisDecision, RawPortalis } from './models'
 import { annotateDecision } from '../../services/rules/annotation'
 import { saveDecisionInAffaire } from '../../services/affaire'
 import { S3_BUCKET_NAME_PORTALIS } from '../../config/env'
+import { fetchZoning } from '../../connectors/jurizonage'
 
-function searchXml(attachments: { name: string; data: Buffer }[]): unknown {
-  const attachment = attachments.reduce<CphMetadatas | undefined>((acc, attachment, index) => {
-    try {
-      const xml = parseXml(attachment)
-      return acc ?? xml
-    } catch (err) {
-      const error = err instanceof Error ? err : new UnexpectedError(`${err}`)
-      logger.error({
-        path: 'src/service/cph/normalization.ts',
-        operations: ['normalization', 'searchXml'],
-        message: `Error on attachment ${index + 1}`,
-        stack: error.stack
-      })
-      return acc
-    }
-  }, undefined)
-
-  if (!attachment)
-    throw new NotFound('attachement', 'Xml metadatas attachement not found or bad formatted')
-  return attachment
-}
-
-async function getCphMetadatas(cphFile: Buffer): Promise<CphMetadatas> {
-  const attachments = await extractAttachments(cphFile)
-  const xml = searchXml(attachments)
-  return parseCphMetadatas(xml).root.document
-}
-
-async function getCphContent(fileNamePdf: string, cphFile: Buffer): Promise<string> {
+async function getPortalisContent(fileNamePdf: string, portalisFile: Buffer): Promise<string> {
   logger.info({
-    path: 'src/service/cph/normalization.ts',
-    operations: ['extraction', 'getCphContent'],
+    path: 'src/sources/portalis/normalization.ts',
+    operations: ['extraction', 'getPortalisContent'],
     message: 'Waiting for text extraction'
   })
-  const html = await pdfToHtml(fileNamePdf, cphFile)
+  const html = await pdfToHtml(fileNamePdf, portalisFile)
   logger.info({
-    path: 'src/service/cph/normalization.ts',
-    operations: ['extraction', 'getCphContent'],
+    path: 'src/sources/portalis/normalization.ts',
+    operations: ['extraction', 'getPortalisContent'],
     message: 'Text successfully extracted'
   })
   return htmlToPlainText(html)
@@ -68,53 +40,72 @@ async function getOccultationStrategy(
     )
   if (!categoriesToOmit)
     throw new NotFound(
-      'codeNac.categoriesToOmitCA',
-      `codeNac ${code} has no "categoriesToOmitCA" property`
+      'codeNac.categoriesToOmit',
+      `codeNac ${code} has no "categoriesToOmit" property`
     )
 
   return { blocOccultation, categoriesToOmit }
 }
 
-export async function normalizeCph(rawCph: RawCph): Promise<unknown> {
-  const cphFile = await getFileByName(S3_BUCKET_NAME_PORTALIS, rawCph.path)
-  const cphMetadatas = await getCphMetadatas(cphFile)
-  const cphPseudoCustomRules = rawCph.metadatas
+export async function normalizePortalis(rawPortalis: RawPortalis): Promise<unknown> {
+  const portalisFile = await getFileByName(S3_BUCKET_NAME_PORTALIS, rawPortalis.path)
+  const portalisMetadatas = rawPortalis.metadatas
+
+  if (!portalisMetadatas.metadatas.juridiction.libelle_court.startsWith('CPH'))
+    throw new NotSupported(
+      'portalisMetadatas.juridiction',
+      portalisMetadatas.metadatas.juridiction.libelle_court
+    )
+
   const occultationStrategy = await getOccultationStrategy(
-    cphMetadatas.dossier.nature_affaire_civile.code
+    portalisMetadatas.metadatas.dossier.nature_affaire_civile.code
   )
-  const cphContent = await getCphContent(rawCph.path, cphFile)
+  const portalisContent = await getPortalisContent(rawPortalis.path, portalisFile)
+  const originalTextZoning = await fetchZoning({
+    arret_id: portalisMetadatas.identifiantDecision,
+    source: 'portalis-cph',
+    text: portalisContent
+  })
 
-  const cphDecision = mapCphDecision(
-    cphMetadatas,
-    cphContent,
-    cphPseudoCustomRules,
+  const portalisDecision = mapPortalisDecision(
+    portalisMetadatas,
+    portalisContent,
+    originalTextZoning,
     occultationStrategy,
-    rawCph.path
+    rawPortalis.path
   )
 
-  const annotatedDecision = await annotateDecision(cphDecision)
+  const annotatedDecision = await annotateDecision(portalisDecision)
 
   return saveDecisionInAffaire(annotatedDecision)
 }
 
-export const rawCphToNormalize = {
-  // Ne contient pas normalized:
-  events: { $not: { $elemMatch: { type: 'normalized' } } },
-  // Les 3 derniers events ne sont pas "blocked":
+export const rawPortalisToNormalize = {
   $expr: {
-    $not: {
-      $eq: [
-        3,
-        {
-          $size: {
-            $filter: {
-              input: { $slice: ['$events', -3] },
-              as: 'e',
-              cond: { $eq: ['$$e.type', 'blocked'] }
-            }
-          }
+    $and: [
+      // Le dernier event n'est pas "normalized":
+      {
+        $not: {
+          $eq: [{ $arrayElemAt: ['$events.type', -1] }, 'normalized']
         }
-      ]
-    }
+      },
+      // Les 3 derniers events ne sont pas "blocked":
+      {
+        $not: {
+          $eq: [
+            3,
+            {
+              $size: {
+                $filter: {
+                  input: { $slice: ['$events', -3] },
+                  as: 'e',
+                  cond: { $eq: ['$$e.type', 'blocked'] }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
   }
 }
