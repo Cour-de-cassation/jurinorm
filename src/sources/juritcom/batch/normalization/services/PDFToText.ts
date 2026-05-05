@@ -24,4 +24,3 @@ export async function fetchPDFFromS3(
     throw new InfrastructureException(error.message)
   }
 }
-

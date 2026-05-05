@@ -57,8 +57,8 @@ type PdfToTextResponse = {
 }
 
 export async function postPdfToText(
-  fileName: string, 
-  fileContent: Buffer, 
+  fileName: string,
+  fileContent: Buffer,
   parameters: PdfToTextParameters = { force_ocr: true }
 ): Promise<string> {
   const route = `${NLP_PSEUDONYMISATION_API_URL}/pdf-to-text`
@@ -79,7 +79,10 @@ export async function postPdfToText(
     if (err instanceof AxiosError && err.status === 429) {
       const MINUTE = 1000 * 60
       return new Promise((res, rej) =>
-        setTimeout(() => postPdfToText(fileName, fileContent, parameters).then(res).catch(rej), MINUTE)
+        setTimeout(
+          () => postPdfToText(fileName, fileContent, parameters).then(res).catch(rej),
+          MINUTE
+        )
       )
     }
     throw err

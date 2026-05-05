@@ -5,10 +5,9 @@ import { JSDOM } from 'jsdom'
 import { logger, TechLog } from '../../config/logger'
 import { MissingValue } from '../error'
 
-export function HtmlToPlainText(input: string): string {
+export function htmlToPlainText(input: string): string {
   // 1. Decode HTML entities:
   let plainText = decode(input)
-
   // 2. Remove inline and useless tags (leaving space so words don't collapse):
   plainText = plainText.replace(
     /<\/?(a|span|strong|em|i|b|u|small|sub|sup|blockquote|math)\/?>/gim,
@@ -21,7 +20,6 @@ export function HtmlToPlainText(input: string): string {
   // 4. Add a line break after every table header and row:
   plainText = plainText.replace(/<\/th>/gim, '</th>\n')
   plainText = plainText.replace(/<\/tr>/gim, '</tr>\n')
-
   // 5. Remove whole tables that contain:
   //    - any nested tables
   //    - more thant 15 rows
@@ -76,7 +74,6 @@ export function HtmlToPlainText(input: string): string {
     .replace(/^.*<body>/gim, '')
     .replace(/<\/body>.*$/gim, '')
     .replace(/\\n/gm, '\n')
-
   // 8. Let html-to-text/convert do its confusing job:
   plainText = convert(plainText, {
     wordwrap: false,
@@ -327,8 +324,8 @@ export function HtmlToPlainText(input: string): string {
 
   if (!plainText || isEmptyText(plainText) || hasNoBreak(plainText)) {
     const error = new MissingValue(
-        'plainText',
-        'Le texte retourné est vide ou potentiellement incomplet'
+      'plainText',
+      'Le texte retourné est vide ou potentiellement incomplet'
     )
     const formatLogs: TechLog = {
       operations: ['normalization', 'HTMLToPlainText'],
