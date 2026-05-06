@@ -86,7 +86,7 @@ export class DbSderApiGateway {
     const result = await axios
       .patch(urlToCall, decisionToSave, {
         headers: {
-          'x-api-key': process.env.DBSDER_OTHER_API_KEY
+          'x-api-key': process.env.DBSDER_API_KEY
         }
       })
       .catch((error) => {
@@ -170,7 +170,7 @@ export class DbSderApiGateway {
           searchAfter: nextCursor
         },
         headers: {
-          'x-api-key': process.env.DBSDER_OTHER_API_KEY
+          'x-api-key': process.env.DBSDER_API_KEY
         }
       })
       .catch((error) => {
@@ -272,7 +272,7 @@ export class DbSderApiGateway {
       .get<Response>(urlToCall, {
         params: { sourceName: 'juritcom', sourceId: `${sourceId}` },
         headers: {
-          'x-api-key': process.env.DBSDER_OTHER_API_KEY
+          'x-api-key': process.env.DBSDER_API_KEY
         }
       })
       .catch((error) => {
@@ -354,7 +354,7 @@ export class DbSderApiGateway {
     const result = await axios
       .get(urlToCall, {
         headers: {
-          'x-api-key': process.env.DBSDER_OTHER_API_KEY
+          'x-api-key': process.env.DBSDER_API_KEY
         }
       })
       .catch((error) => {
@@ -392,83 +392,6 @@ export class DbSderApiGateway {
               })
             })
 
-            throw new UnauthorizedException('You are not authorized to call this route')
-          } else if (error.response.data.statusCode === HttpStatus.CONFLICT) {
-            logger.error({
-              ...formatLogs,
-              message: JSON.stringify({
-                error: error.response.data.message,
-                data: {
-                  ...error.response.data,
-                  id: id
-                },
-                statusCode: HttpStatus.CONFLICT
-              })
-            })
-            throw new ConflictException('DbSderAPI error: ' + error.response.data.message)
-          } else {
-            logger.error({
-              ...formatLogs,
-              message: JSON.stringify({
-                error: error.response.data.message,
-                data: {
-                  ...error.response.data,
-                  id: id
-                },
-                statusCode: HttpStatus.SERVICE_UNAVAILABLE
-              })
-            })
-          }
-        }
-        throw new ServiceUnavailableException('DbSder API is unavailable')
-      })
-
-    return result.data
-  }
-
-  async deleteDecisionById(id: string) {
-    const urlToCall = process.env.DBSDER_API_URL + `/decisions/${id}`
-
-    const result = await axios
-      .delete(urlToCall, {
-        headers: {
-          'x-api-key': process.env.DBSDER_POWERFUL_API_KEY
-        }
-      })
-      .catch((error) => {
-        const formatLogs: TechLog = {
-          operations: ['normalization', 'deleteDecisionById'],
-          path: 'src/sources/juritcom/batch/normalization/repositories/gateways/dbsderApi.gateway.ts',
-          message: 'Error while calling DbSder API'
-        }
-        if (error.response) {
-          if (error.response.data.statusCode === HttpStatus.BAD_REQUEST) {
-            logger.error({
-              ...formatLogs,
-              message: JSON.stringify({
-                error: error.response.data.message,
-                data: {
-                  ...error.response.data,
-                  id: id
-                },
-                statusCode: HttpStatus.BAD_REQUEST
-              })
-            })
-            throw new BadRequestException(
-              'DbSderAPI Bad request error : ' + error.response.data.message
-            )
-          } else if (error.response.data.statusCode === HttpStatus.UNAUTHORIZED) {
-            logger.error({
-              ...formatLogs,
-              message: JSON.stringify({
-                error: error.response.data.message,
-                data: {
-                  ...error.response.data,
-                  id: id
-                },
-                statusCode: HttpStatus.UNAUTHORIZED
-              })
-            })
             throw new UnauthorizedException('You are not authorized to call this route')
           } else if (error.response.data.statusCode === HttpStatus.CONFLICT) {
             logger.error({

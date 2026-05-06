@@ -19,18 +19,6 @@ export const envValidationConfig = {
         version: ['uuidv4'],
         separator: true
       }),
-    DBSDER_OTHER_API_KEY: Joi.string()
-      .required()
-      .guid({
-        version: ['uuidv4'],
-        separator: true
-      }),
-    DBSDER_POWERFUL_API_KEY: Joi.string()
-      .required()
-      .guid({
-        version: ['uuidv4'],
-        separator: true
-      }),
     ZONING_API_URL: Joi.string().required()
   })
 }
