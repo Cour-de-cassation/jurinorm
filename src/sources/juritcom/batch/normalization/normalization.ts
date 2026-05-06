@@ -1,12 +1,10 @@
 import { v4 as uuidv4 } from 'uuid'
 import { removeOrReplaceUnnecessaryCharacters } from './services/removeOrReplaceUnnecessaryCharacters'
-import { DecisionS3Repository } from '../../shared/infrastructure/repositories/decisionS3.repository'
 import { mapDecisionNormaliseeToDecisionDto } from './infrastructure/decision.dto'
 import { computeLabelStatus } from './services/computeLabelStatus'
 import { computeOccultation } from './services/computeOccultation'
 import { DbSderApiGateway } from './repositories/gateways/dbsderApi.gateway'
 import {
-  fetchPDFFromS3,
   fetchNLPDataFromPDF,
   HTMLToPlainText,
   markdownToPlainText,
@@ -21,6 +19,7 @@ import { annotateDecision } from '../../../../services/rules/annotation'
 import { saveDecisionInAffaire } from '../../../../services/affaire'
 import { fetchZoning } from '../../../../connectors/jurizonage'
 import { RawTcom } from '../../shared/infrastructure/dto/rawFile'
+import { getFileByName } from '@connectors/bucket'
 
 export const rawTcomToNormalize = {
   $expr: {
@@ -59,6 +58,8 @@ interface Diff {
   minor: Array<string>
 }
 
+const bucketNamePdf = process.env.S3_BUCKET_NAME_PDF
+
 export async function normalizeTcom(rawTcom: RawTcom): Promise<void> {
   logger.info({
     operations: ['normalization', `normalizationJob-TCOM`],
@@ -66,13 +67,11 @@ export async function normalizeTcom(rawTcom: RawTcom): Promise<void> {
     message: 'Starting TCOM normalization'
   })
 
-  const s3Repository = new DecisionS3Repository()
-
   try {
     const jobId = uuidv4()
 
     // Fetch PDF from -pdf bucket
-    const pdfFile = await fetchPDFFromS3(s3Repository, rawTcom.path)
+    const pdfFile = await getFileByName(bucketNamePdf, rawTcom.path)
 
     let originalText: string
 
