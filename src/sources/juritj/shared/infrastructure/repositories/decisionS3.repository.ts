@@ -39,15 +39,6 @@ export class DecisionS3Repository {
     await this.saveDecision(reqParams)
   }
 
-  async saveDecisionNormalisee(requestToS3Dto: string, filename: string) {
-    const reqParams = {
-      Body: requestToS3Dto,
-      Bucket: process.env.S3_BUCKET_NAME_NORMALIZED_TJ,
-      Key: filename
-    }
-    await this.saveDecision(reqParams)
-  }
-
   async saveDecision(reqParams): Promise<void> {
     try {
       await this.s3Client.send(new PutObjectCommand(reqParams))
@@ -95,27 +86,6 @@ export class DecisionS3Repository {
       logger.error({
         path: 'src/sources/juritj/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['other', 'getDecisionByFilename'],
-        message: error.message,
-        stack: error.stack
-      })
-      throw new BucketError(error)
-    }
-  }
-
-  async getNormalizedDecisionByFilename(filename: string): Promise<CollectDto> {
-    const reqParams = {
-      Bucket: process.env.S3_BUCKET_NAME_NORMALIZED_TJ,
-      Key: filename
-    }
-
-    try {
-      const decisionFromS3 = await this.s3Client.send(new GetObjectCommand(reqParams))
-      const stringifiedDecision = await decisionFromS3.Body?.transformToString()
-      return JSON.parse(stringifiedDecision)
-    } catch (error) {
-      logger.error({
-        path: 'src/sources/juritj/shared/infrastructure/repositories/decisionS3.repository.ts',
-        operations: ['other', 'getNormalizedDecisionByFilename'],
         message: error.message,
         stack: error.stack
       })

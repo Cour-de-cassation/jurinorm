@@ -19,7 +19,6 @@
         S3_URL: "{{ s3_url }}"
         S3_REGION: "{{ s3_region }}"
         S3_BUCKET_NAME_RAW_TJ: "{{ s3_bucket_name_raw_tj }}"
-        S3_BUCKET_NAME_NORMALIZED_TJ: "{{ s3_bucket_name_normalized_tj }}"
         S3_BUCKET_NAME_PDF: "{{ s3_bucket_name_pdf }}"
         S3_BUCKET_NAME_PORTALIS: "{{ s3_bucket_name_portalis }}"
         NODE_ENV: "{{ node_env }}"
