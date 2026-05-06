@@ -20,7 +20,6 @@ s3_bucket_name_decision_failed: "juritcom-bucket-decision-failed"
 s3_bucket_name_deletion: "juritcom-bucket-deletion"
 s3_bucket_name_deletion_processed: "juritcom-bucket-deletion-processed"
 s3_bucket_name_normalized_tcom: "juritcom-bucket-normalized"
-plaintext_source: "nlp"
 
 ## CPH
 s3_bucket_name_portalis: "portalis-collect-bucket"

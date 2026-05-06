@@ -10,7 +10,6 @@ import {
 import { logger } from '../../../../../config/logger'
 import { BucketError } from '../../domain/errors/bucket.error'
 import { DecisionRepository } from './decision.repository'
-import { CollectDto } from '../dto/collect.dto'
 
 export class DecisionS3Repository implements DecisionRepository {
   private s3Client: S3Client
@@ -141,27 +140,6 @@ export class DecisionS3Repository implements DecisionRepository {
     }
   }
 
-  async getDecisionByFilename(filename: string): Promise<CollectDto & { _id: string }> {
-    const reqParams = {
-      Bucket: process.env.S3_BUCKET_NAME_RAW_TCOM,
-      Key: filename
-    }
-
-    try {
-      const decisionFromS3 = await this.s3Client.send(new GetObjectCommand(reqParams))
-      const stringifiedDecision = await decisionFromS3.Body?.transformToString()
-      return JSON.parse(stringifiedDecision)
-    } catch (error) {
-      logger.error({
-        path: 'src/sources/juritcom/shared/infrastructure/repositories/decisionS3.repository.ts',
-        operations: ['normalization', 'getDecisionByFilename'],
-        message: error.message,
-        stack: error.stack
-      })
-      throw new BucketError(error)
-    }
-  }
-
   async getPDFByFilename(filename: string): Promise<Buffer> {
     const reqParams = {
       Bucket: process.env.S3_BUCKET_NAME_PDF,
@@ -215,31 +193,6 @@ export class DecisionS3Repository implements DecisionRepository {
       logger.error({
         path: 'src/sources/juritcom/shared/infrastructure/repositories/decisionS3.repository.ts',
         operations: ['normalization', 'archiveFailedDecision'],
-        message: error.message,
-        stack: error.stack
-      })
-      throw new BucketError(error)
-    }
-  }
-
-  async archiveSuccessPDF(data: object, key: string): Promise<void> {
-    const params = {
-      Bucket: process.env.S3_BUCKET_NAME_PDF2TEXT_SUCCESS,
-      Key: `${key}`,
-      Body: JSON.stringify(data),
-      ACL: 'public-read',
-      Metadata: {
-        date: new Date().toISOString(),
-        originalPdfFileName: `${key}`
-      }
-    } as unknown as any
-
-    try {
-      await this.s3Client.send(new PutObjectCommand(params))
-    } catch (error) {
-      logger.error({
-        path: 'src/sources/juritcom/shared/infrastructure/repositories/decisionS3.repository.ts',
-        operations: ['normalization', 'archiveSuccessPDF'],
         message: error.message,
         stack: error.stack
       })

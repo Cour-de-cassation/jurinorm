@@ -27,7 +27,6 @@
         S3_BUCKET_NAME_DELETION: "{{ s3_bucket_name_deletion }}"
         S3_BUCKET_NAME_DELETION_PROCESSED: "{{ s3_bucket_name_deletion_processed }}"
         S3_BUCKET_NAME_NORMALIZED_TCOM: "{{ s3_bucket_name_normalized_tcom }}"
-        PLAINTEXT_SOURCE: "{{ plaintext_source }}"
         S3_BUCKET_NAME_PORTALIS: "{{ s3_bucket_name_portalis }}"
         NODE_ENV: "{{ node_env }}"
         NORMALIZATION_BATCH_SCHEDULE: "{{ normalization_batch_schedule }}"
