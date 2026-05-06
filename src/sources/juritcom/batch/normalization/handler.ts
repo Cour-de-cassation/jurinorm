@@ -52,7 +52,7 @@ export async function normalizeRawTcomFiles(
         })
 
         const result = { rawFile: rawTcom, status: 'success' } as const
-        await updateRawFileStatus(process.env.S3_BUCKET_NAME_RAW_TCOM, result)
+        await updateRawFileStatus(process.env.S3_BUCKET_NAME_PDF, result)
         return result
       } catch (err) {
         const error = toUnexpectedError(err)
@@ -63,7 +63,7 @@ export async function normalizeRawTcomFiles(
         })
 
         const result = { rawFile: rawTcom, status: 'error', error } as const
-        await updateRawFileStatus(process.env.S3_BUCKET_NAME_RAW_TCOM, result)
+        await updateRawFileStatus(process.env.S3_BUCKET_NAME_PDF, result)
         return result
       }
     }
