@@ -5,18 +5,26 @@ import { JSDOM } from 'jsdom'
 import { logger, TechLog } from '../../config/logger'
 import { MissingValue } from '../error'
 
-export function htmlToPlainText(input: string): string {
-  // 1. Decode HTML entities:
-  let plainText = decode(input)
-  // 2. Remove inline and useless tags (leaving space so words don't collapse):
-  plainText = plainText.replace(
-    /<\/?(a|span|strong|em|i|b|u|small|sub|sup|blockquote|math)\/?>/gim,
-    ' '
-  )
+export function composeHtmlToText(html: string, convertFn: (x: string) => string, ...restConvertFn: ((x: string) => string)[]): string {
+  const [nextFn, ...restFn] = restConvertFn
+  return nextFn ? composeHtmlToText(convertFn(html), nextFn, ...restFn) : convertFn(html)
+}
 
-  // 3. Remove extra spaces:
-  plainText = plainText.replace(/\s+\s/gm, ' ')
+export function removeExtraSpace(plainText: string): string {
+  // '\s' without '\n', '\r' , '\v':
+  const moreOfOneSpace = /[\f\t\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+[\f\t\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/gm
+  return plainText.replace(moreOfOneSpace, ' ')
+}
 
+export function removeExtraLineBreaks(plainText: string): string {
+  // '\s' without '\n', '\r' , '\v':
+  const emptyLineWithSpace = /\n[\f\t\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+\n/gm
+  return plainText
+    .replace(emptyLineWithSpace, '\n\n')
+    .replace(/\n+\n/gm, '\n\n')
+}
+
+export function removeExtraTables(plainText: string): string {
   // 4. Add a line break after every table header and row:
   plainText = plainText.replace(/<\/th>/gim, '</th>\n')
   plainText = plainText.replace(/<\/tr>/gim, '</tr>\n')
@@ -62,20 +70,29 @@ export function htmlToPlainText(input: string): string {
       }
     })
 
-  // 6. Remove some specific block types:
+  return dom.serialize()
+}
+
+export function removeInlineMath(plainText: string): string {
+  const dom = new JSDOM(plainText)
+
   dom.window.document.querySelectorAll('p[block-type="TextInlineMath"]').forEach((textToIgnore) => {
     textToIgnore.outerHTML = '<p block-type="Text">[…]</p>'
   })
+  
+  return dom.serialize()
+}
 
-  // 7. Get the serialized HTML content back:
-  plainText = dom
-    .serialize()
+export function removeExtraBody(plainText: string): string {
+  return plainText
     .replace(/\n/gm, '\\n')
     .replace(/^.*<body>/gim, '')
     .replace(/<\/body>.*$/gim, '')
     .replace(/\\n/gm, '\n')
-  // 8. Let html-to-text/convert do its confusing job:
-  plainText = convert(plainText, {
+}
+
+export function convertHtmlToText(html: string): string {
+  return convert(html, {
     wordwrap: false,
     preserveNewlines: true,
     selectors: [
@@ -88,46 +105,6 @@ export function htmlToPlainText(input: string): string {
       {
         selector: 'img',
         format: 'skip'
-      },
-      {
-        selector: 'a',
-        format: 'inline'
-      },
-      {
-        selector: 'span',
-        format: 'inline'
-      },
-      {
-        selector: 'strong',
-        format: 'inline'
-      },
-      {
-        selector: 'em',
-        format: 'inline'
-      },
-      {
-        selector: 'i',
-        format: 'inline'
-      },
-      {
-        selector: 'b',
-        format: 'inline'
-      },
-      {
-        selector: 'u',
-        format: 'inline'
-      },
-      {
-        selector: 'small',
-        format: 'inline'
-      },
-      {
-        selector: 'sub',
-        format: 'inline'
-      },
-      {
-        selector: 'sup',
-        format: 'inline'
       },
       {
         selector: 'h1',
@@ -164,187 +141,33 @@ export function htmlToPlainText(input: string): string {
         options: {
           uppercase: false
         }
+      },
+      {
+        selector: 'blockquote',
+        format: 'inline'
       }
     ]
   })
+}
 
-  // 9. Remove extra line breaks and useless stuff:
-  plainText = plainText.replace(/\n\s+\n/gm, '\n\n')
-  plainText = plainText.replace(/\n+\n/gm, '\n\n')
-  plainText = plainText.replace(/\.\.\./gm, '…')
-  plainText = plainText.replace(/\n[\*\-_=#\s]+\n/gm, '\n\n')
-  plainText = plainText.replace(/(?:\[…\]\s*\n+\s*)+\[…\]/gm, '\n\n[…]\n\n')
+export function removeOrReplaceUnnecessaryCharacters(rawString: string): string {
+  const tabOrPageBreakRegex = /\t|\f/gi
+  const carriageReturnRegex = /\r\n|\r/gi
 
-  // 10. Cleanup numbered and non-numbered list items:
-  plainText = plainText.replace(/\n\s?[\-−]\s?(\w+)/gim, '\n * $1')
-  plainText = plainText.replace(/\n\s+\*\s+\n\s+/gm, '\n* ')
-  plainText = plainText.replace(/\n\s+(\d+)\.\s+\n\s+/gm, '\n$1. ')
-  plainText = plainText.replace(
-    /\n\s*([\*\-−¬→↑←➢⇒♦❖♠◆✦●■☐►➤▶▲>♣✓\.οo○·∙٠•_+]\s?\.?)\s+/gim,
-    '\n* '
-  )
-  plainText = plainText.replace(
-    /\n\s*\*\s+([\*\-−¬→↑←➢⇒♦❖♠◆✦●■☐►➤▶▲>♣✓\.οo○·∙٠•_+]\s?\.?)\s+/gim,
-    '\n* '
-  )
-  plainText = plainText.replace(/\n\s*\*\s+([a-z]\s?\.?)\s+/gim, '\n$1 ')
-  plainText = plainText.replace(/\n\s*\*\s+(\d+)\.\s+/gim, '\n$1. ')
-  plainText = plainText.replace(/\n\s*(\d+)\s*\n+\s*([eè][mr]e\s+chambre)/gim, '\n$1$2')
-  plainText = plainText.replace(/\n\s*\*\s+/gm, '\n * ')
-  plainText = plainText.replace(/(\w)Juge\s?:/gm, '$1\nJuge :')
-  plainText = plainText.replace(/\s:(\w)/gm, ' : $1')
+  return rawString
+  .replace(tabOrPageBreakRegex, ' ')
+  .replace(carriageReturnRegex, '\n')
+  .replace(/\n[\*\-_=#\s]+\n/gm, '\n\n')
+}
 
-  // 11. Move isolated non-alphanumeric characters to the end of the previous line:
-  plainText = plainText.replace(/\n+(\W\W?)\n/gm, '$1\n')
+export function replaceThreeDots(plainText: string): string {
+  return plainText.replace(/\.\.\./gm, '…')
+    .replace(/(?:\[…\]\s*\n+\s*)+\[…\]/gm, '\n\n[…]\n\n')
+}
 
-  // 12. Remove space between alphanumeric characters and common punctuation marks:
-  plainText = plainText.replace(/(\w)\s([,.'°])/gm, '$1$2')
-  plainText = plainText.trim()
-
-  // 13. Try to reject the appendices after the actual end of the decision:
-  const firstRegexp = /(sign[ée]e?\s+[pleé]\w*[a-zéèçàùâêûîôäëüïö,\s.-]*greffier)/i
-  const secondRegexp =
-    /(par\sces\smotifs\W*(?:(?!par\sces\smotifs).)+l[ea]\s(?:greffi[èe]re?|pr[ée]sidente?))/i
-  plainText = plainText.replace(/\n/gm, '\\n') // It's easier to do it without the \n
-  if (firstRegexp.test(plainText) === true) {
-    const segments = plainText.split(firstRegexp)
-    if (segments.length > 1) {
-      if (/motifs/i.test(segments[0]) === true) {
-        // The "par ces motifs" thing seems to be in the first segment, so we append the signature to it:
-        plainText = segments[0] + ' ' + segments[1]
-        // If the next segments have no line break, then they could be a tiny bit of the actual decision that we must keep:
-        for (let index = 2; index < segments.length; index++) {
-          if (
-            segments[index] &&
-            (/\\n/.test(segments[index].replace(/^\\n/, '').replace(/\\n$/, '')) === false ||
-              segments[index].length < segments[index - 1].length)
-          ) {
-            plainText = plainText + ' ' + segments[index]
-          }
-        }
-        // Reject the rest...
-      } else if (segments.length > 3) {
-        // Sometimes the signature is mentioned before the "par ces motifs" thing:
-        plainText = segments[0] + ' ' + segments[1] + ' ' + segments[2]
-        // If the next segments have no line break, then they could be a tiny bit of the actual decision that we must keep:
-        if (secondRegexp.test(segments[3])) {
-          // Fall back to the second case (see below):
-          const other_segments = segments[3].split(secondRegexp)
-          if (other_segments.length > 1) {
-            if (secondRegexp.test(other_segments[1]) === true) {
-              plainText =
-                plainText + other_segments[0] + ' ' + other_segments[1].split(secondRegexp)[1]
-            } else {
-              plainText = plainText + other_segments[0] + ' ' + other_segments[1]
-            }
-          }
-          // Reject the rest...
-        } else {
-          for (let index = 3; index < segments.length; index++) {
-            if (
-              segments[index] &&
-              (/\\n/.test(segments[index].replace(/^\\n/, '').replace(/\\n$/, '')) === false ||
-                segments[index].length < segments[index - 1].length)
-            ) {
-              plainText = plainText + ' ' + segments[index]
-            }
-          }
-        }
-        // Reject the rest...
-      } else if (secondRegexp.test(plainText) === true) {
-        // Fall back to the second case (see below):
-        const segments = plainText.split(secondRegexp)
-        if (segments.length > 1) {
-          if (secondRegexp.test(segments[1]) === true) {
-            plainText = segments[0] + ' ' + segments[1].split(secondRegexp)[1]
-            segments.shift()
-            segments.shift()
-          } else {
-            plainText = segments[0] + ' ' + segments[1]
-          }
-          // If the next segments have no line break, then they could be a tiny bit of the actual decision that we must keep:
-          for (let index = 2; index < segments.length; index++) {
-            if (
-              segments[index] &&
-              (/\\n/.test(segments[index].replace(/^\\n/, '').replace(/\\n$/, '')) === false ||
-                segments[index].length < segments[index - 1].length)
-            ) {
-              plainText = plainText + ' ' + segments[index]
-            }
-          }
-          // Reject the rest...
-        }
-      }
-    }
-  } else if (secondRegexp.test(plainText) === true) {
-    // More regular case?
-    const segments = plainText.split(secondRegexp)
-    if (segments.length > 1) {
-      if (secondRegexp.test(segments[1]) === true) {
-        plainText = segments[0] + ' ' + segments[1].split(secondRegexp)[1]
-        segments.shift()
-        segments.shift()
-      } else {
-        plainText = segments[0] + ' ' + segments[1]
-      }
-      // If the next segments have no line break, then they could be a tiny bit of the actual decision that we must keep:
-      for (let index = 2; index < segments.length; index++) {
-        if (
-          segments[index] &&
-          (/\\n/.test(segments[index].replace(/^\\n/, '').replace(/\\n$/, '')) === false ||
-            segments[index].length < segments[index - 1].length)
-        ) {
-          plainText = plainText + ' ' + segments[index]
-        }
-      }
-      // Reject the rest...
-    }
-  }
-
-  // 14. Remove extra spaces (again):
-  plainText = plainText.replace(/\s+\s/gm, ' ')
-  plainText = plainText.replace(/\\n\s+(\w)/gim, '\\n$1')
-
-  // 15. Remove useless garbage:
-  plainText = plainText.replace(/\\n\w+\scompany.*\w\sproperty.*\w\ssecond.*$/gim, '\\n').trim()
-
-  // 16. Put the \n back and ensure there's a "final dot":
-  plainText = plainText.replace(/\\n/gm, '\n').trim()
-  plainText = plainText.replace(/\n+\n/gm, '\n\n')
-  plainText = plainText.replace(/,,/gm, ',')
-  plainText = plainText.replace(/\s([,.])$/gm, '$1')
-  if (/[:,;.-]$/.test(plainText) === false) {
-    plainText = plainText + '.'
-  }
-
-  // 17. Remove more useless garbage:
-  plainText = plainText.replace(/sign[ée]\s[ée]lectroniquement\spar\.?$/gim, '')
-
-  plainText = plainText.trim()
-
-  if (!plainText || isEmptyText(plainText) || hasNoBreak(plainText)) {
-    const error = new MissingValue(
-      'plainText',
-      'Le texte retourné est vide ou potentiellement incomplet'
-    )
-    const formatLogs: TechLog = {
-      operations: ['normalization', 'HTMLToPlainText'],
-      path: 'src/sources/juritcom/batch/normalization/services/PDFToText.ts',
-      message: JSON.stringify({
-        error: error.message,
-        data: {
-          input: input,
-          output: plainText
-        }
-      })
-    }
-    logger.error({
-      ...formatLogs
-    })
-    throw error
-  }
-
-  return plainText
+export function fixToAssureFinalDot(plainText) {
+  const utilPlainText = plainText.trim()
+  return /[:,;.-]$/.test(utilPlainText) ? utilPlainText : utilPlainText + '.'
 }
 
 export function isEmptyText(text: string): boolean {
@@ -355,4 +178,46 @@ export function isEmptyText(text: string): boolean {
 export function hasNoBreak(text: string): boolean {
   const hasBreak = `${text}`.includes('\n')
   return hasBreak === false
+}
+
+export function throwOnEmpty(plainText: string): string {
+  if (!plainText || isEmptyText(plainText) || hasNoBreak(plainText)) {
+    const error = new MissingValue(
+      'plainText',
+      'Le texte retourné est vide ou potentiellement incomplet'
+    )
+    throw error
+  }
+  return plainText
+}
+
+export function htmlToPlainText(input: string): string {
+  try {
+    return composeHtmlToText(
+      input,
+      decode,
+      removeExtraSpace,
+      removeExtraTables,
+      removeInlineMath,
+      removeExtraBody,
+      convertHtmlToText,
+      replaceThreeDots,
+      removeExtraLineBreaks,
+      removeOrReplaceUnnecessaryCharacters,
+      fixToAssureFinalDot,
+      throwOnEmpty
+    )
+  } catch(err) {
+    logger.error({
+      path: __filename,
+      operations: ['extraction', 'htmlToPlainText'],
+      stack: err.stack,
+      message: JSON.stringify({
+        error: err.message,
+        data: {
+          input: input,
+        }
+      }),
+    })
+  }
 }

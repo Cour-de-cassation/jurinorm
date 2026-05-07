@@ -1,5 +1,4 @@
 import { v4 as uuidv4 } from 'uuid'
-import { removeOrReplaceUnnecessaryCharacters } from './services/removeOrReplaceUnnecessaryCharacters'
 import { ConvertedDecisionWithMetadonneesDto } from '../../shared/infrastructure/dto/convertedDecisionWithMetadonnees.dto'
 import { fetchDecisionListFromS3 } from './services/fetchDecisionListFromS3'
 import { DecisionS3Repository } from '../../shared/infrastructure/repositories/decisionS3.repository'
@@ -17,6 +16,7 @@ import { annotateDecision } from '../../../../services/rules/annotation'
 import { saveDecisionInAffaire } from '../../../../services/affaire'
 import { fetchZoning } from '../../../../connectors/jurizonage'
 import { getPdfContent } from '../../../../services/textExtraction/pdf'
+import { textPostProcess } from './services/textPostProcess'
 
 const dbSderApiGateway = new DbSderApiGateway()
 const bucketNameIntegre = process.env.S3_BUCKET_NAME_RAW_TCOM
@@ -58,7 +58,8 @@ export async function normalizationJob(
 
         try {
           // Transforming decision from PDF to text
-          decision.texteDecisionIntegre = await getPdfContent(pdfFilename, pdfFile)
+          const plainText = await getPdfContent(pdfFilename, pdfFile)
+          decision.texteDecisionIntegre = textPostProcess(plainText)
         } catch (error) {
           logger.error({
             operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
@@ -87,19 +88,10 @@ export async function normalizationJob(
         message: 'Generated unique id for decision'
       })
 
-      // Step 5: Removing or replace (by other thing) unnecessary characters from decision
-      const cleanedDecision = removeOrReplaceUnnecessaryCharacters(decision.texteDecisionIntegre)
-
-      logger.info({
-        operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-        path: 'src/sources/juritcom/batch/normalization/normalization.ts',
-        message: 'Removed unnecessary characters'
-      })
-
       // Step 6: Map decision to DBSDER API Type to save it in database
       const decisionToSave = mapDecisionNormaliseeToDecisionDto(
         _id,
-        cleanedDecision,
+        decision.texteDecisionIntegre,
         decision.metadonnees,
         decisionFilename
       )
@@ -234,7 +226,7 @@ export async function normalizationJob(
 
       listConvertedDecision.push({
         metadonnees: decisionToSave,
-        decisionNormalisee: cleanedDecision
+        decisionNormalisee: decision.texteDecisionIntegre
       })
     } catch (error) {
       // logger à mettre au format DecisionLog
