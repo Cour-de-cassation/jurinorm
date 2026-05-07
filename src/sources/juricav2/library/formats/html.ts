@@ -1,98 +1,47 @@
-import { compile } from 'html-to-text'
+import { decodeHTML } from 'entities'
 
-const convert = compile({
-  wordwrap: false,
-  preserveNewlines: true,
-  selectors: [
-    {
-      selector: '*',
-      options: {
-        ignoreHref: true
-      }
-    },
-    {
-      selector: 'img',
-      format: 'skip'
-    },
-    {
-      selector: 'a',
-      format: 'inline'
-    },
-    {
-      selector: 'span',
-      format: 'inline'
-    },
-    {
-      selector: 'strong',
-      format: 'inline'
-    },
-    {
-      selector: 'em',
-      format: 'inline'
-    },
-    {
-      selector: 'i',
-      format: 'inline'
-    },
-    {
-      selector: 'b',
-      format: 'inline'
-    },
-    {
-      selector: 'u',
-      format: 'inline'
-    },
-    {
-      selector: 'small',
-      format: 'inline'
-    },
-    {
-      selector: 'sub',
-      format: 'inline'
-    },
-    {
-      selector: 'sup',
-      format: 'inline'
-    },
-    {
-      selector: 'h1',
-      options: {
-        uppercase: false
-      }
-    },
-    {
-      selector: 'h2',
-      options: {
-        uppercase: false
-      }
-    },
-    {
-      selector: 'h3',
-      options: {
-        uppercase: false
-      }
-    },
-    {
-      selector: 'h4',
-      options: {
-        uppercase: false
-      }
-    },
-    {
-      selector: 'h5',
-      options: {
-        uppercase: false
-      }
-    },
-    {
-      selector: 'h6',
-      options: {
-        uppercase: false
-      }
-    }
-  ]
-})
+function removeMultipleSpace(str: string): string {
+  return str.replace(/  +/gm, ' ').trim()
+}
+
+function replaceErroneousChars(str: string): string {
+  return str
+    .replace(/\x91/gm, '‘')
+    .replace(/\x92/gm, '’')
+    .replace(/\x80/gm, '€')
+    .replace(/\x96/gm, '–')
+}
+
+function cleanHTML(html: string): string {
+  if (/<html/i.test(html) === false) {
+    return html
+  }
+
+  // Remove HTML tags:
+  html = html.replace(/<\/?[^>]+(>|$)/gm, '')
+
+  // Handling newlines and carriage returns:
+  html = html.replace(/\r\n/gim, '\n')
+  html = html.replace(/\r/gim, '\n')
+
+  // Remove extra spaces:
+  html = html.replace(/\t/gim, ' ')
+  html = html.replace(/\\t/gim, ' ') // That could happen...
+  html = html.replace(/\f/gim, ' ')
+  html = html.replace(/\\f/gim, ' ') // That could happen too...
+  html = removeMultipleSpace(html)
+
+  // Mysterious chars (cf. https://www.compart.com/fr/unicode/U+0080, etc.):
+  html = replaceErroneousChars(html)
+
+  // Decode HTML entities:
+  return decodeHTML(html)
+}
 
 export function htmlToPlainText(html: string) {
-  return convert(html)
+  const text = cleanHTML(html)
+  return text
+    .replace(/\*DEB[A-Z]*/gm, '')
+    .replace(/\*FIN[A-Z]*/gm, '')
+    .trim()
 }
