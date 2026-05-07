@@ -3,7 +3,6 @@ import { logger, TechLog } from '../../../../../config/logger'
 import * as FormData from 'form-data'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import { Marked } from 'marked'
-import { PostponeException } from '../infrastructure/nlp.exception'
 import { decode } from 'html-entities'
 import { convert } from 'html-to-text'
 import { JSDOM } from 'jsdom'
@@ -62,11 +61,7 @@ export async function fetchNLPDataFromPDF(pdfFile: Buffer, pdfFilename: string):
           error: error.message
         })
       })
-      if (error.status === 429 || error.status === 500) {
-        throw new PostponeException(error.message)
-      } else {
-        throw new InfrastructureException(error.message)
-      }
+      throw new InfrastructureException(error.message)
     } else {
       logger.error({
         ...formatLogsNLP,

@@ -1,5 +1,5 @@
 import { UnIdentifiedDecisionTcom, LabelStatus } from 'dbsder-api-types'
-import { logger, TechLog } from '../../../../../config/logger'
+import { DecisionLog, logger } from '../../../../../config/logger'
 
 const dateMiseEnService = getMiseEnServiceDate()
 
@@ -9,19 +9,19 @@ export async function computeLabelStatus(
   const dateCreation = new Date(decisionDto.dateCreation)
   const dateDecision = new Date(decisionDto.dateDecision)
 
-  const formatLogs: TechLog = {
+  const formatLogs: DecisionLog = {
     operations: ['normalization', 'computeLabelStatus'],
-    path: 'src/sources/juritcom/batch/normalization/services/computeLabelStatus.ts'
+    path: 'src/sources/juritcom/batch/normalization/services/computeLabelStatus.ts',
+    decision: {
+      sourceId: decisionDto.sourceId.toString(),
+      sourceName: decisionDto.sourceName
+    }
   }
-  logger.info({
-    ...formatLogs,
-    message: `Starting computeLabelStatus for decision ${decisionDto.sourceId} from ${decisionDto.jurisdictionName}`
-  })
 
   if (isDecisionInTheFuture(dateCreation, dateDecision)) {
     logger.error({
       ...formatLogs,
-      message: `Incorrect date, dateDecision is in the future compared to dateCreation for idJuridiction  ${decisionDto.jurisdictionId} & libelleJuridiction  ${decisionDto.jurisdictionName}. Changing LabelStatus to ${LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE}.`
+      message: `Incorrect date, dateDecision is in the future compared to dateCreation. Changing LabelStatus to ${LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE}.`
     })
     return LabelStatus.IGNORED_DATE_DECISION_INCOHERENTE
   }
@@ -29,7 +29,7 @@ export async function computeLabelStatus(
   if (isDecisionOlderThanMiseEnService(dateDecision)) {
     logger.error({
       ...formatLogs,
-      message: `Incorrect date, dateDecision is before mise en service date for idJuridiction  ${decisionDto.jurisdictionId} & libelleJuridiction  ${decisionDto.jurisdictionName}. Changing LabelStatus to ${LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE}.`
+      message: `Incorrect date, dateDecision is before mise en service date. Changing LabelStatus to ${LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE}.`
     })
     return LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
   }
@@ -37,7 +37,7 @@ export async function computeLabelStatus(
   if (decisionDto.public === false) {
     logger.error({
       ...formatLogs,
-      message: `Decision is not public for idJuridiction  ${decisionDto.jurisdictionId} & libelleJuridiction  ${decisionDto.jurisdictionName}. Changing LabelStatus to ${LabelStatus.IGNORED_DECISION_NON_PUBLIQUE}.`
+      message: `Decision is not public. Changing LabelStatus to ${LabelStatus.IGNORED_DECISION_NON_PUBLIQUE}.`
     })
     return LabelStatus.IGNORED_DECISION_NON_PUBLIQUE
   }
@@ -45,7 +45,7 @@ export async function computeLabelStatus(
   if (decisionDto.motifsSecretAffaires === true) {
     logger.error({
       ...formatLogs,
-      message: `Decision has motifs secret affaires for idJuridiction  ${decisionDto.jurisdictionId} & libelleJuridiction  ${decisionDto.jurisdictionName}. Changing LabelStatus to ${LabelStatus.IGNORED_MOTIFS_SECRET_AFFAIRE}.`
+      message: `Decision has motifs secret affaires. Changing LabelStatus to ${LabelStatus.IGNORED_MOTIFS_SECRET_AFFAIRE}.`
     })
     return LabelStatus.IGNORED_MOTIFS_SECRET_AFFAIRE
   }

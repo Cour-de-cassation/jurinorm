@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from 'uuid'
 import { removeOrReplaceUnnecessaryCharacters } from './services/removeOrReplaceUnnecessaryCharacters'
 import { mapDecisionNormaliseeToDecisionDto } from './infrastructure/decision.dto'
 import { computeLabelStatus } from './services/computeLabelStatus'
@@ -10,9 +9,8 @@ import {
   markdownToPlainText,
   NLPPDFToTextDTO
 } from './services/PDFToText'
-import { PostponeException } from './infrastructure/nlp.exception'
 import { LabelStatus, PublishStatus, UnIdentifiedDecisionTcom } from 'dbsder-api-types'
-import { DecisionLog, logger } from '../../../../config/logger'
+import { DecisionLog, logger, TechLog } from '../../../../config/logger'
 
 import { strict as assert } from 'assert'
 import { annotateDecision } from '../../../../services/rules/annotation'
@@ -58,47 +56,36 @@ interface Diff {
   minor: Array<string>
 }
 
+const normalizationFormatTechLogs: TechLog = {
+  path: 'src/sources/juritcom/batch/normalization/normalization.ts',
+  operations: ['normalization', 'normalizationJob-TCOM']
+}
+
 const bucketNamePdf = process.env.S3_BUCKET_NAME_PDF
 
 export async function normalizeTcom(rawTcom: RawTcom): Promise<void> {
   logger.info({
-    operations: ['normalization', `normalizationJob-TCOM`],
-    path: 'src/sources/juritcom/batch/normalization/normalization.ts',
-    message: 'Starting TCOM normalization'
+    ...normalizationFormatTechLogs,
+    message: `Starting normalization of ${rawTcom.path}`
   })
 
   try {
-    const jobId = uuidv4()
-
-    // Fetch PDF from -pdf bucket
+    logger.info({
+      ...normalizationFormatTechLogs,
+      message: `Fetching ${rawTcom.path} from S3`
+    })
     const pdfFile = await getFileByName(bucketNamePdf, rawTcom.path)
 
+    logger.info({ ...normalizationFormatTechLogs, message: `Extracting text from ${rawTcom.path}` })
     let originalText: string
-
-    try {
-      // Transforming decision from PDF to text
-
-      // 1. Get data from NLP API:
-      const NLPData: NLPPDFToTextDTO = await fetchNLPDataFromPDF(pdfFile, rawTcom.path)
-
-      if (NLPData.HTMLText) {
-        // 2.1. Get plain text from HTML:
-        originalText = HTMLToPlainText(NLPData.HTMLText)
-      } else if (NLPData.markdownText) {
-        // 2.2. Get plain text from markdown:
-        originalText = markdownToPlainText(NLPData.markdownText)
-      }
-      originalText = removeOrReplaceUnnecessaryCharacters(originalText)
-    } catch (error) {
-      logger.error({
-        operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-        path: 'src/sources/juritcom/batch/normalization/normalization.ts',
-        message: `NLPPDFToText failed for decision ${rawTcom.path}: ${error.message}`
-      })
-      throw error
+    const NLPData: NLPPDFToTextDTO = await fetchNLPDataFromPDF(pdfFile, rawTcom.path)
+    if (NLPData.HTMLText) {
+      originalText = HTMLToPlainText(NLPData.HTMLText)
+    } else if (NLPData.markdownText) {
+      originalText = markdownToPlainText(NLPData.markdownText)
     }
+    originalText = removeOrReplaceUnnecessaryCharacters(originalText)
 
-    // Step 6: Map decision to DBSDER API Type to save it in database
     const decisionToSave = mapDecisionNormaliseeToDecisionDto(
       rawTcom.metadatas.idDecision,
       originalText,
@@ -106,29 +93,25 @@ export async function normalizeTcom(rawTcom: RawTcom): Promise<void> {
       rawTcom.path
     )
     const decisionLogFormat: DecisionLog = {
-      operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
+      operations: ['normalization', `normalizationJob-TCOM`],
       path: 'src/sources/juritcom/batch/normalization/normalization.ts',
       decision: {
         sourceId: decisionToSave.sourceId.toString(),
-        sourceName: decisionToSave.sourceName,
-        publishStatus: decisionToSave.publishStatus,
-        labelStatus: decisionToSave.labelStatus
+        sourceName: decisionToSave.sourceName
       }
     }
-    try {
-      decisionToSave.originalTextZoning = await fetchZoning({
-        arret_id: decisionToSave.sourceId,
-        source: 'tcom',
-        text: decisionToSave.originalText
-      })
-    } catch (error) {
-      logger.error({
-        ...decisionLogFormat,
-        message: `Error while calling zoning. Error : ${error}`
-      })
-    }
 
+    logger.info({ ...decisionLogFormat, message: `Fetching zoning` })
+    decisionToSave.originalTextZoning = await fetchZoning({
+      arret_id: decisionToSave.sourceId,
+      source: 'tcom',
+      text: decisionToSave.originalText
+    })
+
+    logger.info({ ...decisionLogFormat, message: `Computing labelStatus` })
     decisionToSave.labelStatus = await computeLabelStatus(decisionToSave)
+
+    logger.info({ ...decisionLogFormat, message: `Computing occultation` })
     decisionToSave.occultation = {
       additionalTerms: '',
       categoriesToOmit: [],
@@ -136,12 +119,14 @@ export async function normalizeTcom(rawTcom: RawTcom): Promise<void> {
     }
     decisionToSave.occultation = computeOccultation(rawTcom.metadatas)
 
+    logger.info({ ...decisionLogFormat, message: `Computing publishStatus` })
     decisionToSave.publishStatus =
       decisionToSave.labelStatus !== LabelStatus.TOBETREATED
         ? PublishStatus.BLOCKED
         : PublishStatus.TOBEPUBLISHED
+    logger.info({ ...decisionLogFormat, message: `publishStatus is ${decisionToSave.labelStatus}` })
 
-    // Step 7: check diff (major/minor) and upsert/patch accordingly
+    // Check diff (major/minor) and upsert/patch accordingly
     const previousVersion = await dbSderApiGateway.getDecisionBySourceId(decisionToSave.sourceId)
     const diff = previousVersion ? computeDiff(previousVersion, decisionToSave) : null
     if (
@@ -162,7 +147,6 @@ export async function normalizeTcom(rawTcom: RawTcom): Promise<void> {
         decisionToSave.labelStatus === LabelStatus.IGNORED_DATE_AVANT_MISE_EN_SERVICE
       ) {
         decisionToSave.publishStatus = PublishStatus.BLOCKED
-        // Bad new date? Throw a warning... @TODO ODDJDashboard
         logger.warn({
           ...decisionLogFormat,
           message: `Decision has a bad updated date: ${decisionToSave.dateDecision}`
@@ -184,75 +168,43 @@ export async function normalizeTcom(rawTcom: RawTcom): Promise<void> {
           decisionToSave.publishStatus = previousVersion.publishStatus
         }
       }
+      logger.info({
+        ...decisionLogFormat,
+        message: `Decision has minor update, patching in dbsder.`
+      })
       await dbSderApiGateway.patchDecision(previousVersion._id, decisionToSave)
       logger.info({
-        operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-        path: 'src/sources/juritcom/batch/normalization/normalization.ts',
-        message: `Decision patched in database with minor changes: ${JSON.stringify(diff.minor)}`
+        ...decisionLogFormat,
+        message: `Decision succesfully patched in dbsder with minor changes: ${JSON.stringify(diff.minor)}`
       })
     } else if (
       diff?.major?.length === 0 &&
       diff?.minor?.length === 0 &&
       previousVersion.labelStatus !== LabelStatus.WAITING_FOR_AFFAIRE_RESOLUTION
     ) {
-      // No change? Throw a warning and do nothing... @TODO ODDJDashboard
       logger.warn({
-        operations: ['normalization', `normalizationJob-TCOM-${jobId}`],
-        path: 'src/sources/juritcom/batch/normalization/normalization.ts',
-        message: 'Decision has no change'
+        ...decisionLogFormat,
+        message: 'Decision has no change, no action.'
       })
     } else {
-      // Insert new decision:
+      logger.info({ ...decisionLogFormat, message: `Fetching annotation from /ner` })
       const annotatedDecision = await annotateDecision(decisionToSave)
+
+      logger.info({ ...decisionLogFormat, message: `Sending decision to dbsder-api` })
       await saveDecisionInAffaire(annotatedDecision)
-      logger.info({
-        ...decisionLogFormat,
-        message: `Decision saved in database`
-      })
     }
 
     logger.info({
       ...decisionLogFormat,
-      message: 'Decision saved in normalized bucket. Deleting decision in raw bucket'
-    })
-
-    logger.info({
-      ...decisionLogFormat,
-      message: 'Successful normalization of ' + rawTcom.path
+      message: `Successful normalization of ${rawTcom.path}`
     })
   } catch (error) {
-    // logger à mettre au format DecisionLog
-    if (error.message && /nosuchkey/i.test(error.message)) {
-      logger.error({
-        operations: ['normalization', `normalizationJob-TCOM`],
-        path: 'src/sources/juritcom/batch/normalization/normalization.ts',
-        message: 'Decision has no PDF. Archiving decision to failed bucket',
-        stack: error.stack
-      })
-      logger.error({
-        operations: ['normalization', `normalizationJob-TCOM`],
-        path: 'src/sources/juritcom/batch/normalization/normalization.ts',
-        message: 'Failed to normalize the decision ' + rawTcom.path + '.'
-      })
-    } else {
-      logger.error({
-        operations: ['normalization', `normalizationJob-TCOM`],
-        path: 'src/sources/juritcom/batch/normalization/normalization.ts',
-        message: error.message,
-        stack: error.stack
-      })
-      logger.error({
-        operations: ['normalization', `normalizationJob-TCOM`],
-        path: 'src/sources/juritcom/batch/normalization/normalization.ts',
-        message: 'Failed to normalize the decision ' + rawTcom.path + '. Archived to failed bucket.'
-      })
-      // To avoid too many request errors (as in Label):
-      if (error instanceof PostponeException) {
-        await new Promise((_) => setTimeout(_, 20 * 1000))
-      } else {
-        await new Promise((_) => setTimeout(_, 10 * 1000))
-      }
-    }
+    logger.error({
+      ...normalizationFormatTechLogs,
+      message: `Failed to normalize rawfile ${rawTcom._id} : ${error.message}`,
+      stack: error.stack
+    })
+    throw error
   }
 }
 
