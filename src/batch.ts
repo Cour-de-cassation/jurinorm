@@ -13,7 +13,7 @@ import { normalizationJob as normalizeRawTcomFiles } from './sources/juritcom/ba
 import { normalizeRawTjFiles } from './sources/juritj/batch/normalization/handler'
 import { normalizeRawCcFiles } from './sources/jurinet/handler'
 import { normalizeRawCaFiles } from './sources/jurica/handler'
-import { normalizeRawJuricaFiles } from './sources/juricav2/handler'
+import { normalizeRawJuricaV2Files } from './sources/juricav2/handler'
 
 const MAX_DECISION_PER_BATCH_CA = parseInt(BATCH_MAX_DECISIONS_CA, 10)
 const MAX_DECISION_PER_BATCH_TJ = parseInt(BATCH_MAX_DECISIONS_TJ, 10)
@@ -34,7 +34,7 @@ async function startNormalization() {
   if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV))
     await normalizeRawPortalisFiles(filters, MAX_DECISION_PER_BATCH_CPH)  
   if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV))
-    await normalizeRawJuricaFiles(filters, MAX_DECISION_PER_BATCH_JURICAV2)
+    await normalizeRawJuricaV2Files(filters, MAX_DECISION_PER_BATCH_JURICAV2)
 }
 
 startNormalization()

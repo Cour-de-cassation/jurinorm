@@ -10,13 +10,13 @@ import { DecisionLog, logger, TechLog } from '../../config/logger'
 import { COLLECTION_JURICAV2_RAW } from '../../config/env'
 import { updateRawFileStatus, NormalizationResult } from '../../services/eventSourcing'
 
-export async function normalizeRawJuricaFiles(
+export async function normalizeRawJuricaV2Files(
   defaultFilter?: Parameters<typeof findFileInformations<RawJurica>>[1],
   limit?: number
 ) {
   const normalizationFormatLogs: TechLog = {
     path: 'src/sources/juricav2/handler.ts',
-    operations: ['normalization', 'normalizeRawJuricaFiles']
+    operations: ['normalization', 'normalizeRawJuricaV2Files']
   }
   logger.info({
     ...normalizationFormatLogs,
@@ -42,7 +42,7 @@ export async function normalizeRawJuricaFiles(
     async (rawJurica) => {
       const normalizationFormatDecisionLogs: DecisionLog = {
         path: 'src/sources/juricav2/handler.ts',
-        operations: ['normalization', 'normalizeRawJuricaFiles'],
+        operations: ['normalization', 'normalizeRawJuricaV2Files'],
         decision: {
           _id: rawJurica._id.toJSON(),
           sourceId: rawJurica.metadatas._id.toHexString(),
