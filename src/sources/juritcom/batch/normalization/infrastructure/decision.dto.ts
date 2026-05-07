@@ -19,8 +19,7 @@ export function mapDecisionNormaliseeToDecisionDto(
     jurisdictionId: metadonnees.idJuridiction,
     jurisdictionName: metadonnees.libelleJuridiction,
     labelStatus: LabelStatus.TOBETREATED,
-    publishStatus:
-      metadonnees.decisionPublique === true ? PublishStatus.TOBEPUBLISHED : PublishStatus.BLOCKED,
+    publishStatus: PublishStatus.TOBEPUBLISHED,
     occultation: {
       additionalTerms: '',
       categoriesToOmit: [],
