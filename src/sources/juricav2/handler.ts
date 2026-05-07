@@ -5,74 +5,74 @@ import {
   findFileInformations,
   mapCursorSync
 } from '../../connectors/dbRawFile'
-import { normalizePortalis, rawPortalisToNormalize } from './normalization'
+import { normalizeJurica, rawJuricaToNormalize } from './normalization'
 import { DecisionLog, logger, TechLog } from '../../config/logger'
-import { S3_BUCKET_NAME_PORTALIS } from '../../config/env'
+import { COLLECTION_JURICAV2_RAW } from '../../config/env'
 import { updateRawFileStatus, NormalizationResult } from '../../services/eventSourcing'
 
-export async function normalizeRawPortalisFiles(
-  defaultFilter?: Parameters<typeof findFileInformations<RawPortalis>>[1],
+export async function normalizeRawJuricaFiles(
+  defaultFilter?: Parameters<typeof findFileInformations<RawJurica>>[1],
   limit?: number
 ) {
   const normalizationFormatLogs: TechLog = {
-    path: 'src/sources/portalis/handler.ts',
-    operations: ['normalization', 'normalizeRawPortalisFiles']
+    path: 'src/sources/juricav2/handler.ts',
+    operations: ['normalization', 'normalizeRawJuricaFiles']
   }
   logger.info({
     ...normalizationFormatLogs,
-    message: `Starting Portalis normalization`
+    message: `Starting Jurica normalization`
   })
-  const rawPortalisFilter = defaultFilter ?? rawPortalisToNormalize
-  const rawPortalisCursor = await findFileInformations<RawPortalis>(
-    S3_BUCKET_NAME_PORTALIS,
-    rawPortalisFilter,
+  const rawJuricaFilter = defaultFilter ?? rawJuricaToNormalize
+  const rawJuricaCursor = await findFileInformations<RawJurica>(
+    COLLECTION_JURICAV2_RAW,
+    rawJuricaFilter,
     limit
   )
-  const rawPortalisLength = await countFileInformations<RawPortalis>(
-    S3_BUCKET_NAME_PORTALIS,
-    rawPortalisFilter
+  const rawJuricaLength = await countFileInformations<RawJurica>(
+    COLLECTION_JURICAV2_RAW,
+    rawJuricaFilter
   )
   logger.info({
     ...normalizationFormatLogs,
-    message: `Find ${rawPortalisLength} raw decisions to normalize batch. Limit is set to ${limit}`
+    message: `Find ${rawJuricaLength} raw decisions to normalize batch. Limit is set to ${limit}`
   })
 
-  const results: NormalizationResult<RawPortalis>[] = await mapCursorSync(
-    rawPortalisCursor,
-    async (rawPortalis) => {
+  const results: NormalizationResult<RawJurica>[] = await mapCursorSync(
+    rawJuricaCursor,
+    async (rawJurica) => {
       const normalizationFormatDecisionLogs: DecisionLog = {
-        path: 'src/sources/portalis/handler.ts',
-        operations: ['normalization', 'normalizeRawPortalisFiles'],
+        path: 'src/sources/juricav2/handler.ts',
+        operations: ['normalization', 'normalizeRawJuricaFiles'],
         decision: {
-          _id: rawPortalis._id.toJSON(),
-          sourceId: rawPortalis.metadatas.identifiantDecision,
-          sourceName: 'Portalis'
+          _id: rawJurica._id.toJSON(),
+          sourceId: rawJurica.metadatas._id.toHexString(),
+          sourceName: 'Jurica'
         }
       }
       try {
         logger.info({
           ...normalizationFormatDecisionLogs,
-          message: `Starting normalization for ${rawPortalis._id} - ${rawPortalis.path}`
+          message: `Starting normalization for ${rawJurica._id} - ${rawJurica.path}`
         })
-        await normalizePortalis(rawPortalis)
+        await normalizeJurica(rawJurica)
         logger.info({
           ...normalizationFormatDecisionLogs,
-          message: `${rawPortalis._id} normalized with success`
+          message: `${rawJurica._id} normalized with success`
         })
 
-        const result = { rawFile: rawPortalis, status: 'success' } as const
-        await updateRawFileStatus(S3_BUCKET_NAME_PORTALIS, result)
+        const result = { rawFile: rawJurica, status: 'success' } as const
+        await updateRawFileStatus(COLLECTION_JURICAV2_RAW, result)
         return result
       } catch (err) {
         const error = toUnexpectedError(err)
         logger.error({
           ...normalizationFormatDecisionLogs,
-          message: `${rawPortalis._id} failed to normalize`,
+          message: `${rawJurica._id} failed to normalize`,
           stack: error.stack
         })
 
-        const result = { rawFile: rawPortalis, status: 'error', error } as const
-        await updateRawFileStatus(S3_BUCKET_NAME_PORTALIS, result)
+        const result = { rawFile: rawJurica, status: 'error', error } as const
+        await updateRawFileStatus(COLLECTION_JURICAV2_RAW, result)
         return result
       }
     }

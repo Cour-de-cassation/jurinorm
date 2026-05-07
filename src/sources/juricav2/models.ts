@@ -154,7 +154,7 @@ export function mapJuricaDecision(
     sourceId: data._id.toHexString(),
     sourceName: 'juricav2',
     originalText: content,
-    registerNumber: `${data.numero_rg} ${data.numero_registre}`, // on reproduit sciemment "l'erreur" de la collecte originale (qui sera "réparée" lors de la publication)
+    registerNumber: `${data.numero_rg} ${data.numero_registre}`, // on reproduit sciemment la collecte originale (le numéro RG sera rétabli lors de la publication)
     labelStatus: LabelStatus.TOBETREATED,
     publishStatus: PublishStatus.TOBEPUBLISHED,
     dateCreation: new Date().toISOString(),

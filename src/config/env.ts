@@ -29,6 +29,10 @@ if (process.env.BATCH_MAX_DECISIONS_TCOM == null)
   throw new MissingValue('process.env.BATCH_MAX_DECISIONS_TCOM')
 if (process.env.BATCH_MAX_DECISIONS_CPH == null)
   throw new MissingValue('process.env.BATCH_MAX_DECISIONS_CPH')
+if (process.env.BATCH_MAX_DECISIONS_JURICAV2 == null)
+  throw new MissingValue('process.env.BATCH_MAX_DECISIONS_JURICAV2')
+if (process.env.COLLECTION_JURICAV2_RAW == null)
+  throw new MissingValue('process.env.COLLECTION_JURICAV2_RAW')
 
 export const {
   DBSDER_API_KEY,
@@ -48,5 +52,7 @@ export const {
   BATCH_MAX_DECISIONS_CA,
   BATCH_MAX_DECISIONS_TJ,
   BATCH_MAX_DECISIONS_TCOM,
-  BATCH_MAX_DECISIONS_CPH
+  BATCH_MAX_DECISIONS_CPH,
+  BATCH_MAX_DECISIONS_JURICAV2,
+  COLLECTION_JURICAV2_RAW
 } = process.env
