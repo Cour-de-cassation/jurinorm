@@ -1,8 +1,8 @@
-import { 
-    composeHtmlToText,
-    fixToAssureFinalDot,
-    throwOnEmpty
-} from "../../../../../services/textExtraction/html"
+import {
+  composeHtmlToText,
+  fixToAssureFinalDot,
+  throwOnEmpty
+} from '../../../../../services/textExtraction/html'
 
 function tcomPostProcess(plainText: string): string {
   // 10. Cleanup numbered and non-numbered list items:
@@ -151,10 +151,5 @@ function tcomPostProcess(plainText: string): string {
 }
 
 export function textPostProcess(input: string): string {
-  return composeHtmlToText(
-    input,
-    tcomPostProcess,
-    fixToAssureFinalDot,
-    throwOnEmpty
-  )
+  return composeHtmlToText(input, tcomPostProcess, fixToAssureFinalDot, throwOnEmpty)
 }

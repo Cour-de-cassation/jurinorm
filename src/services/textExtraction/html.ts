@@ -2,26 +2,30 @@ import { decode } from 'html-entities'
 import { convert } from 'html-to-text'
 import { JSDOM } from 'jsdom'
 
-import { logger, TechLog } from '../../config/logger'
+import { logger } from '../../config/logger'
 import { MissingValue } from '../error'
 
-export function composeHtmlToText(html: string, convertFn: (x: string) => string, ...restConvertFn: ((x: string) => string)[]): string {
+export function composeHtmlToText(
+  html: string,
+  convertFn: (x: string) => string,
+  ...restConvertFn: ((x: string) => string)[]
+): string {
   const [nextFn, ...restFn] = restConvertFn
   return nextFn ? composeHtmlToText(convertFn(html), nextFn, ...restFn) : convertFn(html)
 }
 
 export function removeExtraSpace(plainText: string): string {
   // '\s' without '\n', '\r' , '\v':
-  const moreOfOneSpace = /[\f\t\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+[\f\t\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/gm
+  const moreOfOneSpace =
+    /[\f\t\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+[\f\t\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/gm
   return plainText.replace(moreOfOneSpace, ' ')
 }
 
 export function removeExtraLineBreaks(plainText: string): string {
   // '\s' without '\n', '\r' , '\v':
-  const emptyLineWithSpace = /\n[\f\t\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+\n/gm
-  return plainText
-    .replace(emptyLineWithSpace, '\n\n')
-    .replace(/\n+\n/gm, '\n\n')
+  const emptyLineWithSpace =
+    /\n[\f\t\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+\n/gm
+  return plainText.replace(emptyLineWithSpace, '\n\n').replace(/\n+\n/gm, '\n\n')
 }
 
 export function removeExtraTables(plainText: string): string {
@@ -79,7 +83,7 @@ export function removeInlineMath(plainText: string): string {
   dom.window.document.querySelectorAll('p[block-type="TextInlineMath"]').forEach((textToIgnore) => {
     textToIgnore.outerHTML = '<p block-type="Text">[…]</p>'
   })
-  
+
   return dom.serialize()
 }
 
@@ -155,14 +159,13 @@ export function removeOrReplaceUnnecessaryCharacters(rawString: string): string 
   const carriageReturnRegex = /\r\n|\r/gi
 
   return rawString
-  .replace(tabOrPageBreakRegex, ' ')
-  .replace(carriageReturnRegex, '\n')
-  .replace(/\n[\*\-_=#\s]+\n/gm, '\n\n')
+    .replace(tabOrPageBreakRegex, ' ')
+    .replace(carriageReturnRegex, '\n')
+    .replace(/\n[\*\-_=#\s]+\n/gm, '\n\n')
 }
 
 export function replaceThreeDots(plainText: string): string {
-  return plainText.replace(/\.\.\./gm, '…')
-    .replace(/(?:\[…\]\s*\n+\s*)+\[…\]/gm, '\n\n[…]\n\n')
+  return plainText.replace(/\.\.\./gm, '…').replace(/(?:\[…\]\s*\n+\s*)+\[…\]/gm, '\n\n[…]\n\n')
 }
 
 export function fixToAssureFinalDot(plainText) {
@@ -207,7 +210,7 @@ export function htmlToPlainText(input: string): string {
       fixToAssureFinalDot,
       throwOnEmpty
     )
-  } catch(err) {
+  } catch (err) {
     logger.error({
       path: __filename,
       operations: ['extraction', 'htmlToPlainText'],
@@ -215,9 +218,9 @@ export function htmlToPlainText(input: string): string {
       message: JSON.stringify({
         error: err.message,
         data: {
-          input: input,
+          input: input
         }
-      }),
+      })
     })
   }
 }
