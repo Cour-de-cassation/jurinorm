@@ -3,5 +3,5 @@
         "src"
     ],
     "ext": "ts",
-    "exec": "ts-node -r dotenv/config src/batch.ts"
+    "exec": "ts-node -r tsconfig-paths/register -r dotenv/config src/batch.ts"
 }

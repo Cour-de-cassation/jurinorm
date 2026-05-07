@@ -6,11 +6,11 @@
   "license": "MIT",
   "author": "Cour de cassation",
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsc --build && tsc-alias",
     "fix": "eslint \"src/**/*.ts\" --fix && prettier \"src/**/*.ts\" --write",
     "lint": "eslint \"src/**/*.ts\" --max-warnings 0",
     "format": "prettier \"src/**/*.ts\" --check",
-    "start": "npx ts-node -r dotenv/config src/batch.ts",
+    "start": "npx ts-node -r tsconfig-paths/register -r dotenv/config src/batch.ts",
     "start:watch": "nodemon --config nodemon.json",
     "start:docker": "docker compose up",
     "test": "jest && npm run test:integration",
@@ -82,6 +82,7 @@
     "ts-jest": "29.4.5",
     "ts-loader": "9.5.4",
     "ts-node": "10.9.2",
+    "tsc-alias": "1.8.17",
     "tsconfig-paths": "4.2.0",
     "typescript": "5.9.3"
   }
