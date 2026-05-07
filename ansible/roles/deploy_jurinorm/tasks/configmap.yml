@@ -38,4 +38,6 @@
         BATCH_MAX_DECISIONS_TJ: "{{ batch_max_decisions_tj }}"
         BATCH_MAX_DECISIONS_TCOM: "{{ batch_max_decisions_tcom }}"
         BATCH_MAX_DECISIONS_CPH: "{{ batch_max_decisions_cph }}"
+        BATCH_MAX_DECISIONS_JURICAV2: "{{ batch_max_decisions_juricav2 }}"
+        COLLECTION_JURICAV2_RAW: "{{ collection_juricav2_raw }}"
 ...
