@@ -9,6 +9,7 @@ import {
 } from 'dbsder-api-types'
 import { RawFile } from '../../services/eventSourcing'
 import { zObjectId } from 'zod-mongodb-schema'
+import { computeRaisonInteretParticulier } from '../../services/rules/raisonInteretParticulier'
 
 export function occultationRecommendationCodeNac(
   recommandationOccultation: SuiviOccultation
@@ -149,6 +150,7 @@ export function mapJuricaDecision(
   occultationStrategy: Required<Pick<CodeNac, 'blocOccultation' | 'categoriesToOmit'>>
 ): UnIdentifiedDecisionCaV2 {
   const recommandationOccultation = getRecommandationOccultation(data.occultation_complementaire)
+  const raisonInteretParticulier = computeRaisonInteretParticulier(data.is_selected, data.sommaire)
 
   return {
     sourceId: data._id.toHexString(),
@@ -186,7 +188,8 @@ export function mapJuricaDecision(
     debatPublic: data.is_debat_public,
     pourvoiCourDeCassation: data.has_pourvoi_cassation,
     pourvoiLocal: data.has_pourvoi_local,
-    filenameSource: data.fichier_archive
+    filenameSource: data.fichier_archive,
+    raisonInteretParticulier
   }
 }
 
