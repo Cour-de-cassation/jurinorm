@@ -16,7 +16,7 @@ RUN npm run build && npm prune --production
 FROM builder AS batch
 
 USER root
-RUN apk add cmd:wpd2text
+RUN apk add cmd:wpd2text && npm uninstall -g npm
 
 USER node
 
