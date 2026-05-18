@@ -20,7 +20,7 @@
     "scripts:tcom:reprocessStockDecisions": "docker compose run --rm jurinorm-batch npx ts-node /home/node/src/tcom/script/reprocessStockDecisions.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1048.0",
+    "@aws-sdk/client-s3": "3.1048.0",
     "@nestjs/axios": "4.0.1",
     "@nestjs/common": "11.1.6",
     "@nestjs/config": "4.0.2",
@@ -34,7 +34,6 @@
     "class-validator": "0.14.2",
     "dbsder-api-types": "3.0.3",
     "dotenv": "17.2.3",
-    "fast-xml-parser": "^5.8.0",
     "form-data": "4.0.5",
     "html-entities": "2.6.0",
     "html-to-text": "9.0.5",
