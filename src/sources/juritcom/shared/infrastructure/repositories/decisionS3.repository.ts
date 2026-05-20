@@ -5,7 +5,8 @@ import {
   ListObjectsV2CommandInput,
   _Object,
   ListObjectsV2Command,
-  DeleteObjectCommand
+  DeleteObjectCommand,
+  PutObjectCommandInput
 } from '@aws-sdk/client-s3'
 import { logger } from '../../../../../config/logger'
 import { BucketError } from '../../domain/errors/bucket.error'
@@ -116,7 +117,7 @@ export class DecisionS3Repository implements DecisionRepository {
     originalPdfFileName: string,
     pdfS3Key: string
   ): Promise<void> {
-    const params = {
+    const params: PutObjectCommandInput = {
       Bucket: process.env.S3_BUCKET_NAME_PDF,
       Key: `${pdfS3Key}`,
       Body: file.buffer,
@@ -126,7 +127,7 @@ export class DecisionS3Repository implements DecisionRepository {
         date: new Date().toISOString(),
         originalPdfFileName: originalPdfFileName
       }
-    } as unknown as any
+    }
 
     try {
       await this.s3Client.send(new PutObjectCommand(params))
@@ -223,7 +224,7 @@ export class DecisionS3Repository implements DecisionRepository {
   }
 
   async archiveSuccessPDF(data: object, key: string): Promise<void> {
-    const params = {
+    const params: PutObjectCommandInput = {
       Bucket: process.env.S3_BUCKET_NAME_PDF2TEXT_SUCCESS,
       Key: `${key}`,
       Body: JSON.stringify(data),
@@ -232,7 +233,7 @@ export class DecisionS3Repository implements DecisionRepository {
         date: new Date().toISOString(),
         originalPdfFileName: `${key}`
       }
-    } as unknown as any
+    }
 
     try {
       await this.s3Client.send(new PutObjectCommand(params))

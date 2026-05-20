@@ -235,7 +235,4 @@ export class MetadonneeDto {
   @Type(() => OccultationComplementaireDto)
   @IsOptional()
   occultationsComplementaires?: OccultationComplementaireDto
-
-  @IsOptional()
-  date?: any
 }

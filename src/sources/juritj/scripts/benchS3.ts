@@ -7,7 +7,7 @@ async function main(key: string) {
   const t0 = new Date()
   const decision: CollectDto = await s3Repository.getNormalizedDecisionByFilename(key)
   const t1 = new Date()
-  logger
+
   logger.info({
     path: 'src/sources/juritj/scripts/benchS3.ts',
     operations: ['other', 'script-benchS3-TJ'],

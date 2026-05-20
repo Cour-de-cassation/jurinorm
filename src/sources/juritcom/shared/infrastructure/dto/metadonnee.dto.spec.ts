@@ -2,8 +2,8 @@ import { ArgumentMetadata } from '@nestjs/common'
 import { QualitePartieExhaustive, TypePartieExhaustive } from 'dbsder-api-types'
 import { MockUtils } from '../utils/mock.utils'
 import { ValidateDtoPipe } from './validateDto.pipe'
-import { BadPropertiesException } from '../exceptions/missingProperties.exception'
 import { AdresseDto, CompositionDto, MetadonneeDto, PartieDto } from './metadonnee.dto'
+import { NotSupported } from '@services/error'
 
 describe('Validate MetadonneeDTO format', () => {
   const target = new ValidateDtoPipe()
@@ -39,7 +39,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
 
     it('throws an error when libelleJuridiction has more than 42 characters', async () => {
@@ -52,7 +52,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
 
     it('throws an error when libelleJuridiction has less than 2 characters', async () => {
@@ -65,7 +65,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
   })
 
@@ -77,7 +77,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
 
     it('throws an error when idJuridiction is not a string', async () => {
@@ -87,7 +87,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
   })
 
@@ -103,7 +103,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
 
     it('throws an error when dateDecision is more than 8 characters', async () => {
@@ -117,7 +117,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
 
     it('throws an error when dateDecision is a string but incorrect valid values', async () => {
@@ -131,7 +131,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
 
     it('throws an error when dateDecision is a string but incorrect format', async () => {
@@ -145,7 +145,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
 
     it('throws an error when dateDecision is a string but incorrect format', async () => {
@@ -159,7 +159,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
   })
 
@@ -205,7 +205,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(metadonneesWithParties, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
 
     it('throws an error when type property on parties does not have valid value', async () => {
@@ -222,7 +222,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
     it('throws an error when qualite property on parties does not have valid value', async () => {
       // GIVEN
@@ -238,7 +238,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
     it('throws an error when parties is not an array', async () => {
       // GIVEN
@@ -251,7 +251,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
 
     it('throws an error when parties is not an array of partie', async () => {
@@ -265,7 +265,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
   })
 
@@ -320,7 +320,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(metadonneesWithComposition, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
 
     it('throws an error when nom property on parties does not have valid value', async () => {
@@ -339,7 +339,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
     it('throws an error when composition is not an array', async () => {
       // GIVEN
@@ -352,7 +352,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
 
     it('throws an error when composition is not an array of partie', async () => {
@@ -366,7 +366,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
   })
 
@@ -382,7 +382,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
   })
 
@@ -398,7 +398,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
   })
 
@@ -414,7 +414,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
   })
 
@@ -432,7 +432,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
     it('succeeds when adresse property has all elements', async () => {
       // GIVEN
@@ -460,7 +460,7 @@ describe('Validate MetadonneeDTO format', () => {
       // WHEN
       await expect(async () => await target.transform(invalidMetadonnee, metadata))
         // THEN
-        .rejects.toThrow(BadPropertiesException)
+        .rejects.toThrow(NotSupported)
     })
   })
 })

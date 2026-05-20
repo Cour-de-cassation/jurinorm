@@ -15,8 +15,7 @@ import {
 } from 'class-validator'
 import { MockUtils } from '../utils/mock.utils'
 import { TypePartieExhaustive, QualitePartieExhaustive, SuiviOccultation } from 'dbsder-api-types'
-import "reflect-metadata";
-
+import 'reflect-metadata'
 
 const metadonneesDtoExample = new MockUtils().allAttributesMetadonneesDtoMock
 
