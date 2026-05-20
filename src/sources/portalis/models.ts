@@ -29,6 +29,7 @@ export function occultationRecommendationCodeNac(
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const schemaPortalisMetadatas = zod.object({
   identifiantDecision: zod.string().trim().min(1),
   recommandationOccultation: zod.object({
