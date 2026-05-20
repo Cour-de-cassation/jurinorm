@@ -236,13 +236,11 @@ export class DbSderApiGateway {
 
     return {
       next: async () => {
-        console.log(`listDecisions index:${index}`)
         const decision = response.decisions[index]
         index++
         if (!!decision) return decision
 
         if (!!response.nextCursor) {
-          console.log(`listDecisions nextCursor:${response.nextCursor}`)
           response = await this.getListDecisions(
             labelStatus,
             startDate,

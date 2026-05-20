@@ -1,5 +1,5 @@
 import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common'
-import { isCustomError, NotSupported } from '@services/error'
+import { NotSupported } from '@services/error'
 import { plainToInstance } from 'class-transformer'
 import { validate, ValidationError } from 'class-validator'
 

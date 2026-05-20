@@ -26,7 +26,7 @@ export class FileService {
         filename: uniqueFilename,
         path: fullPath
       }
-    } catch (_error) {
+    } catch (_) {
       const error = new InternalServerErrorException('Error saving file')
       logger.error({
         operations: ['other', `${FileService.name}`],

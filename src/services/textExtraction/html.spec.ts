@@ -1,7 +1,7 @@
 import { htmlToPlainText, removeOrReplaceUnnecessaryCharacters } from './html'
 
 describe(`${__dirname}/textExtraction/html.ts`, () => {
-  ;(describe('HtmlToPlainText', () => {
+  describe('HtmlToPlainText', () => {
     it('should change a html into a plain text', () => {
       const html = '<html><h1>Title</h1><p>This text is a html.</p></html>'
 
@@ -122,40 +122,41 @@ describe(`${__dirname}/textExtraction/html.ts`, () => {
 
       expect(result).toBe("Title\n\nMany things to […] doesn't display\n\nor\n\nuseless.")
     })
-  }),
-    describe('removeOrReplaceUnnecessaryCharacters', () => {
-      it('replaces multiple return character \r to a newline character \n', () => {
-        // GIVEN
-        const rawString = 'A string with \r character \r'
-        const trueString = 'A string with \n character \n'
-        // WHEN
-        const normalizedString = removeOrReplaceUnnecessaryCharacters(rawString)
-        // THEN
-        expect(normalizedString).toEqual(trueString)
-      })
+  })
 
-      it('replaces multiple \r\n to newline characters \n', () => {
-        // GIVEN
-        const rawString = 'A string with \r\n character \r\n'
-        const trueString = 'A string with \n character \n'
+  describe('removeOrReplaceUnnecessaryCharacters', () => {
+    it('replaces multiple return character \r to a newline character \n', () => {
+      // GIVEN
+      const rawString = 'A string with \r character \r'
+      const trueString = 'A string with \n character \n'
+      // WHEN
+      const normalizedString = removeOrReplaceUnnecessaryCharacters(rawString)
+      // THEN
+      expect(normalizedString).toEqual(trueString)
+    })
 
-        // WHEN
-        const normalizedString = removeOrReplaceUnnecessaryCharacters(rawString)
+    it('replaces multiple \r\n to newline characters \n', () => {
+      // GIVEN
+      const rawString = 'A string with \r\n character \r\n'
+      const trueString = 'A string with \n character \n'
 
-        // THEN
-        expect(normalizedString).toEqual(trueString)
-      })
+      // WHEN
+      const normalizedString = removeOrReplaceUnnecessaryCharacters(rawString)
 
-      it('replaces \r\n and \r in the same sentence to newline characters \n', () => {
-        // GIVEN
-        const rawString = 'A string with \r\n character \r'
-        const trueString = 'A string with \n character \n'
+      // THEN
+      expect(normalizedString).toEqual(trueString)
+    })
 
-        // WHEN
-        const normalizedString = removeOrReplaceUnnecessaryCharacters(rawString)
+    it('replaces \r\n and \r in the same sentence to newline characters \n', () => {
+      // GIVEN
+      const rawString = 'A string with \r\n character \r'
+      const trueString = 'A string with \n character \n'
 
-        // THEN
-        expect(normalizedString).toEqual(trueString)
-      })
-    }))
+      // WHEN
+      const normalizedString = removeOrReplaceUnnecessaryCharacters(rawString)
+
+      // THEN
+      expect(normalizedString).toEqual(trueString)
+    })
+  })
 })
