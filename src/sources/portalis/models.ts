@@ -36,15 +36,18 @@ const schemaPortalisMetadatas = zod.object({
       .optional(),
     decision: zod.object({
       date: zod.string().regex(/\d{8}/),
-      codes_decision: zod.object({
-        code_decision: zod
-          .array(
-            zod.object({
-              code: zod.string(),
-              libelle: zod.string()
-            })
-          ).min(1)
-      }).optional()
+      codes_decision: zod
+        .object({
+          code_decision: zod
+            .array(
+              zod.object({
+                code: zod.string(),
+                libelle: zod.string()
+              })
+            )
+            .min(1)
+        })
+        .optional()
     }),
     dossier: zod.object({
       nature_affaire_civile: zod.object({
@@ -84,10 +87,9 @@ export function mapPortalisDecision(
   { metadatas, ...publicationRules }: PortalisMetadatas,
   content: string,
   originalTextZoning: Zoning,
-  occultationStrategy: { blocOccultation: BlocOccultation, categoriesToOmit: Category[] },
+  occultationStrategy: { blocOccultation: BlocOccultation; categoriesToOmit: Category[] },
   filenameSource: string
 ): UnIdentifiedDecisionCph {
-
   return {
     sourceId: publicationRules.identifiantDecision,
     sourceName: 'portalis-cph',

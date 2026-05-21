@@ -15,7 +15,7 @@ import { mapPortalisDecision, RawPortalis } from './models'
 async function getOccultationStrategy(
   code: string,
   categoryType: CategoriesToOmit
-): Promise<{ blocOccultation: BlocOccultation, categoriesToOmit: Category[] }> {
+): Promise<{ blocOccultation: BlocOccultation; categoriesToOmit: Category[] }> {
   const codeNac = await getCodeNac(code)
   if (!codeNac) throw new NotFound('codeNac', `codeNac ${code} not found`)
 
@@ -48,7 +48,9 @@ export async function normalizePortalis(rawPortalis: RawPortalis): Promise<unkno
 
   const occultationStrategy = await getOccultationStrategy(
     portalisMetadatas.metadatas.dossier.nature_affaire_civile.code,
-    portalisMetadatas.recommandationOccultation ? CategoriesToOmit.SUIVI : CategoriesToOmit.NON_SUIVI
+    portalisMetadatas.recommandationOccultation
+      ? CategoriesToOmit.SUIVI
+      : CategoriesToOmit.NON_SUIVI
   )
 
   const portalisContent = await getPdfContent(rawPortalis.path, portalisFile, false)
