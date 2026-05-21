@@ -1,14 +1,7 @@
-import { removeOrReplaceUnnecessaryCharacters } from './services/removeOrReplaceUnnecessaryCharacters'
 import { mapDecisionNormaliseeToDecisionDto } from './infrastructure/decision.dto'
 import { computeLabelStatus } from './services/computeLabelStatus'
 import { computeOccultation } from './services/computeOccultation'
 import { DbSderApiGateway } from './repositories/gateways/dbsderApi.gateway'
-import {
-  fetchNLPDataFromPDF,
-  HTMLToPlainText,
-  markdownToPlainText,
-  NLPPDFToTextDTO
-} from './services/PDFToText'
 import { LabelStatus, PublishStatus, UnIdentifiedDecisionTcom } from 'dbsder-api-types'
 import { DecisionLog, logger, TechLog } from '../../../../config/logger'
 
@@ -16,6 +9,8 @@ import { strict as assert } from 'assert'
 import { annotateDecision } from '../../../../services/rules/annotation'
 import { saveDecisionInAffaire } from '../../../../services/affaire'
 import { fetchZoning } from '../../../../connectors/jurizonage'
+import { getPdfContent } from '../../../../services/textExtraction/pdf'
+import { textPostProcess } from './services/textPostProcess'
 import { RawTcom } from '../../shared/infrastructure/dto/rawFile'
 import { getFileByName } from '@connectors/bucket'
 
@@ -77,14 +72,8 @@ export async function normalizeTcom(rawTcom: RawTcom): Promise<void> {
     const pdfFile = await getFileByName(bucketNamePdf, rawTcom.path)
 
     logger.info({ ...normalizationFormatTechLogs, message: `Extracting text from ${rawTcom.path}` })
-    let originalText: string
-    const NLPData: NLPPDFToTextDTO = await fetchNLPDataFromPDF(pdfFile, rawTcom.path)
-    if (NLPData.HTMLText) {
-      originalText = HTMLToPlainText(NLPData.HTMLText)
-    } else if (NLPData.markdownText) {
-      originalText = markdownToPlainText(NLPData.markdownText)
-    }
-    originalText = removeOrReplaceUnnecessaryCharacters(originalText)
+    const plainText = await getPdfContent(rawTcom.path, pdfFile)
+    const originalText = textPostProcess(plainText)
 
     const decisionToSave = mapDecisionNormaliseeToDecisionDto(
       rawTcom.metadatas.idDecision,

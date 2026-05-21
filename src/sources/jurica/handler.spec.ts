@@ -2,6 +2,7 @@ import { normalizeCa } from './handler'
 import { computeRaisonInteretParticulier } from '../../services/rules/raisonInteretParticulier'
 import { saveDecisionInAffaire } from '../../services/affaire'
 import { RaisonInteretParticulier } from 'dbsder-api-types'
+import { RawCa } from './models'
 
 jest.mock('../../services/rules/raisonInteretParticulier', () => ({
   computeRaisonInteretParticulier: jest.fn()
@@ -16,13 +17,13 @@ jest.mock('../../services/affaire', () => ({
 }))
 
 describe('normalizeCa – caDecision content', () => {
-  const rawCa: any = {
+  const rawCa = {
     _id: 'raw1',
     metadatas: {
       selection: true,
       sommaire: 'S4 - ...'
     }
-  }
+  } as unknown as RawCa // @todo: type && use expected mock
 
   beforeEach(() => {
     jest.clearAllMocks()
