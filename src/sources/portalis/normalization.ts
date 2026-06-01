@@ -1,4 +1,4 @@
-import { CodeNac } from 'dbsder-api-types'
+import { BlocOccultation, CategoriesToOmit, Category } from 'dbsder-api-types'
 import { S3_BUCKET_NAME_PORTALIS } from '../../config/env'
 import { fetchZoning } from '../../connectors/jurizonage'
 
@@ -13,8 +13,9 @@ import { getPdfContent } from '../../services/textExtraction/pdf'
 import { mapPortalisDecision, RawPortalis } from './models'
 
 async function getOccultationStrategy(
-  code: string
-): Promise<Required<Pick<CodeNac, 'blocOccultation' | 'categoriesToOmit'>>> {
+  code: string,
+  categoryType: CategoriesToOmit
+): Promise<{ blocOccultation: BlocOccultation; categoriesToOmit: Category[] }> {
   const codeNac = await getCodeNac(code)
   if (!codeNac) throw new NotFound('codeNac', `codeNac ${code} not found`)
 
@@ -24,13 +25,15 @@ async function getOccultationStrategy(
       'codeNac.blocOccultationCA',
       `codeNac ${code} has no "blocOccultationCA" property`
     )
-  if (!categoriesToOmit)
+
+  const categoriesToOmitByType = categoriesToOmit?.[categoryType]
+  if (!categoriesToOmitByType)
     throw new NotFound(
       'codeNac.categoriesToOmit',
-      `codeNac ${code} has no "categoriesToOmit" property`
+      `codeNac ${code} has no "categoriesToOmit" property for "${categoryType}"`
     )
 
-  return { blocOccultation, categoriesToOmit }
+  return { blocOccultation, categoriesToOmit: categoriesToOmitByType }
 }
 
 export async function normalizePortalis(rawPortalis: RawPortalis): Promise<unknown> {
@@ -44,8 +47,12 @@ export async function normalizePortalis(rawPortalis: RawPortalis): Promise<unkno
     )
 
   const occultationStrategy = await getOccultationStrategy(
-    portalisMetadatas.metadatas.dossier.nature_affaire_civile.code
+    portalisMetadatas.metadatas.dossier.nature_affaire_civile.code,
+    portalisMetadatas.recommandationOccultation
+      ? CategoriesToOmit.SUIVI
+      : CategoriesToOmit.NON_SUIVI
   )
+
   const portalisContent = await getPdfContent(rawPortalis.path, portalisFile, false)
   const originalTextZoning = await fetchZoning({
     arret_id: portalisMetadatas.identifiantDecision,
