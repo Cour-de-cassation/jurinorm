@@ -8,7 +8,7 @@ import {
 } from './config/env'
 
 import { normalizeRawPortalisFiles } from './sources/portalis/handler'
-import { normalizationJob as normalizeRawTcomFiles } from './sources/juritcom/batch/normalization/normalization'
+import { normalizeRawTcomFiles } from './sources/juritcom/batch/normalization/handler'
 import { normalizeRawTjFiles } from './sources/juritj/batch/normalization/handler'
 import { normalizeRawCcFiles } from './sources/jurinet/handler'
 import { normalizeRawCaFiles } from './sources/jurica/handler'
@@ -27,7 +27,7 @@ async function startNormalization() {
   await normalizeRawCcFiles()
   await normalizeRawCaFiles(filters, MAX_DECISION_PER_BATCH_CA)
   await normalizeRawTjFiles(filters, MAX_DECISION_PER_BATCH_TJ)
-  await normalizeRawTcomFiles(MAX_DECISION_PER_BATCH_TCOM)
+  await normalizeRawTcomFiles(filters, MAX_DECISION_PER_BATCH_TCOM)
   if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV))
     await normalizeRawPortalisFiles(filters, MAX_DECISION_PER_BATCH_CPH)
 }

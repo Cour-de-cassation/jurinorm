@@ -1,229 +1,118 @@
-import {
-  DeleteObjectCommand,
-  GetObjectCommand,
-  ListObjectsV2Command,
-  PutObjectCommand,
-  S3Client
-} from '@aws-sdk/client-s3'
-import 'aws-sdk-client-mock-jest'
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock'
-import { normalizationJob } from './normalization'
-import { MockUtils } from '../../shared/infrastructure/utils/mock.utils'
-import { Readable } from 'stream'
-import { sdkStreamMixin } from '@smithy/util-stream'
-import { DbSderApiGateway } from './repositories/gateways/dbsderApi.gateway'
-import { InfrastructureException } from '../../shared/infrastructure/exceptions/infrastructure.exception'
-import { CollectDto } from '../../shared/infrastructure/dto/collect.dto'
-// import { ConvertedDecisionWithMetadonneesDto } from '../../shared/infrastructure/dto/convertedDecisionWithMetadonnees.dto'
+import { MongoMemoryServer } from 'mongodb-memory-server'
+import { MongoClient, Collection } from 'mongodb'
+import { rawTcomToNormalize } from './normalization'
 
-jest.mock('../../../../config/logger', () => ({
-  logger: {
-    log: jest.fn(),
-    info: jest.fn(),
-    error: jest.fn()
-  },
-  normalizationFormatLogs: {
-    operations: ['normalizationJob'],
-    path: 'src/sources/juritcom/batch/normalization/normalization.ispec.ts',
-    message: 'Starting normalization job...'
-  }
-}))
+const FILE_NAME = 'decision.pdf'
 
-describe('Normalization', () => {
-  const mockS3: AwsClientStub<S3Client> = mockClient(S3Client)
+let mongoServer: MongoMemoryServer
+let client: MongoClient
+let collection: Collection
 
-  const mockUtils = new MockUtils()
-  const decisionIntegre = mockUtils.decisionContentToNormalize
-  const metadonneesFromS3 = mockUtils.metadonneeDtoMock
-  // const normalizedMetadonnees = mockUtils.decisionMock
+describe('rawTcomToNormalize MongoDB Filter', () => {
+  beforeAll(async () => {
+    mongoServer = await MongoMemoryServer.create()
+    client = new MongoClient(mongoServer.getUri())
+    await client.connect()
+    collection = client.db().collection('rawFiles')
+  }, 120_000)
 
-  beforeEach(() => {
-    mockS3.reset()
-    jest.resetAllMocks()
-
-    mockS3.on(PutObjectCommand).resolves({})
-    mockS3.on(DeleteObjectCommand).resolves({})
+  afterEach(async () => {
+    await collection.deleteMany({})
   })
 
-  beforeAll(() => {
-    jest.useFakeTimers()
-    jest.setSystemTime(mockUtils.dateNow)
+  afterAll(async () => {
+    await client.close()
+    await mongoServer.stop()
   })
 
-  afterAll(() => {
-    jest.useRealTimers()
+  it('selects a document with no event', async () => {
+    await collection.insertOne({ path: FILE_NAME, events: [] })
+
+    const rawFiles = await collection.find(rawTcomToNormalize).toArray()
+
+    expect(rawFiles).toHaveLength(1)
   })
 
-  describe('Success Cases', () => {
-    it('returns an empty list when no decisions are present', async () => {
-      // GIVEN
-      const emptyListFromS3 = {
-        Contents: []
-      }
-      mockS3.on(ListObjectsV2Command).resolves(emptyListFromS3)
-
-      const expected = []
-
-      // WHEN
-      const response = await normalizationJob()
-
-      // THEN
-      expect(response).toEqual(expected)
-    })
-
-    /*
-    it('returns a list of normalized decisions when decisions are present', async () => {
-      // GIVEN
-      const fileName = 'filename.json'
-
-      const listWithOneElementFromS3 = {
-        Contents: [{ Key: fileName }]
-      }
-      mockS3.on(ListObjectsV2Command).resolves(listWithOneElementFromS3)
-
-      mockS3.on(GetObjectCommand).resolves({
-        Body: createFakeDocument(decisionIntegre, metadonneesFromS3)
-      })
-
-      jest.spyOn(DbSderApiGateway.prototype, 'saveDecision').mockResolvedValue({})
-
-      const expected: ConvertedDecisionWithMetadonneesDto[] = [
-        {
-          decisionNormalisee: mockUtils.decisionContentNormalized,
-          metadonnees: {
-            ...normalizedMetadonnees,
-            labelStatus: LabelStatus.TOBETREATED,
-            filenameSource: fileName
-          }
-        }
+  it('selects a document with less than 3 blocked events', async () => {
+    await collection.insertOne({
+      path: FILE_NAME,
+      events: [
+        { type: 'blocked', date: new Date(), reason: 'random error' },
+        { type: 'blocked', date: new Date(), reason: 'random error' }
       ]
-
-      // WHEN
-      const result = await normalizationJob()
-
-      // THEN
-      expect(result).toEqual(expected)
     })
 
-    it('returns 3 normalized decisions when 3 decisions are available on S3 (restarts until all decisions from S3 are treated)', async () => {
-      // GIVEN
-      const firstFilename = 'firstFilename.json'
-      const secondFilename = 'secondFilename.json'
-      const thirdFilename = 'thirdFilename.json'
+    const rawFiles = await collection.find(rawTcomToNormalize).toArray()
 
-      // S3 must be called 3 times to return 2 + 1 decision filename
-      const listWithTwoElementsFromS3 = {
-        Contents: [{ Key: firstFilename }, { Key: secondFilename }]
-      }
-      const listWithOneElementFromS3 = {
-        Contents: [{ Key: thirdFilename }]
-      }
-      mockS3
-        .on(ListObjectsV2Command)
-        .resolvesOnce(listWithTwoElementsFromS3)
-        .resolvesOnce(listWithOneElementFromS3)
-        .resolves({})
-
-      // S3 must be called 3 times to retrieve decisions content
-      mockS3
-        .on(GetObjectCommand)
-        .resolvesOnce({
-          Body: createFakeDocument(decisionIntegre, { ...metadonneesFromS3, idDecision: 'first' })
-        })
-        .resolvesOnce({
-          Body: createFakeDocument(decisionIntegre, { ...metadonneesFromS3, idDecision: 'second' })
-        })
-        .resolvesOnce({
-          Body: createFakeDocument(decisionIntegre, { ...metadonneesFromS3, idDecision: 'third' })
-        })
-        .resolves({})
-
-      jest.spyOn(DbSderApiGateway.prototype, 'saveDecision').mockResolvedValue({})
-
-      const expected = [
-        {
-          decisionNormalisee: mockUtils.decisionContentNormalized,
-          metadonnees: {
-            ...normalizedMetadonnees,
-            labelStatus: LabelStatus.TOBETREATED,
-            filenameSource: firstFilename,
-            sourceId: 182325407
-          }
-        },
-        {
-          decisionNormalisee: mockUtils.decisionContentNormalized,
-          metadonnees: {
-            ...normalizedMetadonnees,
-            labelStatus: LabelStatus.TOBETREATED,
-            filenameSource: secondFilename,
-            sourceId: 1126719509
-          }
-        },
-        {
-          decisionNormalisee: mockUtils.decisionContentNormalized,
-          metadonnees: {
-            ...normalizedMetadonnees,
-            labelStatus: LabelStatus.TOBETREATED,
-            filenameSource: thirdFilename,
-            sourceId: 164456582
-          }
-        }
-      ]
-
-      // WHEN
-      const result = await normalizationJob()
-
-      // THEN
-      expect(mockS3).toHaveReceivedCommandTimes(ListObjectsV2Command, 3)
-      expect(result).toEqual(expected)
-    })
-    */
+    expect(rawFiles).toHaveLength(1)
   })
 
-  describe('Failing Cases', () => {
-    it('returns an exception when S3 is unavailable', async () => {
-      // GIVEN
-      mockS3.on(ListObjectsV2Command).rejects(new Error())
-
-      // WHEN
-      expect(async () => await normalizationJob())
-        // THEN
-        .rejects.toThrow(InfrastructureException)
+  it('selects a document when the last 3 events are not all blocked', async () => {
+    await collection.insertOne({
+      path: FILE_NAME,
+      events: [
+        { type: 'blocked', date: new Date(), reason: 'random error' },
+        { type: 'created', date: new Date() },
+        { type: 'blocked', date: new Date(), reason: 'random error' },
+        { type: 'blocked', date: new Date(), reason: 'random error' },
+        { type: 'updated', date: new Date() }
+      ]
     })
 
-    it('returns an empty list when S3 is available but dbSder API is unavailable', async () => {
-      // GIVEN
-      const listWithOneElementFromS3 = {
-        Contents: [{ Key: 'filename' }]
+    const rawFiles = await collection.find(rawTcomToNormalize).toArray()
+
+    expect(rawFiles).toHaveLength(1)
+  })
+
+  it('excludes a document with 3 consecutive blocked events', async () => {
+    await collection.insertOne({
+      path: FILE_NAME,
+      events: [
+        { type: 'created', date: new Date() },
+        { type: 'blocked', date: new Date(), reason: 'random error' },
+        { type: 'blocked', date: new Date(), reason: 'random error' },
+        { type: 'blocked', date: new Date(), reason: 'random error' }
+      ]
+    })
+
+    const rawFiles = await collection.find(rawTcomToNormalize).toArray()
+
+    expect(rawFiles).toHaveLength(0)
+  })
+
+  it('excludes a document with normalized event', async () => {
+    await collection.insertOne({
+      path: FILE_NAME,
+      events: [{ type: 'normalized', date: new Date() }]
+    })
+
+    const rawFiles = await collection.find(rawTcomToNormalize).toArray()
+
+    expect(rawFiles).toHaveLength(0)
+  })
+
+  it('selects only matching documents from a mixed collection', async () => {
+    await collection.insertMany([
+      { path: 'new.pdf', events: [] },
+      {
+        path: 'retry.pdf',
+        events: [{ type: 'blocked', date: new Date(), reason: 'random error' }]
+      },
+      { path: 'normalized_decision.pdf', events: [{ type: 'normalized', date: new Date() }] },
+      {
+        path: 'blocked_decision.pdf',
+        events: [
+          { type: 'blocked', date: new Date(), reason: 'random error' },
+          { type: 'blocked', date: new Date(), reason: 'random error' },
+          { type: 'blocked', date: new Date(), reason: 'random error' }
+        ]
       }
-      mockS3.on(ListObjectsV2Command).resolves(listWithOneElementFromS3)
+    ])
 
-      mockS3.on(GetObjectCommand).resolves({
-        Body: createFakeDocument(decisionIntegre, metadonneesFromS3)
-      })
+    const rawFiles = await collection.find(rawTcomToNormalize).toArray()
 
-      jest.spyOn(DbSderApiGateway.prototype, 'saveDecision').mockRejectedValueOnce(new Error())
-
-      // WHEN
-      const result = await normalizationJob()
-
-      // THEN
-      expect(result).toEqual([])
-    })
+    expect(rawFiles).toHaveLength(2)
+    const paths = rawFiles.map((rawFile) => rawFile.path)
+    expect(paths).toEqual(['new.pdf', 'retry.pdf'])
   })
 })
-
-function createFakeDocument(
-  texteDecisionIntegre: string,
-  metadonnees: MockUtils['metadonneeDtoMock']
-) {
-  const decision: CollectDto = {
-    texteDecisionIntegre: texteDecisionIntegre,
-    metadonnees,
-    date: new Date()
-  }
-  const stream = new Readable()
-  stream.push(JSON.stringify(decision))
-  stream.push(null)
-  return sdkStreamMixin(stream)
-}
