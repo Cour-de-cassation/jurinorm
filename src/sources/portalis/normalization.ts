@@ -65,7 +65,7 @@ export async function normalizePortalis(rawPortalis: RawPortalis): Promise<unkno
     portalisContent,
     originalTextZoning,
     occultationStrategy,
-    rawPortalis.path
+    rawPortalis
   )
 
   const annotatedDecision = await annotateDecision(portalisDecision)

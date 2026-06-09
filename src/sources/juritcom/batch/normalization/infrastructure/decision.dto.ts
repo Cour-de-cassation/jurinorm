@@ -1,13 +1,13 @@
 import { LabelStatus, PublishStatus, UnIdentifiedDecisionTcom } from 'dbsder-api-types'
 import { hashDecisionId } from '../../../shared/infrastructure/utils/hash.utils'
-import { MetadonneeDto } from '../../../shared/infrastructure/dto/metadonnee.dto'
+import { RawTcom } from '@tcom/shared/infrastructure/dto/rawFile'
 
 export function mapDecisionNormaliseeToDecisionDto(
-  generatedId: string,
+  source: RawTcom,
   decisionContent: string,
-  metadonnees: MetadonneeDto,
-  filename: string
 ): UnIdentifiedDecisionTcom {
+  const generatedId = source.metadatas.idDecision
+  const metadonnees = source.metadatas
   return {
     __v: 0,
     appeals: [],
@@ -30,7 +30,8 @@ export function mapDecisionNormaliseeToDecisionDto(
     sourceId: hashDecisionId(generatedId),
     sourceName: 'juritcom',
     blocOccultation: 0,
-    filenameSource: filename,
+    filenameSource: source.path,
+    rawFileSource: source._id.toString(),
     public: metadonnees.decisionPublique === true,
     solution: metadonnees.libelleProcedure ?? '',
     codeMatiereCivil: metadonnees.idMatiere ?? '',

@@ -1,16 +1,17 @@
-import { LabelStatus, UnIdentifiedDecisionTj } from 'dbsder-api-types'
+import { LabelStatus, PublishStatus, UnIdentifiedDecisionTj } from 'dbsder-api-types'
 import { hashDecisionId } from '../../../shared/infrastructure/utils/hash.utils'
 import {
   DecisionAssocieeDto,
   MetadonneesDto
 } from '../../../shared/infrastructure/dto/metadonnees.dto'
 import { computeRaisonInteretParticulier } from '../../../../../services/rules/raisonInteretParticulier'
+import { RawTj } from '../models'
 
 export function mapDecisionNormaliseeToDecisionDto(
   generatedId: string,
   decisionContent: string,
   metadonnees: MetadonneesDto,
-  filename: string
+  source: RawTj
 ): UnIdentifiedDecisionTj {
   const raisonInteretParticulier = computeRaisonInteretParticulier(
     metadonnees.selection,
@@ -59,7 +60,8 @@ export function mapDecisionNormaliseeToDecisionDto(
     registerNumber: metadonnees.numeroRegistre,
     sourceId: hashDecisionId(generatedId),
     sourceName: 'juritj',
-    filenameSource: filename,
+    filenameSource: source.path,
+    rawFileSource: source._id.toString(),
     parties: metadonnees.parties,
     indicateurQPC: metadonnees.indicateurQPC,
     idDecisionWinci: metadonnees.idDecision,

@@ -15,15 +15,13 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
 
   it('returns an object mapping decision from S3 to DBSDER API decision type', async () => {
     // GIVEN
-    const { uniqueDecisionId, decisionContentNormalized, metadonneeDtoMock, decisionMock } =
+    const { rawTjMock, decisionContentNormalized, decisionMock } =
       new MockUtils()
 
     // WHEN
     const mappedDecision = mapDecisionNormaliseeToDecisionDto(
-      uniqueDecisionId,
+      rawTjMock,
       decisionContentNormalized,
-      metadonneeDtoMock,
-      'path'
     )
     mappedDecision.dateCreation = new Date(
       parseInt('2024'),

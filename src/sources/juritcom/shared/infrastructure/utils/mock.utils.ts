@@ -7,11 +7,14 @@ import {
   JusticeRoleTcom
 } from 'dbsder-api-types'
 import { AdresseDto, CompositionDto, MetadonneeDto, PartieDto } from '../dto/metadonnee.dto'
+import { ObjectId } from 'mongodb'
+import { RawTcom } from '../dto/rawFile'
 
 export class MockUtils {
   // Shared context
   uniqueDecisionId = `0605_2001F00930_2012-12-05_19`
   dateNow = new Date()
+  dateCreation = new Date(parseInt('2024'), parseInt('12') - 1, parseInt('25'))
 
   decisionContentToNormalize =
     '\tLe contenu de ma décision avec    des espaces     et des backslash multiples \r\n \t'
@@ -86,6 +89,13 @@ export class MockUtils {
     date: null
   }
 
+  rawTjMock: RawTcom = {
+      _id: new ObjectId("010101010101010101010101"),
+      metadatas: this.metadonneeDtoMock,
+      events: [{ type: 'created', date: this.dateCreation }],
+      path: 'path'
+    }
+
   // End of normalization context
   decisionMock: UnIdentifiedDecisionTcom = {
     __v: 0,
@@ -112,6 +122,7 @@ export class MockUtils {
     idDecisionTCOM: '0605_2001F00930_2012-12-05_19',
     selection: false,
     filenameSource: 'path',
+    rawFileSource: "010101010101010101010101",
     motifsDebatsChambreConseil: false,
     motifsSecretAffaires: false
   }

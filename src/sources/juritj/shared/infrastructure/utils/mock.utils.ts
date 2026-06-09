@@ -1,3 +1,4 @@
+import { RawTj } from '@tj/batch/normalization/models'
 import {
   UnIdentifiedDecisionTj,
   LabelStatus,
@@ -5,6 +6,7 @@ import {
   TypePartieExhaustive,
   PublishStatus
 } from 'dbsder-api-types'
+import { ObjectId } from 'mongodb'
 
 export class MockUtils {
   // Shared context
@@ -30,6 +32,7 @@ export class MockUtils {
 
   decisionName = 'decisionName.wpd'
 
+  dateCreationSource = new Date(2023, 11, 20)
   dateNow = new Date(2023, 12, 20)
 
   // JuriTJ Collect context
@@ -92,6 +95,13 @@ export class MockUtils {
     idDecisionWinci: this.decisionAssocieeDtoMock.idDecision
   }
 
+  rawTjMock: RawTj = {
+    _id: new ObjectId("010101010101010101010101"),
+    metadatas: this.allAttributesMetadonneesDtoMock,
+    events: [{ type: 'created', date: this.dateCreationSource }],
+    path: this.decisionName
+  }
+
   decisionTJMock: UnIdentifiedDecisionTj = {
     appeals: this.allAttributesMetadonneesDtoMock.numeroMesureInstruction,
     chamberId: '',
@@ -105,17 +115,18 @@ export class MockUtils {
     occultation: {
       additionalTerms: this.mandatoryMetadonneesDtoMock.occultationComplementaire,
       categoriesToOmit: [],
-      motivationOccultation: !this.mandatoryMetadonneesDtoMock.debatPublic
+      motivationOccultation: undefined
     },
     originalText: this.decisionContentNormalized,
     parties: this.allAttributesMetadonneesDtoMock.parties,
     registerNumber: this.allAttributesMetadonneesDtoMock.numeroRegistre,
     sourceId: this.uniqueDecisionIdHash,
     sourceName: 'juritj',
-    blocOccultation: 1,
+    blocOccultation: 0,
     NPCode: this.allAttributesMetadonneesDtoMock.codeNature,
     NACCode: this.allAttributesMetadonneesDtoMock.codeNAC,
     filenameSource: this.allAttributesMetadonneesDtoMock.filenameSource,
+    rawFileSource: this.rawTjMock._id.toString(),
     public: this.allAttributesMetadonneesDtoMock.decisionPublique,
     selection: false,
     raisonInteretParticulier: null,
@@ -140,7 +151,5 @@ export class MockUtils {
     __v: 0,
     decatt: [],
     publication: [],
-    publishStatus: PublishStatus.TOBEPUBLISHED,
-    originalTextZoning: undefined
   }
 }

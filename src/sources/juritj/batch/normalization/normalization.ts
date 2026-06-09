@@ -110,7 +110,7 @@ export async function normalizeTj(rawTj: RawTj): Promise<void> {
       _id,
       cleanedDecision,
       metadonnees,
-      rawTj.path
+      rawTj
     )
 
     decisionToSave.labelStatus = computeLabelStatus(decisionToSave)
