@@ -155,6 +155,8 @@ export function mapJuricaDecision(
   return {
     sourceId: data._id.toHexString(),
     sourceName: 'juricav2',
+    oracle_id: data.oracle_id,
+    jurica_mongo_id: null, // null pour une nouvelle décision, mais il faudra alimenter cette propriété durant la reprise intégrale du stock avec l'_id Mongo de l'ancienne décision normalisée
     originalText: content,
     registerNumber: `${data.numero_rg} ${data.numero_registre}`, // on reproduit sciemment la collecte originale (le numéro RG sera rétabli lors de la publication)
     labelStatus: LabelStatus.TOBETREATED,
@@ -170,9 +172,9 @@ export function mapJuricaDecision(
     jurisdictionName: data.juridiction_name,
     selection: data.is_selected,
     sommaire: data.sommaire,
-    // blocOccultation: @TODO lost with Jurica v2 ???
+    blocOccultation: occultationStrategy.blocOccultation,
     occultation: {
-      additionalTerms: data.occultation_complementaire_libre, // @TODO for sure ???
+      additionalTerms: data.occultation_complementaire_libre,
       categoriesToOmit:
         occultationStrategy.categoriesToOmit[
           occultationRecommendationCodeNac(recommandationOccultation)
@@ -180,10 +182,8 @@ export function mapJuricaDecision(
       motivationOccultation: false
     },
     recommandationOccultation,
-    // formation: @TODO ???
-    parties: [], // @TODO: which values from data.parties ???
+    parties: data.parties,
     composition: data.composition_tribunal,
-    // tiers: @TODO ???
     public: data.is_decision_publique,
     debatPublic: data.is_debat_public,
     pourvoiCourDeCassation: data.has_pourvoi_cassation,
