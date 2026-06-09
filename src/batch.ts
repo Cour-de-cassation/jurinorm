@@ -32,7 +32,7 @@ async function startNormalization() {
   await normalizeRawTjFiles(filters, MAX_DECISION_PER_BATCH_TJ)
   await normalizeRawTcomFiles(MAX_DECISION_PER_BATCH_TCOM)
   if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV))
-    await normalizeRawPortalisFiles(filters, MAX_DECISION_PER_BATCH_CPH)  
+    await normalizeRawPortalisFiles(filters, MAX_DECISION_PER_BATCH_CPH)
   if (['LOCAL', 'DEV', 'PREPROD'].includes(ENV))
     await normalizeRawJuricaV2Files(filters, MAX_DECISION_PER_BATCH_JURICAV2)
 }
