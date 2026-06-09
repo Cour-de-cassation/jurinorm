@@ -14,9 +14,8 @@ jest.mock('../../../../../services/rules/raisonInteretParticulier', () => ({
 
 describe('mapDecisionNormaliseeToDecisionDto', () => {
   const mockUtils = new MockUtils()
-  const generatedId = 'TJ75011A01-1234520221121'
+  const generatedId = 'TJ75011A01-1234520240120'
   const decisionContent = mockUtils.decisionContentNormalized
-  const filename = 'test.json'
 
   beforeAll(() => {
     jest.useFakeTimers()
@@ -34,57 +33,16 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
 
   it('returns an object mapping decision from S3 to DBSDER API decision type', async () => {
     // GIVEN
-    const mockDecision = mockUtils.mandatoryMetadonneesDtoMock
-
-    const expectedDecisionDto: UnIdentifiedDecisionTj = {
-      __v: 0,
-      decatt: [],
-      publication: [],
-      endCaseCode: '55C',
-      codeService: '0A',
-      debatPublic: true,
-      decisionAssociee: undefined,
-      libelleEndCaseCode: 'some libelle code decision / endCaseCode',
-      libelleNAC: 'Demande en dommages-intérêts contre un organisme',
-      libelleService: 'Libelle de service',
-      matiereDeterminee: true,
-      numeroRoleGeneral: '01/12345',
-      pourvoiCourDeCassation: false,
-      pourvoiLocal: false,
-      recommandationOccultation: SuiviOccultation.SUBSTITUANT,
-      selection: false,
-      raisonInteretParticulier: null,
-      NACCode: '11F',
-      appeals: [],
-      blocOccultation: 0,
-      chamberId: '',
-      chamberName: '',
-      dateCreation: mockUtils.dateNow.toISOString(),
-      dateDecision: new Date(2024, 0, 20).toISOString(),
-      filenameSource: 'test.json',
-      idDecisionTJ: 'TJ75011A01-1234520221121',
-      jurisdictionCode: undefined,
-      jurisdictionId: 'TJ75011',
-      jurisdictionName: 'Juridictions civiles de première instance',
-      labelStatus: LabelStatus.TOBETREATED,
-      occultation: {
-        additionalTerms: 'occultation complementaire',
-        categoriesToOmit: [],
-        motivationOccultation: undefined
-      },
-      originalText: mockUtils.decisionContentNormalized,
-      parties: undefined,
-      registerNumber: 'A',
-      sourceId: 1616441172,
-      sourceName: 'juritj'
-    }
+    const mockDecision = mockUtils.allAttributesMetadonneesDtoMock
+    const mockRaw = mockUtils.rawTjMock
+    const expectedDecisionDto = mockUtils.decisionTJMock
 
     // WHEN
     const mappedDecision = mapDecisionNormaliseeToDecisionDto(
       generatedId,
       decisionContent,
       mockDecision,
-      filename
+      mockRaw
     )
 
     // THEN
@@ -94,58 +52,18 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
   it('maps idDecision to idDecisionWinci for both decision and decisionAssociee', async () => {
     // GIVEN
     const mockDecision = {
-      ...mockUtils.mandatoryMetadonneesDtoMock,
+      ...mockUtils.allAttributesMetadonneesDtoMock,
       idDecision: 'TJ00000',
       decisionAssociee: { ...mockUtils.decisionAssocieeDtoMock, idDecision: 'TJ11111' },
       codeNature: '6C',
       libelleNature: 'Autres demandes en matière de frais et dépens'
     }
 
-    const expectedDecisionDto: UnIdentifiedDecisionTj = {
-      __v: 0,
-      decatt: [],
-      publication: [],
-      endCaseCode: '55C',
-      NPCode: '6C',
-      codeService: '0A',
-      debatPublic: true,
-      libelleEndCaseCode: 'some libelle code decision / endCaseCode',
-      libelleNAC: 'Demande en dommages-intérêts contre un organisme',
-      libelleNatureParticuliere: 'Autres demandes en matière de frais et dépens',
-      libelleService: 'Libelle de service',
-      matiereDeterminee: true,
-      numeroRoleGeneral: '01/12345',
-      pourvoiCourDeCassation: false,
-      pourvoiLocal: false,
-      recommandationOccultation: SuiviOccultation.SUBSTITUANT,
-      selection: false,
-      raisonInteretParticulier: null,
-      NACCode: '11F',
-      appeals: [],
-      blocOccultation: 0,
-      chamberId: '',
-      chamberName: '',
-      dateCreation: mockUtils.dateNow.toISOString(),
-      dateDecision: new Date(2024, 0, 20).toISOString(),
-      filenameSource: 'test.json',
-      idDecisionTJ: 'TJ75011A01-1234520221121',
-      jurisdictionCode: undefined,
-      jurisdictionId: 'TJ75011',
-      jurisdictionName: 'Juridictions civiles de première instance',
-      labelStatus: LabelStatus.TOBETREATED,
-      occultation: {
-        additionalTerms: 'occultation complementaire',
-        categoriesToOmit: [],
-        motivationOccultation: undefined
-      },
-      originalText: mockUtils.decisionContentNormalized,
-      parties: undefined,
-      registerNumber: 'A',
-      sourceId: 1616441172,
-      sourceName: 'juritj',
-      idDecisionWinci: 'TJ00000',
+    const mockRaw = mockUtils.rawTjMock
+    const expectedDecisionDto = {
+      ...mockUtils.decisionTJMock,
       decisionAssociee: {
-        ...mockUtils.decisionAssocieeTJDtoMock,
+        ...mockUtils.decisionTJMock.decisionAssociee,
         idDecisionWinci: 'TJ11111'
       }
     }
@@ -155,7 +73,7 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
       generatedId,
       decisionContent,
       mockDecision,
-      filename
+      mockRaw
     )
 
     // THEN
@@ -167,6 +85,7 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
       RaisonInteretParticulier.S4_SUJET_INTERET_PUBLIC_MAJEUR
     )
 
+    const mockRaw = mockUtils.rawTjMock
     const mockDecision = {
       ...mockUtils.mandatoryMetadonneesDtoMock,
       selection: true,
@@ -177,7 +96,7 @@ describe('mapDecisionNormaliseeToDecisionDto', () => {
       generatedId,
       decisionContent,
       mockDecision,
-      filename
+      mockRaw
     )
 
     expect(mappedDecision).toHaveProperty(

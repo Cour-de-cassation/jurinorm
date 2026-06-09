@@ -15,50 +15,12 @@ import {
   SuiviOccultation
 } from 'dbsder-api-types'
 import { ObjectId } from 'mongodb'
+import { MockUtils } from '@tj/shared/infrastructure/utils/mock.utils'
 
 const findCodeNac = jest.spyOn(DbSderApiGateway.prototype, 'getCodeNac')
+const mock = new MockUtils()
 
-const fakeDecision: DecisionTj = {
-  _id: new ObjectId().toString(),
-  sourceId: 1,
-  sourceName: 'juritj',
-  __v: 0,
-  originalText: 'text',
-  registerNumber: '',
-  dateCreation: '',
-  dateDecision: '',
-  jurisdictionCode: '',
-  jurisdictionId: '',
-  jurisdictionName: '',
-  labelStatus: LabelStatus.TOBETREATED,
-  NACCode: '',
-  NPCode: '',
-  libelleNAC: '',
-  libelleNatureParticuliere: '',
-  endCaseCode: '',
-  libelleEndCaseCode: '',
-  chamberId: '',
-  chamberName: '',
-  codeService: '',
-  libelleService: '',
-  debatPublic: true,
-  indicateurQPC: false,
-  matiereDeterminee: false,
-  pourvoiCourDeCassation: false,
-  pourvoiLocal: false,
-  selection: false,
-  blocOccultation: BlocOccultation.TOUTES_CATAGORIES,
-  recommandationOccultation: SuiviOccultation.AUCUNE,
-  occultation: { additionalTerms: '', categoriesToOmit: [] },
-  parties: [],
-  filenameSource: '',
-  idDecisionTJ: '',
-  numeroRoleGeneral: '',
-  appeals: [],
-  decatt: [],
-  publication: [],
-  public: true
-}
+const fakeDecision: DecisionTj = { _id: (new ObjectId()).toString(), ...mock.decisionTJMock }
 
 const codeNac: CodeNac = {
   _id: '',

@@ -88,7 +88,7 @@ export function mapPortalisDecision(
   content: string,
   originalTextZoning: Zoning,
   occultationStrategy: { blocOccultation: BlocOccultation; categoriesToOmit: Category[] },
-  filenameSource: string
+  source: RawPortalis
 ): UnIdentifiedDecisionCph {
   return {
     sourceId: publicationRules.identifiantDecision,
@@ -136,7 +136,8 @@ export function mapPortalisDecision(
         ?.valeur ?? '') === '', // TODO: which value ? - high
     pourvoiCourDeCassation: false, // TODO: which value ? - high
     pourvoiLocal: false, // TODO: which value ? - high
-    filenameSource
+    filenameSource: source.path,
+    rawFileSource: source._id.toString()
   }
 }
 

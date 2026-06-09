@@ -76,10 +76,8 @@ export async function normalizeTcom(rawTcom: RawTcom): Promise<void> {
     const originalText = textPostProcess(plainText)
 
     const decisionToSave = mapDecisionNormaliseeToDecisionDto(
-      rawTcom.metadatas.idDecision,
+      rawTcom,
       originalText,
-      rawTcom.metadatas,
-      rawTcom.path
     )
     const decisionLogFormat: DecisionLog = {
       operations: ['normalization', `normalizationJob-TCOM`],
