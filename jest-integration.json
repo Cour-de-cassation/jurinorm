@@ -11,7 +11,7 @@
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "setupFiles": [
-    "<rootDir>/src/.jest/setupEnvVars.ts"
+    "./src/.jest/setupEnvVars.ts"
   ],
   "moduleNameMapper": {
     "^@ca/(.*)$": "<rootDir>/src/sources/jurica/$1",
