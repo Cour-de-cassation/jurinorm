@@ -36,6 +36,7 @@ const zParty = zod.object({
   type_personne: zod.string().optional()
 })
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const schemaJuricaMetadata = zod.object({
   _id: zObjectId,
   numero_rg: zod.string().trim().min(1).max(40).describe('Numéro RG'),
