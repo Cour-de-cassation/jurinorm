@@ -1,33 +1,21 @@
-import { CodeNac } from 'dbsder-api-types'
+import { BlocOccultation, CategoriesToOmit, Category } from 'dbsder-api-types'
+import { S3_BUCKET_NAME_PORTALIS } from '../../config/env'
+import { fetchZoning } from '../../connectors/jurizonage'
+
 import { getFileByName } from '../../connectors/bucket'
 import { getCodeNac } from '../../connectors/dbSder'
-import { NotFound, NotSupported } from '../../services/error'
-import { htmlToPlainText } from './library/formats/html'
-import { pdfToHtml } from './library/formats/pdf'
-import { logger } from '../../config/logger'
-import { mapPortalisDecision, RawPortalis } from './models'
-import { annotateDecision } from '../../services/rules/annotation'
-import { saveDecisionInAffaire } from '../../services/affaire'
-import { S3_BUCKET_NAME_PORTALIS } from '../../config/env'
 
-async function getPortalisContent(fileNamePdf: string, portalisFile: Buffer): Promise<string> {
-  logger.info({
-    path: 'src/sources/portalis/normalization.ts',
-    operations: ['extraction', 'getPortalisContent'],
-    message: 'Waiting for text extraction'
-  })
-  const html = await pdfToHtml(fileNamePdf, portalisFile)
-  logger.info({
-    path: 'src/sources/portalis/normalization.ts',
-    operations: ['extraction', 'getPortalisContent'],
-    message: 'Text successfully extracted'
-  })
-  return htmlToPlainText(html)
-}
+import { NotFound, NotSupported } from '../../services/error'
+import { saveDecisionInAffaire } from '../../services/affaire'
+import { annotateDecision } from '../../services/rules/annotation'
+import { getPdfContent } from '../../services/textExtraction/pdf'
+
+import { mapPortalisDecision, RawPortalis } from './models'
 
 async function getOccultationStrategy(
-  code: string
-): Promise<Required<Pick<CodeNac, 'blocOccultation' | 'categoriesToOmit'>>> {
+  code: string,
+  categoryType: CategoriesToOmit
+): Promise<{ blocOccultation: BlocOccultation; categoriesToOmit: Category[] }> {
   const codeNac = await getCodeNac(code)
   if (!codeNac) throw new NotFound('codeNac', `codeNac ${code} not found`)
 
@@ -37,13 +25,15 @@ async function getOccultationStrategy(
       'codeNac.blocOccultationCA',
       `codeNac ${code} has no "blocOccultationCA" property`
     )
-  if (!categoriesToOmit)
+
+  const categoriesToOmitByType = categoriesToOmit?.[categoryType]
+  if (!categoriesToOmitByType)
     throw new NotFound(
       'codeNac.categoriesToOmit',
-      `codeNac ${code} has no "categoriesToOmit" property`
+      `codeNac ${code} has no "categoriesToOmit" property for "${categoryType}"`
     )
 
-  return { blocOccultation, categoriesToOmit }
+  return { blocOccultation, categoriesToOmit: categoriesToOmitByType }
 }
 
 export async function normalizePortalis(rawPortalis: RawPortalis): Promise<unknown> {
@@ -57,13 +47,23 @@ export async function normalizePortalis(rawPortalis: RawPortalis): Promise<unkno
     )
 
   const occultationStrategy = await getOccultationStrategy(
-    portalisMetadatas.metadatas.dossier.nature_affaire_civile.code
+    portalisMetadatas.metadatas.dossier.nature_affaire_civile.code,
+    portalisMetadatas.recommandationOccultation
+      ? CategoriesToOmit.SUIVI
+      : CategoriesToOmit.NON_SUIVI
   )
-  const portalisContent = await getPortalisContent(rawPortalis.path, portalisFile)
+
+  const portalisContent = await getPdfContent(rawPortalis.path, portalisFile, false)
+  const originalTextZoning = await fetchZoning({
+    arret_id: portalisMetadatas.identifiantDecision,
+    source: 'portalis-cph',
+    text: portalisContent
+  })
 
   const portalisDecision = mapPortalisDecision(
     portalisMetadatas,
     portalisContent,
+    originalTextZoning,
     occultationStrategy,
     rawPortalis.path
   )

@@ -1,13 +1,12 @@
 import zod from 'zod'
 import {
-  CategoriesToOmit,
-  CodeNac,
   LabelStatus,
   PublishStatus,
   SuiviOccultation,
   UnIdentifiedDecisionCph
 } from 'dbsder-api-types'
 import { RawFile } from '../../services/eventSourcing'
+import { BlocOccultation, Category, Zoning } from 'dbsder-api-types/dist/typeGuards/common.zod'
 
 export type FilePortalis = {
   mimetype: string
@@ -15,19 +14,7 @@ export type FilePortalis = {
   buffer: Buffer
 }
 
-export function occultationRecommendationCodeNac(
-  recommandationOccultation: SuiviOccultation
-): CategoriesToOmit {
-  if (
-    recommandationOccultation === SuiviOccultation.COMPLEMENT ||
-    recommandationOccultation === SuiviOccultation.CONFORME
-  ) {
-    return CategoriesToOmit.SUIVI
-  } else {
-    return CategoriesToOmit.NON_SUIVI
-  }
-}
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const schemaPortalisMetadatas = zod.object({
   identifiantDecision: zod.string().trim().min(1),
   recommandationOccultation: zod.object({
@@ -49,22 +36,25 @@ const schemaPortalisMetadatas = zod.object({
       .optional(),
     decision: zod.object({
       date: zod.string().regex(/\d{8}/),
-      codes_decision: zod.object({
-        code_decision: zod
-          .array(
-            zod.object({
-              code: zod.string(),
-              libelle: zod.string()
-            })
-          )
-          .min(1)
-      })
+      codes_decision: zod
+        .object({
+          code_decision: zod
+            .array(
+              zod.object({
+                code: zod.string(),
+                libelle: zod.string()
+              })
+            )
+            .min(1)
+        })
+        .optional()
     }),
     dossier: zod.object({
       nature_affaire_civile: zod.object({
         code: zod.string(),
         libelle: zod.string()
-      })
+      }),
+      numero: zod.string()
     }),
     evenement_porteur: zod.object({
       caracteristiques: zod.object({
@@ -96,17 +86,14 @@ function computeAdditionalTerms(
 export function mapPortalisDecision(
   { metadatas, ...publicationRules }: PortalisMetadatas,
   content: string,
-  occultationStrategy: Required<Pick<CodeNac, 'blocOccultation' | 'categoriesToOmit'>>,
+  originalTextZoning: Zoning,
+  occultationStrategy: { blocOccultation: BlocOccultation; categoriesToOmit: Category[] },
   filenameSource: string
 ): UnIdentifiedDecisionCph {
-  const recommandationOccultation = publicationRules.recommandationOccultation
-    .suiviRecommandationOccultation
-    ? SuiviOccultation.CONFORME
-    : SuiviOccultation.AUCUNE
-
   return {
     sourceId: publicationRules.identifiantDecision,
     sourceName: 'portalis-cph',
+    portalisNumber: metadatas.dossier.numero,
     originalText: content,
     labelStatus: LabelStatus.TOBETREATED,
     publishStatus: PublishStatus.TOBEPUBLISHED,
@@ -118,29 +105,23 @@ export function mapPortalisDecision(
     ).toISOString(),
     NACCode: metadatas.dossier.nature_affaire_civile.code,
     // NACLibelle: metadatas.dossier.nature_affaire_civile.libelle, // TODO: which value ? - low
-    endCaseCode: (
-      metadatas.decision.codes_decision
-        .code_decision[0] as PortalisMetadatas['metadatas']['decision']['codes_decision']['code_decision'][number]
-    ).code, // index[0] is safe due zod schema
-    // libelleEndCaseCode: endCaseCode: (
-    //   metadatas.decision.codes_decision
-    //     .code_decision[0] as PortalisMetadatas["decision"]["codes_decision"]["code_decision"][number]
-    // ).libelle, // TODO: which value ? - low
+    endCaseCode: metadatas.decision.codes_decision?.code_decision[0].code,
+    originalTextZoning: originalTextZoning,
     jurisdictionCode: metadatas.juridiction.libelle_court,
     jurisdictionId: metadatas.juridiction.code_srj,
     jurisdictionName: metadatas.juridiction.libelle_long,
     selection: publicationRules.interetParticulier,
     sommaire: publicationRules.sommaireInteretParticulier,
-    blocOccultation: occultationStrategy.blocOccultation,
+    blocOccultation: occultationStrategy.blocOccultation ?? undefined,
     occultation: {
       additionalTerms: computeAdditionalTerms(publicationRules.recommandationOccultation),
-      categoriesToOmit:
-        occultationStrategy.categoriesToOmit[
-          occultationRecommendationCodeNac(recommandationOccultation)
-        ],
+      categoriesToOmit: occultationStrategy.categoriesToOmit,
       motivationOccultation: false
     },
-    recommandationOccultation,
+    recommandationOccultation: publicationRules.recommandationOccultation
+      .suiviRecommandationOccultation
+      ? SuiviOccultation.CONFORME
+      : SuiviOccultation.AUCUNE,
     formation: (metadatas.audiences_dossier?.audience_dossier ?? []).find(
       (_) => _.chronologie === 'COURANTE'
     )?.formation,

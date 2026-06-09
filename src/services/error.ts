@@ -37,8 +37,8 @@ export class MissingValue extends Error {
     this.variableName = variableName
   }
 }
-export function isMissingValue(x: any) {
-  return x?.type === 'missingValue' && x instanceof Error
+export function isMissingValue(x: unknown) {
+  return typeof x === 'object' && 'type' in x && x.type === 'missingValue' && x instanceof Error
 }
 export class NotFound extends Error {
   type = 'notFound' as const
@@ -76,7 +76,7 @@ export class UnexpectedError extends Error {
     super(message ? message : `Unexepected error occurs.`)
   }
 }
-export function toUnexpectedError(error: any) {
+export function toUnexpectedError(error: unknown) {
   if (!(error instanceof Error)) return new UnexpectedError(`${error}`)
 
   return Object.assign(error, new UnexpectedError(error.message))
@@ -90,13 +90,14 @@ type CustomError =
   | ForbiddenError
   | UnexpectedError
 
-export function isCustomError(x: any): x is CustomError {
-  switch (x.type) {
+export function isCustomError(x: unknown): x is CustomError {
+  const type = x instanceof Error && 'type' in x ? x.type : null
+  switch (type) {
     case 'notSupported':
     case 'missingValue':
     case 'unauthorizedError':
     case 'unexpectedError':
-      return x instanceof Error
+      return true
     default:
       return false
   }
