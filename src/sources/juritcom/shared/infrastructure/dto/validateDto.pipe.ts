@@ -1,11 +1,11 @@
 import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common'
 import { plainToInstance } from 'class-transformer'
 import { validate, ValidationError } from 'class-validator'
-import { BadPropertiesException } from '../exceptions/missingProperties.exception'
+import { NotSupported } from '@services/error'
 
 @Injectable()
 export class ValidateDtoPipe implements PipeTransform {
-  async transform(value: any, { metatype }: ArgumentMetadata) {
+  async transform(value: unknown, { metatype }: ArgumentMetadata) {
     if (!metatype || !this.toValidate(metatype)) {
       return value
     }
@@ -13,7 +13,7 @@ export class ValidateDtoPipe implements PipeTransform {
     const errors: ValidationError[] = await validate(object)
     if (errors.length > 0) {
       const messages = errors.map((err) => err.property)
-      const error = new BadPropertiesException(messages, value)
+      const error = new NotSupported(messages.join('; '), value)
       throw error
     }
     return value

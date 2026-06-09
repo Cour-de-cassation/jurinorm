@@ -141,7 +141,6 @@ export async function listDecisions(filters: Partial<Decision>) {
       if (!!decision) return decision
 
       if (!!response.nextCursor) {
-        console.log(`listDecisions nextCursor:${response.nextCursor}`)
         response = await findDecisions(filters, response.nextCursor)
         index = 1
         return response.decisions[0]

@@ -11,7 +11,7 @@ export async function transformDecisionIntegreFromWPDToText(
   try {
     const decisionIntegreContent = await readWordperfectDocument(filename)
     return decisionIntegreContent
-  } catch (error) {
+  } catch (_) {
     throw new Error('Could not get decision ' + filename + ' content.')
   } finally {
     deleteTemporaryDecisionIntegre(filename)

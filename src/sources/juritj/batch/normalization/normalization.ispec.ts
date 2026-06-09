@@ -1,14 +1,14 @@
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { MongoClient, Collection } from 'mongodb'
-import { rawTcomToNormalize } from './normalization'
+import { rawTjToNormalize } from './normalization'
 
-const FILE_NAME = 'decision.pdf'
+const FILE_NAME = 'decision.wpd'
 
 let mongoServer: MongoMemoryServer
 let client: MongoClient
 let collection: Collection
 
-describe('rawTcomToNormalize MongoDB Filter', () => {
+describe('rawTjToNormalize MongoDB Filter', () => {
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create()
     client = new MongoClient(mongoServer.getUri())
@@ -28,7 +28,7 @@ describe('rawTcomToNormalize MongoDB Filter', () => {
   it('selects a document with no event', async () => {
     await collection.insertOne({ path: FILE_NAME, events: [] })
 
-    const rawFiles = await collection.find(rawTcomToNormalize).toArray()
+    const rawFiles = await collection.find(rawTjToNormalize).toArray()
 
     expect(rawFiles).toHaveLength(1)
   })
@@ -42,7 +42,7 @@ describe('rawTcomToNormalize MongoDB Filter', () => {
       ]
     })
 
-    const rawFiles = await collection.find(rawTcomToNormalize).toArray()
+    const rawFiles = await collection.find(rawTjToNormalize).toArray()
 
     expect(rawFiles).toHaveLength(1)
   })
@@ -59,7 +59,7 @@ describe('rawTcomToNormalize MongoDB Filter', () => {
       ]
     })
 
-    const rawFiles = await collection.find(rawTcomToNormalize).toArray()
+    const rawFiles = await collection.find(rawTjToNormalize).toArray()
 
     expect(rawFiles).toHaveLength(1)
   })
@@ -75,7 +75,7 @@ describe('rawTcomToNormalize MongoDB Filter', () => {
       ]
     })
 
-    const rawFiles = await collection.find(rawTcomToNormalize).toArray()
+    const rawFiles = await collection.find(rawTjToNormalize).toArray()
 
     expect(rawFiles).toHaveLength(0)
   })
@@ -86,21 +86,21 @@ describe('rawTcomToNormalize MongoDB Filter', () => {
       events: [{ type: 'normalized', date: new Date() }]
     })
 
-    const rawFiles = await collection.find(rawTcomToNormalize).toArray()
+    const rawFiles = await collection.find(rawTjToNormalize).toArray()
 
     expect(rawFiles).toHaveLength(0)
   })
 
   it('selects only matching documents from a mixed collection', async () => {
     await collection.insertMany([
-      { path: 'new.pdf', events: [] },
+      { path: 'new.wpd', events: [] },
       {
-        path: 'retry.pdf',
+        path: 'retry.wpd',
         events: [{ type: 'blocked', date: new Date(), reason: 'random error' }]
       },
-      { path: 'normalized_decision.pdf', events: [{ type: 'normalized', date: new Date() }] },
+      { path: 'normalized_decision.wpd', events: [{ type: 'normalized', date: new Date() }] },
       {
-        path: 'blocked_decision.pdf',
+        path: 'blocked_decision.wpd',
         events: [
           { type: 'blocked', date: new Date(), reason: 'random error' },
           { type: 'blocked', date: new Date(), reason: 'random error' },
@@ -109,10 +109,10 @@ describe('rawTcomToNormalize MongoDB Filter', () => {
       }
     ])
 
-    const rawFiles = await collection.find(rawTcomToNormalize).toArray()
+    const rawFiles = await collection.find(rawTjToNormalize).toArray()
 
     expect(rawFiles).toHaveLength(2)
     const paths = rawFiles.map((rawFile) => rawFile.path)
-    expect(paths).toEqual(['new.pdf', 'retry.pdf'])
+    expect(paths).toEqual(['new.wpd', 'retry.wpd'])
   })
 })

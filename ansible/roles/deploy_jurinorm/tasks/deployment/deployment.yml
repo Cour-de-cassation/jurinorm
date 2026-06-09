@@ -8,12 +8,12 @@
       apiVersion: batch/v1
       kind: CronJob
       metadata:
-        name: "{{ batch_app_id }}-cronjob"
-        namespace: "{{ jurinorm_namespace }}"
+        name: '{{ batch_app_id }}-cronjob'
+        namespace: '{{ jurinorm_namespace }}'
         labels:
-          app: "{{ batch_app_id }}"
+          app: '{{ batch_app_id }}'
       spec:
-        schedule: "{{ normalization_batch_schedule }}"
+        schedule: '{{ normalization_batch_schedule }}'
         suspend: "{{ env == 'DEV' }}"
         timeZone: Europe/Paris
         successfulJobsHistoryLimit: 3
@@ -24,15 +24,15 @@
             template:
               metadata:
                 labels:
-                  app: "{{ batch_app_id }}"
+                  app: '{{ batch_app_id }}'
               spec:
                 restartPolicy: OnFailure
                 containers:
-                  - name: "{{ batch_app_id }}"
-                    image: "{{ batch_image }}"
+                  - name: '{{ batch_app_id }}'
+                    image: '{{ app_image }}'
                     envFrom:
                       - configMapRef:
-                          name: "batch-config"
+                          name: 'batch-config'
                       - secretRef:
-                          name: "batch-secret"
+                          name: 'batch-secret'
 ...
