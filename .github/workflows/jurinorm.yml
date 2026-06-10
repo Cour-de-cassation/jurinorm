@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24.0.2
+          node-version: 24.14.0
 
       - name: Install dependencies
         run: npm install
@@ -37,7 +37,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24.0.2
+          node-version: 24.14.0
 
       - name: Install dependencies
         run: npm install
@@ -55,7 +55,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24.0.2
+          node-version: 24.14.0
 
       - name: Install dependencies
         run: npm install
@@ -73,7 +73,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24.0.2
+          node-version: 24.14.0
 
       - name: Install dependencies
         run: npm install
