@@ -147,4 +147,36 @@ describe('extractCodeFromSommaire', () => {
     // THEN
     expect(code).toBe('F1')
   })
+
+  it('returns code when followed by newline then text', () => {
+    // WHEN
+    const code = extractCodeFromSommaire('S3\nSuite du texte')
+
+    // THEN
+    expect(code).toBe('S3')
+  })
+
+  it('returns code when followed by tab then text', () => {
+    // WHEN
+    const code = extractCodeFromSommaire('S3\tDescription')
+
+    // THEN
+    expect(code).toBe('S3')
+  })
+
+  it('returns code when dash is not surrounded by spaces', () => {
+    // WHEN
+    const code = extractCodeFromSommaire('S3-Description')
+
+    // THEN
+    expect(code).toBe('S3')
+  })
+
+  it('returns code when there is a space between letter and digit', () => {
+    // WHEN
+    const code = extractCodeFromSommaire('F 2 description')
+
+    // THEN
+    expect(code).toBe('F2')
+  })
 })
