@@ -18,7 +18,6 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "strictFunctionTypes": true, // see: https://github.com/m-radzikowski/aws-sdk-client-mock/issues/167
-    "types": ["jest"],
     "paths": {
       "@ca/*": ["src/sources/jurica/*"],
       "@cc/*": ["src/sources/jurinet/*"],

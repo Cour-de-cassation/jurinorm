@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals'
 import { RaisonInteretParticulier } from 'dbsder-api-types'
 import {
   computeRaisonInteretParticulier,
