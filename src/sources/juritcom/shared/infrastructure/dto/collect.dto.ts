@@ -4,6 +4,4 @@ export class CollectDto {
   texteDecisionIntegre: string
 
   metadonnees: MetadonneeDto
-
-  date: Date
 }
