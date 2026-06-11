@@ -76,9 +76,9 @@ export async function normalizeTcom(rawTcom: RawTcom): Promise<void> {
     const originalText = textPostProcess(plainText)
 
     const decisionToSave = mapDecisionNormaliseeToDecisionDto(
-      rawTcom.metadatas.idDecision,
+      rawTcom.metadatas.metadonnees.idDecision,
       originalText,
-      rawTcom.metadatas,
+      rawTcom.metadatas.metadonnees,
       rawTcom.path
     )
     const decisionLogFormat: DecisionLog = {
@@ -106,7 +106,7 @@ export async function normalizeTcom(rawTcom: RawTcom): Promise<void> {
       categoriesToOmit: [],
       motivationOccultation: false
     }
-    decisionToSave.occultation = computeOccultation(rawTcom.metadatas)
+    decisionToSave.occultation = computeOccultation(rawTcom.metadatas.metadonnees)
 
     logger.info({ ...decisionLogFormat, message: `Computing publishStatus` })
     decisionToSave.publishStatus =

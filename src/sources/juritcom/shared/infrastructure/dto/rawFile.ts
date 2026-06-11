@@ -1,4 +1,4 @@
 import { RawFile } from '@services/eventSourcing'
-import { MetadonneeDto } from './metadonnee.dto'
+import { CollectDto } from './collect.dto'
 
-export type RawTcom = RawFile<MetadonneeDto>
+export type RawTcom = RawFile<CollectDto>
